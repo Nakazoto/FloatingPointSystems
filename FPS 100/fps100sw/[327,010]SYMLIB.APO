@@ -1,0 +1,398 @@
+     6      ***LSB
+     3      ***TITLE
+!DIV
+     4      1      ***ENTRY
+!DIV    10000      0      0
+     1      ***END
+!DIV
+     3      ***TITLE
+!SQRT
+     4      1      ***ENTRY
+!SQRT   10202      0      0
+     1      ***END
+!SQRT
+     3      ***TITLE
+!SNCS
+     4      1      ***ENTRY
+!SNCS   10306      0      0
+     1      ***END
+!SNCS
+     3      ***TITLE
+!LOG
+     4      1      ***ENTRY
+!LOG    10333      0      0
+     1      ***END
+!LOG
+     3      ***TITLE
+!EXP
+     4      1      ***ENTRY
+!EXP    10317      0      0
+     1      ***END
+!EXP
+     3      ***TITLE
+!ATAN
+     4      1      ***ENTRY
+!ATAN   10365      0      0
+     1      ***END
+!ATAN
+     3      ***TITLE
+!ZERO
+     4      1      ***ENTRY
+!ZERO   10371      0      0
+     1      ***END
+!ZERO
+     3      ***TITLE
+!ONE
+     4      1      ***ENTRY
+!ONE    10001      0      0
+     1      ***END
+!ONE
+     3      ***TITLE
+!TWO
+     4      1      ***ENTRY
+!TWO    10002      0      0
+     1      ***END
+!TWO
+     3      ***TITLE
+!THREE
+     4      1      ***ENTRY
+!THREE  10441      0      0
+     1      ***END
+!THREE
+     3      ***TITLE
+!FOUR
+     4      1      ***ENTRY
+!FOUR   10442      0      0
+     1      ***END
+!FOUR
+     3      ***TITLE
+!FIVE
+     4      1      ***ENTRY
+!FIVE   10443      0      0
+     1      ***END
+!FIVE
+     3      ***TITLE
+!SIX
+     4      1      ***ENTRY
+!SIX    10444      0      0
+     1      ***END
+!SIX
+     3      ***TITLE
+!SEVEN
+     4      1      ***ENTRY
+!SEVEN  10445      0      0
+     1      ***END
+!SEVEN
+     3      ***TITLE
+!EIGHT
+     4      1      ***ENTRY
+!EIGHT  10446      0      0
+     1      ***END
+!EIGHT
+     3      ***TITLE
+!NINE
+     4      1      ***ENTRY
+!NINE   10447      0      0
+     1      ***END
+!NINE
+     3      ***TITLE
+!TEN
+     4      1      ***ENTRY
+!TEN    10450      0      0
+     1      ***END
+!TEN
+     3      ***TITLE
+!SIXTN
+     4      1      ***ENTRY
+!SIXTN  10451      0      0
+     1      ***END
+!SIXTN
+     3      ***TITLE
+!HALF
+     4      1      ***ENTRY
+!HALF   10427      0      0
+     1      ***END
+!HALF
+     3      ***TITLE
+!THIRD
+     4      1      ***ENTRY
+!THIRD  10430      0      0
+     1      ***END
+!THIRD
+     3      ***TITLE
+!FORTH
+     4      1      ***ENTRY
+!FORTH  10431      0      0
+     1      ***END
+!FORTH
+     3      ***TITLE
+!FIFTH
+     4      1      ***ENTRY
+!FIFTH  10432      0      0
+     1      ***END
+!FIFTH
+     3      ***TITLE
+!SIXTH
+     4      1      ***ENTRY
+!SIXTH  10433      0      0
+     1      ***END
+!SIXTH
+     3      ***TITLE
+!SVNTH
+     4      1      ***ENTRY
+!SVNTH  10434      0      0
+     1      ***END
+!SVNTH
+     3      ***TITLE
+!EGHTH
+     4      1      ***ENTRY
+!EGHTH  10435      0      0
+     1      ***END
+!EGHTH
+     3      ***TITLE
+!NINTH
+     4      1      ***ENTRY
+!NINTH  10436      0      0
+     1      ***END
+!NINTH
+     3      ***TITLE
+!TENTH
+     4      1      ***ENTRY
+!TENTH  10437      0      0
+     1      ***END
+!TENTH
+     3      ***TITLE
+!SXNTH
+     4      1      ***ENTRY
+!SXNTH  10440      0      0
+     1      ***END
+!SXNTH
+     3      ***TITLE
+!SQRT2
+     4      1      ***ENTRY
+!SQRT2  10203      0      0
+     1      ***END
+!SQRT2
+     3      ***TITLE
+!SQRT3
+     4      1      ***ENTRY
+!SQRT3  10422      0      0
+     1      ***END
+!SQRT3
+     3      ***TITLE
+!SQRT5
+     4      1      ***ENTRY
+!SQRT5  10423      0      0
+     1      ***END
+!SQRT5
+     3      ***TITLE
+!SQT10
+     4      1      ***ENTRY
+!SQT10  10424      0      0
+     1      ***END
+!SQT10
+     3      ***TITLE
+!ISQT2
+     4      1      ***ENTRY
+!ISQT2  10206      0      0
+     1      ***END
+!ISQT2
+     3      ***TITLE
+!ISQT3
+     4      1      ***ENTRY
+!ISQT3  10452      0      0
+     1      ***END
+!ISQT3
+     3      ***TITLE
+!ISQT5
+     4      1      ***ENTRY
+!ISQT5  10453      0      0
+     1      ***END
+!ISQT5
+     3      ***TITLE
+!ISQ10
+     4      1      ***ENTRY
+!ISQ10  10454      0      0
+     1      ***END
+!ISQ10
+     3      ***TITLE
+!CBT2
+     4      1      ***ENTRY
+!CBT2   10417      0      0
+     1      ***END
+!CBT2
+     3      ***TITLE
+!CBTT2
+     4      1      ***ENTRY
+!CBTT2  10417      0      0
+     1      ***END
+!CBTT2
+     3      ***TITLE
+!CBT3
+     4      1      ***ENTRY
+!CBT3   10420      0      0
+     1      ***END
+!CBT3
+     3      ***TITLE
+!CBRT3
+     4      1      ***ENTRY
+!CBRT3  10420      0      0
+     1      ***END
+!CBRT3
+     3      ***TITLE
+!QDRT2
+     4      1      ***ENTRY
+!QDRT2  10421      0      0
+     1      ***END
+!QDRT2
+     3      ***TITLE
+!LOG2E
+     4      1      ***ENTRY
+!LOG2E  10317      0      0
+     1      ***END
+!LOG2E
+     3      ***TITLE
+!LOG2
+     4      1      ***ENTRY
+!LOG2   10411      0      0
+     1      ***END
+!LOG2
+     3      ***TITLE
+!LOGE
+     4      1      ***ENTRY
+!LOGE   10337      0      0
+     1      ***END
+!LOGE
+     3      ***TITLE
+!LN2
+     4      1      ***ENTRY
+!LN2    10336      0      0
+     1      ***END
+!LN2
+     3      ***TITLE
+!LN3
+     4      1      ***ENTRY
+!LN3    10407      0      0
+     1      ***END
+!LN3
+     3      ***TITLE
+!LNPI
+     4      1      ***ENTRY
+!LNPI   10406      0      0
+     1      ***END
+!LNPI
+     3      ***TITLE
+!LN10
+     4      1      ***ENTRY
+!LN10   10410      0      0
+     1      ***END
+!LN10
+     3      ***TITLE
+!E
+     4      1      ***ENTRY
+!E      10403      0      0
+     1      ***END
+!E
+     3      ***TITLE
+!INVE
+     4      1      ***ENTRY
+!INVE   10404      0      0
+     1      ***END
+!INVE
+     3      ***TITLE
+!ESQ
+     4      1      ***ENTRY
+!ESQ    10405      0      0
+     1      ***END
+!ESQ
+     3      ***TITLE
+!PI
+     4      1      ***ENTRY
+!PI     10402      0      0
+     1      ***END
+!PI
+     3      ***TITLE
+!TWOPI
+     4      1      ***ENTRY
+!TWOPI  10415      0      0
+     1      ***END
+!TWOPI
+     3      ***TITLE
+!INVPI
+     4      1      ***ENTRY
+!INVPI  10412      0      0
+     1      ***END
+!INVPI
+     3      ***TITLE
+!PI2
+     4      1      ***ENTRY
+!PI2    10312      0      0
+     1      ***END
+!PI2
+     3      ***TITLE
+!PI4
+     4      1      ***ENTRY
+!PI4    10373      0      0
+     1      ***END
+!PI4
+     3      ***TITLE
+!PI180
+     4      1      ***ENTRY
+!PI180  10413      0      0
+     1      ***END
+!PI180
+     3      ***TITLE
+!PISQ
+     4      1      ***ENTRY
+!PISQ   10414      0      0
+     1      ***END
+!PISQ
+     3      ***TITLE
+!SQTPI
+     4      1      ***ENTRY
+!SQTPI  10416      0      0
+     1      ***END
+!SQTPI
+     3      ***TITLE
+!GAMMA
+     4      1      ***ENTRY
+!GAMMA  10425      0      0
+     1      ***END
+!GAMMA
+     3      ***TITLE
+!PHI
+     4      1      ***ENTRY
+!PHI    10426      0      0
+     1      ***END
+!PHI
+     3      ***TITLE
+!FFTSZ
+     4      1      ***ENTRY
+!FFTSZ  10000      0      0
+     1      ***END
+!FFTSZ
+     3      ***TITLE
+!FFTX2
+     4      1      ***ENTRY
+!FFTX2  20000      0      0
+     1      ***END
+!FFTX2
+     3      ***TITLE
+!FFTX4
+     4      1      ***ENTRY
+!FFTX4  40000      0      0
+     1      ***END
+!FFTX4
+     3      ***TITLE
+!FFTX8
+     4      1      ***ENTRY
+!FFTX8 100000      0      0
+     1      ***END
+!FFTX8
+     3      ***TITLE
+!DIVD2
+     4      1      ***ENTRY
+!DIVD2   4000      0      0
+     1      ***END
+!DIVD2
+     7      ***LEB

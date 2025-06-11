@@ -1,0 +1,2386 @@
+$LIB
+"****** APFSRC = SCALAR MATH AND APFTN 1.0 LIBRARY /FAST/ = REL 3.3, DEC 80
+"
+"===========================================================================
+"      --- HISTORY ---
+"REV 3.3:  DEC 80
+"       1. SINCOS FIXED FOR ACCURACY PROBLEM WITH
+"          ARGUMENTS OF VERY SMALL MAGNITUDE.
+"
+"REV 3.2:  DEC 79
+"       1. A BUG WAS FIXED IN AMOD.  THE FIX MEANS MOD NOW ALSO WORKS.
+"       2. AN EXPLICIT  $RADIX 8  STATEMENT WAS ADDED TO EVERY ROUTINE,
+"          INSURING THE ROUTINES WILL ASSEMBLE PROPERLY EVEN WHEN THE
+"          DEFAULT RADIX OF THE ASSEMBLER IS SET TO 10 OR 16.
+"
+"REV 3.1:  SEP 79
+"       1.  DIV SPEEDED FROM 23 TO 22 CYCLES.
+"       2.  DEFINITION OF COSH CORRECTED.
+"ORIGINAL: NOV 78
+"       CONTENTS OF LIBRARY ARE:
+"               RESLVE  --  RESOLVE PARAMETERS FROM APFTN
+"               FUNSAV  --  REGISTER SAVE FOR GENERAL FUNCTION
+"               FUNRES  --  REGISTER RESTORE FOR GENERAL FUNCTION
+"               SAVE    --  REGISTER SAVE
+"               RESTOR  --  REGISTER RESTORE
+"               XSAV    --  GLOBAL S-PAD SAVE
+"               XRST    --  GLOBAL REGISTER RESTORE
+"               MAXMIN  --  FORTRAN MAX AND MIN
+"               SPDIV   --  SPAD DIVIDE
+"               SPMUL   --  SPAD MULTIPLY
+"               SQRT    --  SCALAR SQUARE ROOT
+"               SIN     --  SCALAR SINE
+"               COS     --  SCALAR COSINE
+"               ATAN    --  SCALAR ARCTANGENT (1 ARG )
+"               ATN2    --  SCALAR ARCTANGENT (2 ARG )
+"               IABS    --  INTEGER ABSOLUTE VALUE
+"               ABS     --  FLOATING POINT ABSOLUTE VALUE
+"               IDIM    --  INTEGER POSITIVE DIFFERENCE
+"               DIM     --  FLOATING POINT POSITIVE DIFFERENCE
+"               ISIGN   --  INTEGER TRANSFER OF SIGN
+"               SIGN    --  FLOATING POINT TRANSFER OF SIGN
+"               MOD     --  INTEGER REMAINDER
+"               AMOD    --  FLOATING POINT REMAINDER
+"               AINT    --  FLOATING POINT TO FLOATING POINT TRUNCATION
+"               TANH    --  FLOATING POINT HYPERBOLIC TANGENT
+"               COSH    --  FLOATING POINT HYPERBOLIC COSINE
+"               SINH    --  FLOATING POINT HYPERBOLIC SINE
+"               IEXPI   --  INTEGER TO INTEGER EXPONENTIAL
+"               REXPI   --  FLOATING POINT TO INTEGER EXPONENTIAL
+"               REXPR   --  FLOATING POINT TO FLOATING POINT EXPONENTIAL
+"               LOG     --  SCALAR LOG, BASE 10
+"               LN      --  SCALAR LOG, BASE E
+"               EXP     --  SCALAR EXPONENTIAL
+"               IFIX    --  FLOATING POINT TO INTEGER CONVERSION
+"               INT     --  FLOATING POINT TO INTEGER TRUNCATION
+"               FLOAT   --  INTEGER TO FLOATING POINT CONVERSION
+"               FAPUT   --  STORE ADDER RESULT IN DATA PAD
+"               FAPUSH  --  PUSH OUT ADDER RESULT
+"               DIV     --  SCALAR DIVIDE
+"-----NOTE: FOR THE HISTORY OF REV 2.2 AND EARLIER REFER TO THE HISTORY
+"           SECTION OF BAASRC.
+"
+"=======================================================================
+"****** RESLVE = RESOLVE PARAMETERS FROM APFTN /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE RESLVE
+        $RADIX 8
+        $ENTRY RESLVE
+"
+"
+"       THE FIRST ROUTINE MOVES ADDRESSES THAT ARE RESIDENT IN MAIN DATA
+" MEMORY AND PLACES THEM IN THE S-PADS.
+"
+"       IT ASSUMES THAT THESE ADDRESSES RESIDE IN A BLOCK OF STORAGE
+" AND THE ADDRESS AND SIZE OF THE BLOCK ARE PLACED IN SP(0) AND SP(1)
+" RESPECTIVELY.
+"
+"       THE PASSING OF ADDRESSES OF AUGUMENTS TO MEMORY IS CONSISTANT
+" WITH STANDARD FORTRAN.
+"
+"           ---STATISTICS---
+"LANGUAGE:     AP-120 B ASSEMBLER
+"EQUIPMENT:    AP-120 B
+"SIZE:         27. LOCATIONS
+"TIME:         (2.83 + N*0.5 + M*1.17) U.S.
+"AUTHOR:       A. E. CHARLESWORTH, DEE DAVIS
+"DATE:         NOV 77, JUNE 78
+"
+"                ---SCRATCH---
+"           DPX(0), DPX(1), DPY(1)
+"                ---ENTRIES---
+"             SP(0), SP(1), SP(17)
+"           SP(0) = ADDRESS OF BLOCK
+"           SP(1) = NUMBER OF PARAMETERS
+"           SP(17) = CODE WORD
+        BA $EQU 0
+        CO $EQU 1
+        MAP $EQU 17
+        EXP $EQU 17
+        MASK $EQU 0
+        ADR $EQU 1
+        PATTERN $EQU 0
+        NM $EQU 17
+        C27 $EQU 16
+        NN $EQU 1
+"
+RESLVE: MOV MAP,MAP; DPY(PATTERN)<SPFN                  "GET MAP TO MANTISSA
+        DPY(PATTERN)<1032; WRTEXP                       "SET INITIAL EXPONENT
+        MOV BA,BA;SETMA                                 "FETCH FIRST ADDRESS IN
+        MOV CO,17;LDTMA;DB=!ONE
+        LDSPI C27;DB=27.                         "THESE FIVE LINES FLOAT INTEGER
+        MOV NM,NM;DPX<SPFN
+        FADD ZERO,MDPX; MOV C27,C27
+        FADD;MOV CO,CO
+        CLR 17;FSUBR TM,FA;BEQ SECOND                 "USE SP(17) AS S-PAD NUMBE
+                                               "AND DECREMENT TOTAL COUNT
+LOOP1:  INCMA;                                  "N+1, FETCH NEXT ADDRESS IN BLOC
+                LDSPI 0;DB=MD;FADD              "N, LOAD NEXT S-PAD WITH DATA AD
+        INC 17;DPX<SPFN;FSUBR TM,FA             "N+1, INCREMENT S-PAD NUMBER
+                                                "AND DECREMENT TOTAL COUNT
+        LDSPD;DB=DPX;                           "N+1, DESIGNATE S-PAD
+                BFNE LOOP1                      "N,BRANCH IF TOTAL COUNT IS ZERO
+"
+"
+"        THE SECOND ROUTINE PERFORMS INDIRECT FETCHES WHEN NECESSARY TO CALL
+"MATH LIBRARY ROUTINES FROM APFTN.
+"
+"
+"                  --- USEAGE ---
+"CALL WITH SPAD-17 SET WITH A BIT MAP INDICATING WHICH S-PAD REGISTERS
+"       CONTAIN ADDRESSES WHICH POINT TO VALUES
+"
+"       BIT 15 (THE RIGHT MOST BIT) INDICATES FOR SPAD 0
+"       BIT 14                      INDICATES FOR SPAD 1
+"
+"       ETC.
+"
+"       BIT 0 (THE LEFT MOST BIT) MUST BE ZERO (SINCE SPAD 17 ISN'T INCLUDED)
+"
+"       A '1' INDICATES AN INDIRECT ADDRESS, A '0' INDICATES A DIRECT ADDRESS
+"
+"
+"FOR EXAMPLE:
+"
+"       THE VECTOR ADD ROUTINE IS CALLED WITH A CALL OF:
+"
+"       CALL VADD(A,I,B,J,C,K,N)
+"
+"IN SPADS:        0 1 2 3 4 5 6
+"
+"       I,J,K,N  NEED VALUES FETCHED, SO THE BIT MAP WOULD BE
+"
+"       1 101 010    OR 152  OCTAL
+"
+"SPADS: 6 543 321
+"
+"
+"THUS: THE APFTN ENTRY FOR VADD WOULD DO:
+"
+"       LDSPI 17; DB=152
+"       JSR RESLVE
+"
+"TO GET THE VALUES FOR I,J,K,N FETCHED FROM 'MD'
+"WHICH WOULD TAKE 6.67 US. INCLUDING THE 'LDSPI' AND THE 'JSR'
+"
+"                  --- SCRATCH ---
+"SP:    17
+"DPX:   0-1 (RELATIVE TO DPA)
+"DPY:   0
+"
+"               ---- METHOD ----
+"
+"THE INPUT IS A BIT MAP OF WHICH S-PADS (FROM 0 - 16) CONTAIN ADDRESSES OF
+"VALUES IN MD TO BE FETCHES AND PUT INTO THE RESPECTIVE S-PADS.
+"
+"THE BITS ARE IN 'BIT-REVERSED' ORDER, THAT IS BIT 0 INDICATES FOR SPAD 17,
+"BIT 1 FOR SPAD 16, AND SO ON.
+"
+"     ADDER NORMALIZE FUNCTION IS USED AS A 'LEADING BIT' DETECTOR.  THAT IS,
+"THE ADDER WILL SHIFT A MANTISSA LEFT UNTIL A BIT APPEARS IN BIT #1 OF THE
+"MANTISSA.
+"
+"SO, IF WE PUT OUT BIT-PATTERN FROM S-PAD 17 AND PUT IT INTO THE MANTISSA
+"OF A FLOATING POINT WORD, WITH A 1032 IN THE EXPONENT - THEN THE NORMALIZE
+"WILL LEAVE THE BIT NUMBER OF THE LEADING BIT OF THE MAP (AND HENCE THE SPAD
+"NUMBER TO FETCH FROM) IN THE EXPONENT.
+"
+"THE 'AND' FUNCTION IS USED TO THROW AWAY THE LEADING BIT EACH TIME, SO THAT
+"SUCEEDDING '1' BITS MAY BE FOUND.
+"
+"SO, THE EXPONENT OF THE MASKED AND NORMALIZED BIT PATTERN TELLS FROM WHICH
+"SPAD REGISTER TO 'SETMA' FROM, AND TO STORE THE RESULTING 'MD' VALUE INTO.
+"
+"NOTE THAT WHEN ALL ONE BITS HAVE BEEN FOUND, THE ADDER RESULT WILL BE ZERO,
+"SO THIS CONDITION IS USED TO SIGNAL DONE.
+"
+"
+"
+"
+"
+"SET UP ................................................
+"
+SECOND: RPSF MASKLOC; DPX(MASK)<DB                      "GET MASK
+        LDSPI EXP; DB=32                                "SET INITIAL MASK EXP.
+"
+"START THE PIPELINE .........................................
+"
+        FAND DPY(PATTERN),MDPX(MASK); MOV EXP,EXP       "1. GET NEXT LEADING BIT
+        FADD                                            "3.
+        DPY(PATTERN)<FA                                 "4. BACK TO DPY
+        LDSPE EXP; DB=DPY(PATTERN);                     "7. GET LEADING BIT NUM.
+                        BFEQ DONE                       "   DONE IF NO BITS ON
+"
+"THE PIPELINE ...............................................................
+"
+LOOP2:  FAND DPY(PATTERN),MDPX(MASK); MOV EXP,EXP;      "1. GET NEXT LEADING BIT
+                        DPX(ADR)<SPFN                   "   GET SPAD ADDRESS
+                        LDSPD; DB=DPX(ADR)              "2. SET SPAD ADDRESS
+        FADD;                                           "3.
+                        LDSPI 0; SETMA                  "   DO INDIRECT FETCH
+        DPY(PATTERN)<FA                                 "4. UPDATE PATTERN
+                        LDSPD; DB=DPX(ADR)              "5. RESET SPAD ADDRESS
+                        LDSPI 0; DB=MD                  "6. PUT VALUE INTO SPAD
+        LDSPE EXP; DB=DPY(PATTERN);                     "7. GET LEADING BIT NUM.
+                        BFNE LOOP2                       "   LOOP IF NOT DONE
+"
+"DONE .......................................................................
+"
+DONE:   RETURN
+"
+"MASK
+MASKLOC:         $VAL 0,0,1777,177777
+        $END
+"****** FUNSAV = REGISTER SAVE FOR GENERAL FUNCTION /COMMON/ = REL 3.0, NOV 78 *
+       $TITLE FUNSAV                 "SAVE REGISTERS FOR GENERAL FUNCTIONS
+        $RADIX 8
+       $ENTRY FUNSAV
+FUNSAV: MOV 17,17; DB=SPFN;          "SAVE SPAD 17
+        MI<DB; INCMA
+        LDSPI 17; DB=16;             "SET UP LOOP INDEX.
+          BR ENTRY
+LOOP:   LDSPI 17; DB=SPFN;           "STORE AN ODD SPAD
+          MI<DB; INCMA
+        DB=DPY(-4);                  "STORE A DPY VALUE (SPIN ONE
+          MI<DB; INCMA;              "ON STANDARD MEMORY.
+          INCDPA;                    "MOVE DATA PAD WINDOW.
+          DEC 17                     "DECREMENT AND...
+        BNE .+2;                     "...QUIT BEFORE SAVING SPAD(0)
+          MOV 17,17; DB=SPFN; LDSPD
+        RETURN
+ENTRY:  LDSPI 16; DB=SPFN;           "SAVE AN EVEN SPAD
+          MI<DB; INCMA
+        DB=DPX(-4);                  "STORE A DPX VALUE (SPIN ONE
+          MI<DB; INCMA;              "ON STANDARD MEMORY.
+          DEC 17                     "DECREMENT INDEX.
+        MOV 17,17; DB=SPFN; LDSPD;
+          BR LOOP
+       $END
+"****** FUNRES = REGISTER RESTORE FOR GENERAL FUNCTION /COMMON/ = REL 3.0, NOV 7
+       $TITLE FUNRES              "GENERAL FUNCTION RESTORE FOR STANDARD
+        $RADIX 8
+       $ENTRY FUNRES              "AND FAST MEMORY.
+FUNRES: LDSPI 17; DB=16           "SET UP LOOP INDEX.  ALSO OFFSET DPA.
+        RDPA; LDSPNL 10;          "CHANGING DPA
+          INCMA                   "START FETCH OF SPAD 16
+        LDTMA; DB=MD; INCMA       "SAVE SPAD 17,START FETCH OF DPX(-4)
+        SUB 17,10; SETDPA;
+          BR ENTRY
+LOOP:   LDSPI 17; DB=MD;          "RESTORE AN ODD SPAD
+          INCMA                   "FETCH AN EVEN SPAD
+        DPY(3)<DB; DB=MD;         "RESTORE A DPY VALUE
+          DEC 17;                 "DECREMENT INDEX
+          INCDPA;                 "MOVE DATA PAD WINDOW
+          INCMA                   "FETCH A DPX VALUE
+        MOV 17,17; LDSPD; DB=SPFN;
+          BGT .+3
+        NOP                      "NULLIFY THE LDSPD
+        RTMA; LDSPNL 17;RETURN    "RESTORE SPAD 17
+ENTRY:  LDSPI 16; DB=MD;          "RESTORE AN EVEN SPAD
+          INCMA                   "FETCH AN ODD SPAD
+        DPX(3)<DB; DB=MD;         "RESTORE A DPX VALUE
+          DEC 17;                 "DECREMENT INDEX
+          INCMA                   "FETCH A DPY VALUE
+        MOV 17,17; LDSPD; DB=SPFN;
+          BR LOOP
+       $END
+"****** SAVE = REGISTER SAVE /COMMON/ = REL 3.0, NOV 78 *****
+"****** RESTOR = REGISTER RESTORE /COMMON/ = REL 3.0, NOV 78 *****
+         $TITLE  SAVE
+        $RADIX 8
+         $ENTRY  SAVE
+         $ENTRY  RESTOR
+"
+" SAVE AND RESTORE ARE TO BE USED IN CONJUNCTION WITH THE APFTN BASIC
+" EXTERNAL FUNCTIONS THAT WORK WITH REAL AND INTEGER DATA TYPES.
+" IT'S PURPOSE IS TO QUICKLY SAVE THE REGISTERS WHICH THE EXTERNALS USE
+" AS SCRATCH SPACE.
+"
+" OPERANDS:  *EXPECTED* IN ONE OR TWO OF  SP(0,1), DPX(0), DPY(0).
+"            APFTN PUTS THEM IN ONE OR TWO OF SP(0,1), DPX(2), DPY(2).
+" RESULTS:   *PLACED* IN EITHER SP(0) OR DPX(0) BY THE FUNCTION.
+"            APFTN EXPECTS THEM IN EITHER SP(0) OR DPX(2)
+" WITH THAT IN MIND:  THE INTEGRITY OF SP(0,1) AND DPX(2) ARE NOT GUARANTEED,
+"                     BUT THE INTEGRITY OF DPY(2) IS.
+" SCRATCH:   THE OTHER REGISTERS USED BY THE BASIC EXTERNAL FUNCTIONS
+"            (THE LOGICAL OR OF THE REGISTERS USED) ARE SP(12-17), DPX(1,2),
+"            AND DPY(1,2).  THE INDICES ON THOSE DATA PADS ARE RELATIVE TO
+"            DPA FROM THE FUNCTION'S POINT OF VIEW.  FROM THE APFTN ROUTINE'S
+"            POINT OF VIEW, DPX(6,7) AND DPY(6,7) SO TO SPEAK, ARE THE ONES
+"            USED FOR SCRATCH.
+"            SINCE APFTN USES SP(17) AND DPX(3) ONLY AS SCRATCH, THE
+"            INTEGRITY OF SP(17) DOES NOT NEED TO BE GUARANTEED, AND DPX(3)
+"            CAN BE USED TO STORE AN SPAD.
+"
+"
+"            SPEED: SAVE 1.17 USEC
+"                       RESTOR 1.00 USEC
+"
+"
+"            DATA PADS WILL LOOK SOMETHING LIKE THIS:
+"
+"
+"                  DPX                              DPY
+"                 -----                            -----
+"
+"
+"          -4
+"          -3
+"          -2
+"          -1
+"           0
+"           1
+"           2   OP1 (MOVED OUT); SP(13)       OP2 (MOVED OUT)
+"           3   SP(16)
+"           4   SP(15)                        SP(14)
+" SET DPA-> 5   OP1 (DPX(2))  GOES HERE       OP2 (DPY(2))  GOES HERE
+"           6   SCRATCH                       SCRATCH
+"           7   SCRATCH                       SCRATCH
+"           8   SP(12)
+"
+"
+"
+SAVE:    MOV 16,16; DPX(3)<SPFN;           "DPX(3) := SP(16)
+         INCDPA
+         MOV 15,15; DPX(3)<SPFN;           "DPX(4) := SP(15)
+         INCDPA
+         MOV 14,14; DPY(2)<SPFN;           "DPY(4) := SP(14)
+         INCDPA
+         DPX(2)<DPX(-1);                   "DPX(5) := DPX(2)   THE INCDPA'S
+         INCDPA                            "WILL PUT DPA ATDPX(5) (FROM APFTN'S
+                                           "POINT OF VIEW)
+         DPY(1)<DPY(-2);                   "DPY(5) := DPY(2)   LEAVE DPX(6,7)
+         INCDPA                            "AND DPY(6,7) FOR FUNCTION SCRATCH.
+         MOV 13,13; DPX(-3)<SPFN           "DPX(2) := SP(13)
+         MOV 12,12; DPX(3)<SPFN            "DPX(8) := SP(12)
+         MOV 17,17; DPY(3)<SPFN;           "DPY(8) := SP(17)
+         RETURN                            "DONE SAVING!!!
+"
+"
+"
+RESTOR:  LDSPI 12; DB=DPX(3)              "SP(12) RESTORED.  DPY(2) STILL OKAY.
+         LDSPI 17; DB=DPY(3);             "SP(17) RESTORED
+         DECDPA
+         LDSPI 13; DB=DPX(-2);             "SP(13) RESTORED.
+         DECDPA
+         DPX(-1)<DPX(2);                   "RESULT STORED (IF REAL)
+         DECDPA
+         LDSPI 14; DB=DPY(2);              "RESTORE SP(14)
+         DECDPA
+         LDSPI 15; DB=DPX(3);              "RESTORE SP(15)
+         DECDPA
+         LDSPI 16; DB=DPX(3);              "RESTORE SP(16)
+         RETURN
+"
+         $END
+"****** XSAV = GLOBAL S-PAD SAVE /COMMON/ = REL 3.0, NOV 78 *****
+"
+"
+"
+       $TITLE XSAV              "SAVES GLOBAL SPADS FOR APFTN CALLS.
+        $RADIX 8
+       $ENTRY XSAV00
+       $ENTRY XSAV01
+       $ENTRY XSAV02
+       $ENTRY XSAV03
+       $ENTRY XSAV04
+       $ENTRY XSAV05
+       $ENTRY XSAV06
+       $ENTRY XSAV07
+       $ENTRY XSAV10
+       $ENTRY XSAV11
+       $ENTRY XSAV12
+       $ENTRY XSAV13
+       $ENTRY XSAV14
+       $ENTRY XSAV15
+       $ENTRY XSAV16
+"       CONTENTS OF S-PADS FROM ENTRY POINT UP ARE SAVED IN MAIN MEMORY
+"       THE ROUTINE WORKS FOR EITHER MEMORY
+"       SPEED:  FAST MEMORY  (15-S)/6  USEC
+"               SLOW MEMORY  (2(15-S)-1)/6  USEC
+"                               S = BEGINNING S-PAD NUMBERIN DECIMAL SYSTEM
+"
+"
+"       EXAMPLE:  LDMA;  DB=SCR-1
+"                 JSR XSAVnn
+"                 JSR EXTERNAL
+"                 LDMA;  DB=SCR
+"                 JSR XRSTnn
+"
+"
+XSAV00: MOV 00,00; DB=SPFN; MI<DB; INCMA
+XSAV01: MOV 01,01; DB=SPFN; MI<DB; INCMA
+XSAV02: MOV 02,02; DB=SPFN; MI<DB; INCMA
+XSAV03: MOV 03,03; DB=SPFN; MI<DB; INCMA
+XSAV04: MOV 04,04; DB=SPFN; MI<DB; INCMA
+XSAV05: MOV 05,05; DB=SPFN; MI<DB; INCMA
+XSAV06: MOV 06,06; DB=SPFN; MI<DB; INCMA
+XSAV07: MOV 07,07; DB=SPFN; MI<DB; INCMA
+XSAV10: MOV 10,10; DB=SPFN; MI<DB; INCMA
+XSAV11: MOV 11,11; DB=SPFN; MI<DB; INCMA
+XSAV12: MOV 12,12; DB=SPFN; MI<DB; INCMA
+XSAV13: MOV 13,13; DB=SPFN; MI<DB; INCMA
+XSAV14: MOV 14,14; DB=SPFN; MI<DB; INCMA
+XSAV15: MOV 15,15; DB=SPFN; MI<DB; INCMA
+XSAV16: MOV 16,16; DB=SPFN; MI<DB; INCMA; RETURN
+       $END
+"****** XRST = GLOBAL REGISTER RESTORE  /FAST/ = REL 3.0, NOV 78 *****
+"
+     $TITLE XRST            "RESTORES GLOBAL REGISTERS AFTER APFTN CALL
+        $RADIX 8
+     $ENTRY XRST00
+     $ENTRY XRST01
+     $ENTRY XRST02
+     $ENTRY XRST03
+     $ENTRY XRST04
+     $ENTRY XRST05
+     $ENTRY XRST06
+     $ENTRY XRST07
+     $ENTRY XRST10
+     $ENTRY XRST11
+     $ENTRY XRST12
+     $ENTRY XRST13
+     $ENTRY XRST14
+     $ENTRY XRST15
+     $ENTRY XRST16
+"       RESTORES GLOBAL REGISTERS AFTER APFTN CALL FOR FAST MEMORY
+"
+"       SPEED:   (17-S) USEC
+"               S = BEGINNING S-PAD NUMBER IN DECIMAL SYSTEM
+"
+XRST00: INCMA; LDSPD; DB=ZERO
+XRST01: INCMA; LDSPI 1; DB=MD
+XRST02: INCMA
+XRST03: INCMA; LDSPI 01; DB=MD
+XRST04: INCMA; LDSPI 02; DB=MD
+XRST05: INCMA; LDSPI 03; DB=MD
+XRST06: INCMA; LDSPI 04; DB=MD
+XRST07: INCMA; LDSPI 05; DB=MD
+XRST10: INCMA; LDSPI 06; DB=MD
+XRST11: INCMA; LDSPI 07; DB=MD
+XRST12: INCMA; LDSPI 10; DB=MD
+XRST13: INCMA; LDSPI 11; DB=MD
+XRST14: INCMA; LDSPI 12; DB=MD
+XRST15: INCMA; LDSPI 13; DB=MD
+        LDSPI 14; DB=MD
+XRST16: LDSPI 15; DB=MD
+        LDSPI 16; DB=MD; RETURN
+       $END
+"****** MAXMIN = BASIC FORTRAN MAX AND MIN FUNCTIONS /COMMON/ = REL 3.0, NOV 78
+"
+"
+        $TITLE MAXMIN            "BASIC FORTRAN SCALAR MAX AND MIN FUNCTIONS.
+        $RADIX 8
+        $ENTRY AMAX1             "DPX(0) := MAX (DPX(0),DPY(0))
+        $ENTRY  MAX1
+        $ENTRY AMIN1             "DPX(0) := MIN (DPX(0),DPY(0))
+        $ENTRY  MIN1
+        $ENTRY AMAX0             "SP(0)  := MAX (SP(0), SP(1) )
+        $ENTRY  MAX0
+        $ENTRY AMIN0             "SP(0)  := MIN (SP(0), SP(1) )
+        $ENTRY  MIN0
+"
+"
+"
+"       SPEED:   AMAX1,MAX1,AMIN1,MIN1   0.66 USEC
+"                AMAX0,MAX0,AMIN0,MIN0   0.50 USEC
+"
+"
+AMAX1:
+ MAX1:   FSUB DPX,DPY;  BR .+2
+AMIN1:
+ MIN1:   FSUB DPY,DPX
+         FADD
+         NOP
+         BFGT DONE
+         DPX<DPY; RETURN
+AMAX0:
+ MAX0:   SUB# 1,0
+         BGT  DONE
+         MOV  1,0;  RETURN
+AMIN0:
+ MIN0:   SUB# 0,1
+         BGT  DONE
+         MOV  1,0;  RETURN
+DONE:    RETURN
+        $END
+"****** SPDIV = SPAD DIVIDE /COMMON/ = REL 2.2  , SEP 78 **********************
+"
+        $TITLE SPDIV
+        $RADIX 8
+        $ENTRY SPDIV
+        $EXT DIV
+"
+"                       --- ABSTRACT ---
+"       DIVIDES TWO S-PAD REGISTERS TOGETHER
+"
+"                       --- STATISTICS ---
+"SIZE:  15 WORDS + SCALAR DIVIDE
+"SPEED: 2.33 US. + DIVIDE = 6.17 US.
+"
+"    --- HISTORY ---
+"ORIGINAL:  AUG 77  A.E. CHARLESWORTH
+" REV 2.1:  JUL 78  R.S. NORIN        ADJUSTS NUMERATOR SO INTEGER RESULT
+"                                       COMES OUT CORRECTLY
+"
+"                       --- USEAGE ---
+"SP(0) / SP(1) => SP(0)
+"A SIGNED DIVIDE IS DONE.
+"ARGUEMENTS:
+"       S-PAD 0     1ST ARGUEMENT
+"       S-PAD 1     2ND ARGUEMENT
+"
+"       RESULT RETURNED IN S-PAD 0
+"
+"                       --- ERROR CONDITIONS ---
+"       NO CHECKING IS DONE FOR OVERFLOW, THE LOW 16-BITS OF RESULTS TOO
+"       LARGE TO FIT IN 16-BITS ARE RETURNED.
+"
+"                       --- SCRATCH ---
+"SCRATCH: DPX(DPA),DPY(DPA), PLUS DIV
+"
+"
+          A $EQU  0
+          B $EQU  1
+          C $EQU  0
+        N27 $EQU  0
+"
+SPDIV:  DPX(0)<SPFN; MOV A,A            "PUT A INTO DPX
+        LDTMA; DB=!HALF                 "GET 0.5 FROM TM
+        LDSPI N27; DB=27.               "GET A CONSTANT OF 27
+        FADD ZERO,MDPX(0); MOV N27,N27  "FLOAT A
+        FADD; DPX(0)<SPFN; MOV B,B      "PUT B INTO DPX
+        FADD ZERO,MDPX(0); MOV N27,N27; "FLOAT
+                DPY(0)<FA               "SAVE FLOATED A IN DPY
+        FADD;                           "PUSH OUT B
+         BFGE APOS                      "BRANCH IF A POSITIVE
+        FSUBR TM,DPY(0);                "SUBTRACT 0.5 FROM A (A<0)
+         DPX(0)<FA;                     "SAVE FLOATED B IN DPX
+         BR COMM
+APOS:   FADD TM,DPY(0);                 "ADD 0.5 TO A (A>=0)
+         DPX(0)<FA                      "SAVE FLOATED B IN DPX
+COMM:   FADD
+        DPY(0)<FA; JSR DIV              "SAVE FLOATED A IN DPY AND DIVIDE
+        FIXT DPX(0)                     "FIX ANSWER (TRUNCATED)
+        FADD                            "PUSH
+        DPX(0)<FA                       "SAVE INTEGER IN DPX
+        LDSPI C; DB=DPX; RETURN         "PUT INTO S-PAD
+       $END
+"
+"
+"****** SPMUL = SPAD MULTIPLY /COMMON/ = REL 2.0  , JAN 78 ********************
+"
+        $TITLE SPMUL
+        $RADIX 8
+        $ENTRY SPMUL
+"
+"                       --- ABSTRACT ---
+"       MULTIPLIES TWO S-PAD REGISTERS TOGETHER
+"
+"                       --- STATISTICS ---
+"AUTHOR:A.E. CHARLESWORTH
+"SIZE:  14 WORDS
+"SPEED: 2.33 US.
+"
+"                       --- USEAGE ---
+"SP(0) * SP(1) => SP(0)
+"A SIGNED MULTIPLY IS DONE.
+"ARGUEMENTS:
+"       S-PAD 0     1ST ARGUEMENT
+"       S-PAD 1     2ND ARGUEMENT
+"
+"       RESULT RETURNED IN S-PAD 0
+"
+"                       --- ERROR CONDITIONS ---
+"       NO CHECKING IS DONE FOR OVERFLOW, THE LOW 16-BITS OF RESULTS TOO
+"       LARGE TO FIT IN 16-BITS ARE RETURNED.
+"
+"                       --- SCRATCH ---
+"SCRATCH: DPX(DPA), I.E. DPX(0) RELATIVE TO DPA
+"
+"
+          A $EQU  0
+          B $EQU  1
+          C $EQU  0
+        N27 $EQU  0
+"
+SPMUL:  DPX(0)<SPFN; MOV A,A            "PUT A INTO DPX
+        LDSPI N27; DB=27.               "GET A CONSTANT OF 27
+        FADD ZERO,MDPX(0); MOV N27,N27  "FLOAT A
+        FADD; DPX(0)<SPFN; MOV B,B      "PUT B INTO DPX
+        FADD ZERO,MDPX(0); MOV N27,N27; "FLOAT
+                DPX(0)<FA               "SAVE FLOATED A
+        FADD                            "PUSH OUT B
+        FMUL DPX(0),FA                  "MULTIPLY
+        FMUL                            "PUSH
+        FMUL                            "PUSH
+        DPX(0)<FM                       "SAVE FLOATING ANSWER
+        FIX DPX(0)                      "FIX ANSWER
+        FADD                            "PUSH
+        DPX(0)<FA                       "SAVE INTEGER IN DPX
+        LDSPI C; DB=DPX; RETURN         "PUT INTO S-PAD
+       $END
+"
+"****** SQRT = SCALAR SQUARE ROOT /COMMON/ = REL 3.0  , NOV 78 *************
+        $TITLE SQRT
+        $RADIX 8
+        $ENTRY SQRT
+"SQUARE ROOT SUBROUTINE:  SQUARE ROOT ( DPX )
+"                  --- ABSTRACT ---
+"DOES  DPX(DPA) = SQRT( DPX(DPA) )
+"                  --- STATISTICS ---
+"LANGUAGE:         AP-120B ASSEMBLER
+"EQUIPMENT:        AP-120B WITH EITHER MEMORY
+"SIZE:             28 PROGRAM LOCATIONS
+"SPEED:            3.8 US.
+"SCRATCH:          SP: 12.,13.,14.,15.;  DPX: 0,1; DPY: 0,1 (REL TO DPA)
+"     ---HISTORY---
+"ORIGINAL:  SEPT 75   A.E. CHARLESWORTH
+" REVISED:  NOV  78   R.S. NORIN        REDEFINED INVTBL FOR APAL3
+"                  --- USEAGE ---
+"DOES SQRT(X)
+"       PUT X INTO DPX(DPA) AND JSR TO SQRT
+"FOR EXAMPLE:  IF X IS COMING FROM THE MULTIPLIER:
+"       DPX<FM; JSR SQRT
+"
+"ON RETURN SQRT(X) WILL BE IN DPX(DPA)
+"       S-PAD REGISTERS 14-17 (OCTAL) AND DPX(DPA+1) AND DPY(DPA,DPA+1)
+"         ARE SCRATCHED IN AND THE PREVIOUS CONTENTS LOST
+"MAIN DATA MEMORY IS NOT USED, SO A MEMORY FETCH OR STORE MAY BE MADE
+"       BEFORE "JSR"ING AND THE MEMORY CYCLE WILL BE COMPLETED DURING
+"         THE SQUARE ROOT COMPUTATION
+"                  --- ERROR CONDITIONS ---
+"IF X IS NEGATIVE, SQRT(ABS(X)) IS COMPUTED
+"                  --- ALGORITHM ---
+"DOES THE SQUARE ROOT VIA AN INTERPOLATED TABLE LOOPUP
+"
+"1. COMPUTE SQRT(X)
+"    WRITE X AS  2**E * F, THEN
+"    SQRT(X) = 2**E/2 * SQRT(F)
+"
+"SPLIT F INTO 2 PARTS, M AND R, WHERE M IS THE MOST SIGNIFICANT
+"    N BITS OF THE FRACTION, AND R IS THE REMAINING BITS:
+"
+"    0.1MMMMMMRRRRRRRRRRRRRRRRRRRR        FOR 28 BITS TOTAL, N=7 BITS IN M
+"                                                             20 BITS IN R
+"
+"
+"THEN SQRT(F)  =  SQRT(M + R)  =  SQRT(M  *  ( 1 + (R/M) )
+"                              =  SQRT(M) *  SQRT(1 + ( R * (1/M) ) )
+"
+"LOOK UP SQRT(M), CALLED MS, IN A TABLE;
+"LOOK UP 1/M, CALLED MI, IN ANOTHER TABLE, THUS:
+"    SQRT(F)  =  MS  *  SQRT(1 + R*MI)
+"
+"DEFINE  A = R*MI, TO GET
+"    SQRT(F)  =  MS  *  SQRT(1+A)
+"
+"A IS SMALL RELATIVE TO 1, SO EXPAND SQRT(1+A) IN A TAYLOR SERIES:
+"    SQRT(1+A)  =  1  +  A/2  -  (A**2)/8  +  (A**3)/16  -  5(A**4)/128  +  ...
+"
+"2. TO DETERMINE THE LIMITS ON THE EXPANSION:
+"
+"   A IS LARGEST WHEN  M=0.5, THEN  MI=2.0
+"   R IS AT MOST ALMOST 2**-N, WHERE N IS THE NUMBER OF BITS IN M
+"
+"   THUS MAXIMUM  A  IS:  2**(1-N)
+"
+"FOR N=7, MAX A IS 2**-6
+"THEN:         A/2       (A**2)/8       (A**3)/16        5(A**4)/128
+"              2**-7     2**-15         2**-22           (5/4)*2**-31
+"
+"THUS THE A**4 TERM CAN BE IGNORED IN A 27 BIT FRACTION
+"
+"THE COMPUTATION IS:
+"    SQRT(Y) = 2**(E/2) * Z * MS * ( 1 + A/2 - (A**2)/8 + (A**3)/16 )
+"              WHERE A = MI * R
+"    AND Z  =  1.0       IF E IS EVEN
+"        Z  =  SQRT(2.0) IF E IS ODD
+"
+"
+"3. TABLE LAYOUT:
+"
+"        M          BITS 2-7   FRACTION     MI              MS
+"        0.1000000  0          0.5          2.0             0.707106781
+"        0.1000001  1          0.5078125    1.969230769     0.712609641
+"        . . .      . . .      . . .        . . .           . . .
+"        0.1100000  32         0.75         1.333333333     0.866025404
+"        . . .      . . .      . . .        . . .           . . .
+"        0.1111111  64         0.9921875    1.007874016     0.996086091
+"
+"IN PRACTICE, THE SAME TABLE FOR 'MI' IS USED HERE AS IS USED FOR DIVIDE,
+"    BY USING ONLY EVERY OTHER ENTRY
+"
+"
+"4. WE DO THE POLYNOMIAL BY FACTORING AS FOLLOWS:
+"       1.0+A-A**2/8+A**3/16 IS EQUAL TO:
+"       0.5*(2.0+2.0*(.5A)-(.5A**2)+(.5A)**3)
+"
+"THIS FACTORING AVOIDS MULTIPLYING THE A**3 TERM BY A
+"       CONSTANT.
+"THE OUTSIDE FACTOR OF 0.5 WE GET BY LETTING THE EXPONENT BE
+"       ONE LESS THAN IT WOULD OTHERWISE BE
+"WE GET .5A BY USING AN EXPONENT OF -1 WHEN WE GET
+"       THE RESIDUE VIA A FLOATING AND
+"THE MULTIPLY OF .5A*2.0 DOESN'T COST US ANYTHING, AS WE AREN'T
+"       THERE USING THE MULTIPLIER
+"DATA PAD USEAGE:
+"       DPX             DPY
+"0      X,EXP           A
+"1      2.0             TEMP
+"SQUARE ROOT TABLE IN TABLE MEMORY:
+"SQRTBL:        MASK:   777,17,177777
+"               SQRT(2): 1.414
+"               ONE:  1.0
+"               TWO:  2.0
+"               SQUARE ROOT TABLE:
+"                       SQRT(0.5 TO 1.0-1/128 BY 1/128)
+"ASSEMBLE PARAMETER, LOCATION OF SQUARE ROOT TABLE IN TM !!!!!!!!!!!!!!
+        INVTBL $EQU !DIVD2         "MUST BE AN EVEN ADDRESS   (11/78)
+        SQRTBL $EQU !SQRT
+"DATA PAD MNEMONICS:
+"DPX:
+        X $EQU 0
+        EXP $EQU 0
+        TWO $EQU 1
+"DPY:
+        A $EQU 0
+        TEMP $EQU 1
+SQRT:   LDSPI 17; DB=INVTBL+1;        "INVERSE TABLE ADDR   (11/78)
+          FADD ZERO,DPX(X)      "  SEE IF NEGATIVE
+        LDSPT 16; DB=DPX(X);    "GET TABLE BITS
+          FADD ZERO,DPX(X)      "  SEE IF ZERO
+        LDTMA; DB=SQRTBL;       "FETCH MASK
+          CLR 15                "  CLEAR FOR USE LATER
+        MOVR 16,16;             "WE ONLY WANT 6 BITS
+          FADD;
+          BFGE POS              "  BRANCH IF .GE.0
+"COME HERE IF X IS NEGATIVE, DO SQRT(ABS(X))................
+NEG:    FABS DPX(X)             "TAKE ABS(X)
+        FADD
+        DPX(X)<FA; BR SQRT
+"COME HERE IF POSITIVE X................
+POS:    FAND TM,MDPX(X);        "COMPUTE THE RESIDUE
+          COM 15                "  AN EXP OF 777
+        ADDL 16,17; SETTMA;     "FETCH MI FROM INVERSE TABLE
+          FADD;                 "  PUSH ADDER
+          BFNE NOTZ             "  BRANCH IF NOT ZERO
+"COME HERE IF X = 0............
+NULL:   DPX(X)<ZERO; RETURN
+"COME HERE IF X > 0..........
+NOTZ:   LDSPI 17; DB=SQRTBL+4;  "SQRT TABLE ADDRESS
+          LDTMA                 "  SAVE IN TMA ALSO
+        FMUL TM,FA;             "DO .5A=MI*.5R
+          DECTMA;               "  FETCH 2.0
+          LDSPE 14;             "GET EXPONENT
+          DB=DPX(X)
+        FMUL;                   "PUSH MULTIPLIER
+          MOVR 14,14;           "  DO EXP/2
+          DPX(EXP)<SPFN         "  SAVE IN DPX(EXP)
+        FMUL;                   "PUSH AGAIN
+          DPX(TWO)<TM;          "  SAVE 2.0
+          DECTMA;               "  POINT TO Q=1.0
+          BZC EVEN              "  BRANCH IF EVEN
+"AN ODD EXPONENT, Q=2**0.5=1.414...........................
+ODD:    FMUL FM,DPX(TWO);       "DO .5A*2.0
+          DPY(A)<FM;            "  SAVE .5A
+          DECTMA;               "  POINT TO Q=1.414
+          BR COMMON
+"AN EVEN EXPONENT, Q=1.0.............................
+EVEN:   FMUL FM,DPX(TWO);       "DO .5A*2.0
+          DPY(A)<FM             "  SAVE .5A
+"JOIN BACK TOGETHER HERE..............................
+COMMON: FMUL DPY(A),DPY(A);     "DO (.5A)**2
+          FSUB ZERO,EDPX(EXP);  "  DO -(-0.5*2**EXP/2)
+          MOV 15,15             "  A MANTISSA OF -0.5
+        FMUL; FADD;             "PUSH BOTH
+          ADD 16,17; SETTMA     "  FETCH MS FROM SQRT TABLE
+        FMUL TM,FA;             "DO Q*2**EXP/2-1
+          FADD FM,DPX(TWO)      "  DO 2.0+A
+        FMUL FM,DPY(A);         "DO .5A**3
+          FADD;                 "  PUSH ADDER
+          DPY(TEMP)<FM          "  SAVE .5A**2
+        FMUL;                   "PUSH
+          FSUBR DPY(TEMP),FA;   "  DO (2+A)-.5A**2
+          DPY(TEMP)<TM          "  SAVE MS
+        FADD; FMUL FM,DPY(TEMP) "DO MS*(Q*2**EXP/2-1)
+        FADD FM,FA; FMUL        "DO (2+A-.5A2)+.5A**3
+        FADD; FMUL              "WAIT
+        FMUL FM,FA              "DO (Q*2**EXP/2+1)*(2-A-.5A2+.5A3)
+        FMUL                    "WAIT
+        FMUL                    "WAIT
+        DPX(X)<FM; RETURN       "STORE ANSWER AND RETURN
+        $END
+"****** SIN = (SINCOS) SCALAR SINE FUNCTION /COMMON/ = REL 2.3, DEC 80
+"****** COS = (SINCOS) SCALAR COSINE FUNCTION /COMMON/ = REL 2.3, DEC 80
+"
+        $TITLE SINCOS
+        $RADIX 8
+        $ENTRY SIN
+        $ENTRY COS
+"SINE, COSINE FUNCTION
+"
+"               --- ABSTRACT ---
+"COMPUTES THE FUNCTION SIN(X) OR COS(X), WHERE X IS IN
+"       DPX(DPA)
+"
+"               --- STATISTICS ---
+"LANGUAGE:      AP-120B ASSEMBLER
+"EQUIPMENT:     AP-120B WITH EITHER MEMORY
+"STORAGE:       PS - 38 LOCATIONS
+"               MD - NOT AFFECTED
+"               TM - 9
+"               DPX - 2
+"               DPY - 3
+"               SP - NOT USED
+"SPEED:         SIN - 5.33 US. AVERAGE  (4.83 - 5.83)
+"               COS - 6.00 US. AVERAGE  (5.50 - 6.50)
+"     ---HISTORY---
+"ORIGINAL:      A.E. CHARLESWORTH   (NOV. 1975)
+" REV 2.2:      H. WILLIAMS -- FIXED LOSS OF ACCURACY FOR SMALL ARGUMENTS
+"                              (MAY, 1978)
+" REV 2.3:      H. SEDINGER -- FIXED LOSS OF ACCURACY FOR NEGATIVE
+"                              ARGUMENTS OF SMALL MAGNITUDE (DEC 1980)
+"
+"               --- USEAGE ---
+"SAMPLE CALL:   JSR SIN, JSR COS
+"ARGUEMENT:     X IS IN DPX(DPA)
+"ANSWER:        SIN(X) OR COS(X) IS LEFT IN DPX(DPA)
+"SCRATCH:       DPX(0,1), DPY(0,2)
+"
+"               --- ERROR CONDITIONS ---
+"NONE
+"               --- ALGORITHM ---
+"1.     IF COS(X) IS DESIRED, COS(X) = SIN(X+PI/2)
+"2.     X IS MULTIPLIED BY 2/PI, AND SPLIT INTO (I + F),
+"               WHERE I IS AN INTEGER AND F A POSITIVE FRACTION
+"               BETWEEN 0 AND .9999999999...
+"       IF I IS ODD, F<= (1.0 - F)
+"4.     SIN(F) = AF + BF**3 + CF**5 + DF**7 + EF**9
+"               THE POLYNOMIAL IS FROM
+"               HART & CHANEY #3341 (PRECISION 8.27=5*10**-9)
+"                       RANGE 0 TO PI/2
+"5.     IF I/2 IS ODD, SIN(F) IS NEGATED
+"
+"NOTE:  THE POLYNOMIAL IS FACTORED AS:
+"       (AF + F**3(B + CF**2)) + F**7(D + EF**2)
+"
+"
+"THE TABLE IN TABLE MEMORY IS AS FOLLOWS:
+"SINTBL:0.63661 97724           2/PI
+"       0.79689 67894 6 E -1    C
+"       0.999999925             FRACTION MASK (1000,3777,177777)
+"       1.0                     ODD BIT MASK
+"       0.15707 96318 44 E 1    A (PI/2)
+"       0.15148 5129 E-3        E
+"       -.64596 37105 99        B
+"       -.46737 6661 E-2        D
+"       2.0                     NEXT ODD BIT MASK
+"
+"
+"TABLE LOCATION IN TM:
+        SINTBL $EQU !SNCS
+"DATA PAD X:
+        X $EQU 0
+        TEMPX $EQU 1
+"DATA PAD Y:
+        C $EQU 0
+        AF $EQU 0
+        F $EQU 1
+        F2 $EQU 1
+        F3 $EQU 1
+        I $EQU 2
+"COME HERE FOR COSINE(X)...............
+COS:    LDTMA; DB=SINTBL+4      "FETCH PI/2 (A)
+        LDTMA; DB=SINTBL        "FETCH 2/PI
+        FADD TM,DPX(X)          "DO X+PI/2
+        FADD
+        FABS FA;                "TAKE ABS(X)
+          DPX(X)<FA;            "  SAVE SIGNED X
+          BR COMMON             "  GO DO SIN(X+PI/2)
+"COME HERE FOR SINE(X).................
+SIN:    LDTMA; DB=SINTBL        "FETCH 2/PI
+        FABS DPX(X)             "TAKE ABS(X)
+COMMON: FADD
+        FMUL TM,FA;             "DO X*2/PI
+          INCTMA                "  FETCH C
+        LDTMA; DB=!EXP+3        "FETCH GREATEST INTEGER MASK (5/78)
+        FMUL; DPY(C)<TM         "SAVE C
+        FMUL; DPX(TEMPX)<TM     "SAVE MASK FOR USE IN NEXT INSTR (5/78)
+        FAND FM,DPX(TEMPX)      "GET GREATEST INTEGER FUNCTION (5/78)
+        LDTMA; DB=SINTBL+3      "FETCH ODD BIT MASK
+        FADD; INCTMA            "FETCH A
+"OH, THE GLORIES OF A FLOATING POINT AND...
+"       WE CAN GET THE FRACTIONAL PART OF A NUMBER,
+"       OR
+"       WE CAN TEST TO SEE IF THE INTEGER PART OF
+"       A NUMBER IS ODD...
+"       (NOTE:  TO FIX LOSS OF ACCURACY FOR SMALL ARGS,         (5/78)
+"        F IS COMPUTED AS X - GREATEST INTEGER FN (X),
+"        RATHER THAN DIRECTLY FROM FAND.)
+"       FAND FM,DPX(TEMPX);     "GET F = FRAC(2X/PI) (REPLACED 5/78)
+        FSUB FM,FA;             "GET F = FRAC(2X/PI) = X - GREAT.INT.(X) (5/78)
+          DPY(I)<FA;            "  SAVE I
+          DPX(TEMPX)<TM         "  SAVE ODD BIT MASK (1.0)
+        FAND DPY(I),DPX(TEMPX)  "SEE IF I IS ODD
+"HERE WE PLUNGE AHEAD AND START THE POLYNOMIAL,
+"       HOPING THAT WE AREN'T IN THE
+"       SECOND OR FOURTH QUADRANTS
+ODD:    FMUL DPY(C),FA;         "DO C*F
+          DPY(F)<FA;            "  SAVE F
+          FSUB DPX(TEMPX),FA    "  DO 1.0-F
+        FMUL DPY(F),DPY(F);     "DO F**2
+          FADD ZERO,ZERO        "  PUSH 1-F OUT
+"IF I IS ODD, THE FAND WILL PRODUCE 1.0 AS A RESULT,
+"       WHICH WE NOW TEST FOR...
+"THIS IS NOT AN INFINITE LOOP !!!
+"       IF I IS ODD, AND WE COME THIS WAY AGAIN,
+"       THE SECOND TIME WE WILL BE TESTING THE RESULT
+"       OF ADDING 0.0 + 0.0, WHICH WILL
+"       ALWAYS BE ZERO
+        FMUL TM,DPY(F);         "DO A*F
+          BFNE ODD              "  BRANCH BACK IF I IS ODD
+"NOW WE ARE INTO THE POLYNOMIAL FOR GOOD.........
+        FMUL FM, DPY(F)         "DO CF * F
+        FMUL FM,DPY(F);         "DO F**3
+          DPY(F2)<FM;           "  SAVE F**2
+          INCTMA                "  FETCH E
+        FMUL DPY(F2),DPY(F2);   "DO F**4
+          DPY(AF)<FM;           "  SAVE AF
+          INCTMA                "  FETCH B
+        FMUL TM,DPY(F2);        "DO E * F**2
+          DPX(TEMPX)<FM;        "  SAVE CF2
+          INCTMA                "  FETCH D
+        FADD TM,DPX(TEMPX);     "DO B+CF2
+          FMUL;
+          DPY(F3)<FM            "  SAVE F**3
+        FMUL FM,DPY(F3);        "DO F**7
+          DPX(TEMPX)<TM;        "  SAVE D
+          FADD
+        FMUL DPY(F3),FA;        "DO F**3 * (B+CF2)
+          FADD FM,DPX(TEMPX);   "  DO D + EF2
+          INCTMA                "  FETCH NEXT ODD BIT MASK
+        FMUL; FADD              "WAIT
+"HERE WE SEE IF MOD(I/2,2) IS 1 OR 0.........
+        FMUL FM,FA;             "DO F**7 * (D+EF2)
+          FAND TM,DPY(I)        "  SEE IF I/2 IS ODD
+        FADD FM,DPY(AF); FMUL   "DO AF + (BF3+CF5)
+        FADD ZERO,DPX(X);       "SIGN TO FADDER
+          FMUL
+        FADD FM,FA;             "DO (AF+BF3+CF5)+(DF7+EF9)
+          BFNE NEG              "  SEE IF WE NEED TO NEGATE
+DONE:   FADD
+        FSUB ZERO,FA;           "NEGATE ANSWER
+          DPX(X)<FA;            "STORE ANSWER
+          BFGE FINAL
+        FADD
+        DPX(X)<FA; RETURN       "STORE ANSWER AND RETURN
+FINAL:  RETURN
+"COME HERE IF WE NEED TO NEGATE THE ANSWER....
+NEG:    FADD ZERO,DPX(X)        "
+        FSUB ZERO,FA;           "0.0 - ANSWER
+          BR DONE               "  GO FINISH
+        $END
+"****** ATAN = SCALAR ARCTANGENT (1 ARG) /COMMON/ = REL 2.0  , JAN 78 ******
+"****** ATN2 = SCALAR ARCTANGENT (2 ARGS) /COMMON/ = REL 2.0  , JAN 78 *****
+"
+        $TITLE ATAN
+        $RADIX 8
+        $ENTRY ATAN
+        $ENTRY ATN2
+        $ENTRY ATAN2
+        $EXT DIV
+"ARCTANGENT
+"
+"               --- ABSTRACT ---
+"COMPUTES THE FUNCTION ATAN(X), WHERE X IS IN DPX(DPA)
+"ALSO, DOES ATN2(X,Y) = ATAN(Y/X)
+"
+"               --- STATISTICS   -
+"LABGUAGE:      AP-120B ASSEMBLER
+"EQUIPMENT:     AP-120B WITH EITHER MEMORY
+"STORAGE:       PS -  46
+"               MD - NONE
+"               TM - 12
+"               DPX - 2
+"               DPY - 2
+"               SP - 6
+"SUBROUTINES CALLED:    DIV
+"SPEED: X < .41         --  4.33 US.
+"       .41 < X < 2.41  -- 5.16 + DIV = 9.00
+"       X > 2.41        -- 4.83 + DIV = 8.67
+"       FOR ATN2: ATAN + 5.1.33 + :DIV = ATAN + 5.16
+"AUTHOR:        A.E. CHARLESWORTH
+"DATE:          OCT 1975
+"               --- USEAGE ---
+"SAMPLE CALL:   JSR ATAN
+"ARGUEMENTS:    X IS IN DPX(DPA)
+"RESULTS:       ATAN(X) IN DPX(DPA)
+"FOR ATN2:      JSR ATN2
+"               X IN DPX(DPA), Y IN DPY(DPA)
+"               ATAN(Y/X) IN DPX(DPA)
+"SCRATCH:       SP (12-17), DPX(0-2), DPY(0-1)
+"               DPA IS UNCHANGED
+"               - - ERROR CONDITIONS ---
+"NONE
+"               --- ALGORITHM ---
+"       THE COEFFICIENTS AND REDUCTION METHOD ARE FROM HART & CHENEY
+"               THE SERIES IS #4963
+"1.     REDUCE THE RANGE OF X:
+"               ATAN(X)=-ATAN(-X),  X NEGATIVE
+"               X LESS THAN TAN(PI/8): Y=X,  K=0
+"               X BETWEEN TAN(PI/8) AND TAN(3PI/8):
+"                       Y = 1.0 - 2/(1+X), K=PI/4
+"               X GREATER THAN TAN(3P1/8):
+"                       Y = 1.0 / X,  K=-PI/2
+"                       NEGATE RESULT
+"2.     COMPUTE ATAN(Y)=A+BY3+CY5+DY7+EY9+FY11
+"3.     ATAN(X)=ATAN(Y)+K
+"       THE POLYNOMIAL IS FACTORED AS:
+"       ((K+AY)+Y3(B+CY2))+(Y7((D+EY2)+FY4))
+"THE TABLE IN TM IS AS FOLLOWS:
+"ATNTBL:ONE             1.0
+"       TAN(PI/8)        .41421 35623 7
+"       TAN(3PI/8)      2.41421 35623 7
+"       TWO             2.0
+"CZERO  ZERO            0
+"CMP12  -PI/2          -1.57079 63267 9
+"CPI4:  PI/4             .78539 81634 0
+"ATNCON:E                .10573 44027 5
+"       D               -.14240 07773 2
+"       C                .19998 21666 7
+"       F               -.06034 6883
+"       B               -.33333 30762 1
+"       A                .99999 99994 0
+"       PI              3.14159 26535 9
+"DATA PAD MNEMONICS:
+"DPX:
+        X $EQU 0
+        Y $EQU 0
+        XTEMP $EQU 1
+"DPY:
+        YTEMP $EQU 0
+        ONE $EQU 1
+"LOCATION OF THE ATAN TABLE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ATNTBL $EQU !ATAN
+        CZERO $EQU ATNTBL+4
+        CMPI2 $EQU ATNTBL+5
+        CPI4 $EQU ATNTBL+6
+        ATNCON $EQU ATNTBL+7
+        PI $EQU ATNTBL+13.
+"ATN2:
+"IF X>0:        DO ATAN(Y/X)
+"IF Y<0 DO ATAN(Y/X) + SIGN(Y) * PI
+"IF X = 0:      FORCE SIGN(Y) * PI/2
+"               AND SET OVERFLOW BIT AND DIVZ BIT
+"COME HERE IF X < 0...............
+NEG2:   SFL0;                   "SET FLAG 0 FOR X<0
+          BDBN GO               "  BRANCH IF Y<0
+"COME HERE IF X<0 AND Y>0......
+        CFL1; BR GO             "CLEAR FLAG 1, Y>0
+"ENTRY FOR ATN2,ATAN2..................
+ATAN2:
+ATN2:   DB=DPX(0); CFL0         "RESET FLAG 0
+        BDBN NEG2;              "BRANCH IF X<0
+          DB=DPY(0); SFL1       "  SET FLAG 1 IN CASE NEEDED
+GO:     JSR DIV                 "GO DO IT
+        JSR ATAN
+        BFL0 COMPL2             "BRANCH IF X WAS < 0
+        RETURN                  "OTHERWISE RETURN
+"COME HERE AFTER ATAN IF X WAS <0................
+COMPL2: FADD TM,DPX(X);         "DO ANSWER + PI
+          BFL1 SUB2             "  SEE IF Y WAS < 0
+DONE2:  FADD                    "PUSH
+        DPX(0)<FA; RETURN       "SAVE ANSWER AND RETURN
+"COME HERE IF X WAS < 0 AND Y WAS < 0........
+SUB2:   FSUBR TM,DPX(X);        "DO ANSWER - PI
+          BR DONE2              "  AND RETURN
+"ENTRY FOR ATAN......................
+ATAN:   LDTMA; DB=ATNTBL        "FETCH 1.0
+        FABS DPX(X);            "TAKE ABS(X)
+          CLR 14;               "  CLEAR FLAG IN SP
+          DB=DPX(X);            "  FOR SIGN TEST
+          INCTMA                "  FETCH TAN(PI/8)
+        FADD; DPY(ONE)<TM;      "SAVE 1.0
+          INCTMA;               "  FETCH TAN(3PI/8)
+          BDBN NEG              "  BRANCH TO REMEMBER SIGN
+"COME HERE FOR POSITIVE X.................
+POS:    FSUBR TM,FA;            "DO X-TAN(PI/8)
+          DPX(X)<FA;            "  SAVE ABS(X)
+          INCTMA;               "  FETCH 2.0
+          BR COMMON
+"COME HERE IF NEGATIVE................
+NEG:    FSUBR TM,FA;            "DO X-TAN(PI/8)
+          DPX(X)<FA;            "  SAVE ABS(X)
+          INCTMA;               "  FETCH 2.0
+          DEC 14                "  SET SIGN FLAG IN SP
+"COMMON........
+COMMON: FSUBR TM,DPX(X);        "DO X-TAN(3PI/8)
+          LDSPI 12; DB=ATNCON   "  REMEMBER ADDRESS
+        FADD; LDSPI 13; DB=CZERO"SET K=ZERO
+        BFLT POLY;              "IF X<TAN(PI/8) DO POLY
+          DPY(YTEMP)<TM;        "  SAVE 2.0 AS A DIVIDEND
+          FADD DPX(X),DPY(ONE)  "  DO 1+X IN CASE WE NEED IT
+        BFGT LARGE;             "BRANCH IF X>TAN(3PI/8)
+          FADD;
+          DB=CMPI2; LDSPI 13    "  SET K=-PI/2
+"COME HERE IF TAN(PI/8) < X < TAN(3PI/8)......
+MEDIUM: DPX(X)<FA;              "SAVE 1+X
+          JSR DIV               "  GO DO 2/(1+X)
+        FSUB DPY(ONE),DPX(X)    "DO Y=1-(2/(1+X))
+        FADD
+        DPX(Y)<FA;              "SAVE Y
+          LDSPI 13; DB=CPI4;    "  SET K=PI/4
+          BR POLY               "  GO DO THE POLY
+"COME HERE IF X>TAN(3PI/8)...........
+LARGE:  DPY(YTEMP)<DPY(ONE);    "DIVIDEND OF 1.0
+          COM 14                "  COMPLEMENT SIGN FLAG
+        JSR DIV                 "GO DO 1/X
+"DO THE POLYNOMIAL HERE...........
+POLY:   FMUL DPX(Y),DPX(Y);     "DO Y**2
+          MOV 12,12; SETTMA     "  FETCH E
+        FMUL
+        FMUL; DPX(XTEMP)<TM;    "SAVE E
+          INCTMA                "  FETCH D
+        FMUL FM,DPX(XTEMP);     "DO E*Y**2
+          DPX(XTEMP)<FM;        "  SAVE Y**2
+          INCTMA                "  FETCH C
+        FMUL DPX(XTEMP),DPX(XTEMP);     "DO Y**4
+          FADD DPX(XTEMP),ZERO; "  SAVE X**2 IN THE ADDER
+          DPY(YTEMP)<TM;        "  SAVE D
+          INCTMA                "  FETCH F
+        FMUL TM,DPX(XTEMP);     "DO C*Y**2
+          FADD;
+          INCTMA                "  FETCH B
+        FMUL DPX(Y),FA;         "DO Y**3
+          FADD FM,DPY(YTEMP);   "  DO D+EY
+          DPX(XTEMP)<TM;        "  SAVE F
+          INCTMA                "  FETCH A
+        FMUL FM,DPX(XTEMP);     "DO F*Y**4
+          DPY(YTEMP)<TM;        "  SAVE B
+          DPX(XTEMP)<FM         "  SAVE Y**4
+        FMUL TM,DPX(Y);         "DO A*Y
+          FADD FM,DPY(YTEMP);   "  DO B+CY
+          MOV 13,13; SETTMA     "  FETCH K
+        FMUL FM,DPX(XTEMP);     "DO Y**7
+          DPX(XTEMP)<FM;        "  SAVE Y**3
+          DPY(YTEMP)<FA;  FADD  "  SAVE D+EY
+        FMUL DPX(XTEMP),FA;     "DO (B+CY)*Y**3
+          FADD FM,DPY(YTEMP);   "  DO (D+EY2)+FY4
+          DPX(XTEMP)<TM         "  SAVE K
+        FADD FM,DPX(XTEMP);     "DO K+AY
+          FMUL
+        FMUL FM,FA; FADD        "DO (D+EY2+FY4)*Y**7
+        FADD FM,FA; FMUL        "DO (K+AY)+(BY3+CY5)
+        FADD; FMUL
+        FADD FM,FA;             "DO (K+AY+BY3+CY5)+(DY7+EY9+FY11)
+          MOV 14,14             "  SIGN FLAG
+DONE:   FADD; BNE COMPL "BRANCH TO NEGATE ANSWER
+        DPX(X)<FA; RETURN;      "DONE !!!!!!
+          LDTMA; DB=PI          "  FETCH PI FOR ATN2
+"COME HERE TO NEGATE FINAL ANSWER............
+COMPL:  FSUB ZERO,FA;   "NEGATE
+          CLR 14;               "  CLEAR FLAG
+          BR DONE               "  BRANCH BACK
+        $END
+"****** IABS = INTEGER ABSOLUTE VALUE /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE IABS
+        $RADIX 8
+        $ENTRY IABS
+"
+"INTERFACE:  SP(0) = IABS(SP(0))
+"
+"FORMULA:  IABS(I) =  I IF I.GE.0
+"                  = -I IF I.LT.0
+"
+"AUTHOR:  G. DUGGAN, 01-MAR-78
+"
+"SIZE:  4. LOCATIONS
+"
+"SPEED:  0.50 US.
+"
+"SCRATCH:  SP(0)
+"
+"DESCRIPTION:  IABS COMPUTES THE ABSOLUTE VALUE OF AN INTEGER.
+"
+"S-PAD ASSIGNMENTS:
+        I $EQU 0        "I, IABS(I)
+IABS:   MOV I,I                         "CHECK SIGN OF I
+        COM I;                          "COMPLEMENT I
+        BGE DONE                        "BRANCH IF I.GE.0
+        INC I; RETURN                   "ELSE RETURN -I
+DONE:   COM I; RETURN                   "RETURN I
+        $END
+"****** ABS = FLOATING-POINT ABSOLUTE VALUE /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE ABS
+        $RADIX 8
+        $ENTRY ABS
+        $EXT FAPUT
+"
+"INTERFACE:  DPX(0) = ABS(DPX(0))
+"
+"FORMULA:  ABS(X) =  X IF X.GE.0.0
+"                 = -X IF X.LT.0.0
+"
+"AUTHOR:  G. DUGGAN, 01-MAR-78
+"
+"SIZE:  1. LOCATIONS
+"
+"SPEED:  0.50 US.
+"
+"SCRATCH:  DPX(0), FA
+"
+"DESCRIPTION:  ABS COMPUTES THE ABSOLUTE VALUE OF A FLOATING-POINT NUMBER.
+"
+"DATA-PAD X ASSINGMENTS:
+        X $EQU 0        "X, ABS(X)
+ABS:    FABS DPX(X);                    "DO ABS(X)
+        JMP FAPUT                       "PUSH ADDER AND RETURN ABS(X)
+        $END
+"****** IDIM = INTEGER POSITIVE DIFFERENCE /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE IDIM
+        $RADIX 8
+        $ENTRY IDIM
+"
+"INTERFACE:  SP(0) = IDIM(SP(0),SP(1))
+"
+"FORMULA:  IDIM(I,J) = I-J IF I-J.GE.0
+"                    = 0   IF I-J.LT.0
+"
+"AUTHOR:  G. DUGGAN, 28-FEB-78
+"
+"SIZE:  4. LOCATIONS
+"
+"SPEED:  0.50 US.
+"
+"SCRATCH:  SP(0,1)
+"
+"DESCRIPTION:  IDIM COMPUTES THE POSITIVE DIFFERENCE BETWEEN TWO INTEGERS.
+"
+"S-PAD ASSIGNMENTS:
+        I $EQU 0        "I, IDIM(I,J)
+        J $EQU 1        "J
+IDIM:   SUB J,I                         "DO I-J
+        BGE DONE                        "BRANCH IF I-J.GE.0
+        CLR I; RETURN                   "ELSE RETURN 0
+DONE:   RETURN                          "RETURN I-J
+        $END
+"****** DIM = FLOATING-POINT POSITIVE DIFFERENCE /COMMON/ = REL 3.0, NOV 78 ****
+        $TITLE DIM
+        $RADIX 8
+        $ENTRY DIM
+        $EXT FAPUT
+"
+"INTERFACE:  DPX(0) = DIM(DPX(0),DPY(0))
+"
+"FORMULA:  DIM(X,Y) = X-Y IF X-Y.GE.0.0
+"                   = 0.0 IF X-Y.LT.0.0
+"
+"AUTHOR:  G. DUGGAN, 28-FEB-78
+"
+"SIZE:  4. LOCATIONS
+"
+"SPEED:  0.83 US.
+"
+"SCRATCH:  DPX(0), DPY(0), FA
+"
+"DESCRIPTION: DIM COMPUTES THE POSITIVE DIFFERENCE BETWEEN TWO FLOATING-POINT
+"NUMBERS.
+"
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X, DIM(X,Y)
+"DATA-PAD Y ASSIGNMENTS:
+        Y $EQU 0        "Y
+DIM:    FSUB DPX(X),DPY(Y);             "DO X-Y
+        JSR FAPUT                       "PUSH ADDER AND STORE RESULT
+        BFGE DONE                       "BRANCH IF X-Y.GE.0.0
+        DPX(X)<ZERO; RETURN             "ELSE RETURN 0.0
+DONE:   RETURN                          "RETURN X-Y
+        $END
+"****** ISIGN = INTEGER TRANSFER OF SIGN /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE ISIGN
+        $RADIX 8
+        $ENTRY ISIGN
+"INTERFACE:  SP(0) = ISIGN(SP(0),SP(1))
+"
+"FORMULA:  ISIGN(I,J) =  ABS(I) IF J.GE.0
+"                     = -ABS(I) IF J.LT.0
+"
+"AUTHOR:  G. DUGGAN, 28-FEB-78
+"
+"SIZE:  4. LOCATIONS
+"
+"SPEED:  0.50 US.
+"
+"SCRATCH:  SP(0,1)
+"
+"DESCRIPTION:  ISIGN TRANSFERS THE SIGN OF ONE INTEGER TO ANOTHER.
+"
+"S-PAD ASSIGNMENTS:
+        I $EQU 0        "I, ISIGN(I,J)
+        J $EQU 1        "J
+ISIGN:  EQV# I,J                        "CHECK IF SIGNS SAME
+        COM I;                          "COMPLEMENT I
+        BGE DIFF                        "BRANCH IF SIGNS DIFFERENT
+        COM I; RETURN                   "ELSE RETURN I
+DIFF:   INC 0; RETURN                   "RETURN -I
+        $END
+"****** SIGN = FLOATING-POINT TRANSFER OF SIGN /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE SIGN
+        $RADIX 8
+        $ENTRY SIGN
+        $EXT FAPUT
+"INTERFACE:  DPX(0) = SIGN(DPX(0),DPY(0))
+"
+"FORMULA:  SIGN(X,Y) =  ABS(X) IF Y.GE.0.0
+"                    = -ABS(X) IF Y.LT.0.0
+"
+"AUTHOR:  G. DUGGAN, 28-FEB-78
+"
+"SIZE:  4. LOCATIONS.
+"
+"SPEED:  0.50 US. (BEST), 1.00 US. (WORST)
+"
+"SCRATCH:  DPX(0), DPY(0), FA
+"
+"DESCRIPTION:  SIGN TRANSFERS THE SIGN OF ONE FLOATING-POINT NUMBER TO ANOTHER.
+"
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X, SIGN(X,Y)
+"DATA-PAD Y ASSIGNMENTS:
+        Y $EQU 0        "Y
+SIGN:   FABS DPX(X);                    "DO ABS(X)
+        DB=DPY(Y)                       "CHECK SIGN OF Y
+        FADD;                           "PUSH ADDER
+        BDBN NEG                        "BRANCH IF Y.LT.0.0
+        DPX(X)<FA; RETURN               "ELSE RETURN ABS(X)
+NEG:    FSUB ZERO,FA;                   "DO -ABS(X)
+        JMP FAPUT                       "PUSH ADDER AND RETURN -ABS(X)
+        $END
+"****** MOD = INTEGER REMAINDERING /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE MOD
+        $RADIX 8
+        $ENTRY MOD
+        $EXT FLOAT,AMOD,IFIX
+"
+"INTERFACE:  SP(0) = MOD(SP(0),SP(1))
+"
+"FORMULA:  MOD(I,J) = IFIX(AMOD(FLOAT(I),FLOAT(J)))
+"
+"AUTHOR:  G. DUGGAN, 01-MAR-78
+"
+"SIZE:  5. LOCATIONS
+"
+"SPEED:  9.67 US.
+"
+"SCRATCH:  SP(0,1,14-17), DPX(0-2), DPY(0,1), FA, FM, TM
+"
+"DESCRIPTION:  MOD COMPUTES THE REMAINDER OF ONE INTEGER MODULO ANOTHER. NOTE
+"THAT ALL INTERNAL COMPUTATIONS ARE DONE IN FLOATING-POINT USING THE AMOD
+"FUNCTION.
+"
+"S-PAD ASSIGNMENTS:
+        I $EQU 0        "I, MOD(I,J)
+        J $EQU 1        "J
+"DATA-PAD X ASSIGNMENTS:
+        FLOATJ $EQU 0   "FLOAT(J)
+"DATA-PAD Y ASSIGNMENTS:
+        FLOATI $EQU 0   "FLOAT(I)
+MOD:    JSR FLOAT                       "DO FLOAT(I)
+        DPY(FLOATI)<DPX(FLOATJ);        "STORE FLOAT(I)
+        MOV J,I                         "GET J
+        JSR FLOAT                       "DO FLOAT(J)
+        JSR AMOD                        "DO AMOD(FLOAT(I),FLOAT(J))
+        JMP IFIX                        "RETURN MOD(I,J)
+        $END
+"****** AMOD = FLOATING-POINT REMAINDERING /COMMON/ = REL 3.1, DEC 79 *****
+        $TITLE AMOD
+        $RADIX 8
+        $ENTRY AMOD
+        $EXT DIV,AINT,FAPUT
+"
+"INTERFACE:  DPX(0) = AMOD(DPY(0),DPX(0))
+"
+"FORMULA:  AMOD(Y,X) = Y-AINT(Y/X)*X
+"
+"AUTHOR:  G. DUGGAN, 27-FEB-78
+"REVISED: H. SEDINGER, DEC-79      Y/X REPLACED BY Y/X+DELTA AS INPUT FOR
+"                                  AINT TO COMPENSATE FOR FLOATING
+"                                  ARITHMETIC INACCURACY
+"
+"SIZE:  12. LOCATIONS
+"
+"SPEED:  7.20 US.
+"
+"SCRATCH:  SP(14-17), DPX(0-2), DPY(0,1), FA, FM, TM
+"
+"DESCRIPTION: AMOD COMPUTES THE REMAINDER OF ONE FLOATING-POINT NUMBER MODULO
+"ANOTHER. NOTE THAT THE NORMAL ARGUMENT ORDER IS REVERSED DUE TO THE NEEDS OF
+"THE DIV SUBROUTINE.
+"
+"S-PAD ASIIGNMENTS:
+        CNT $EQU 14
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X, AMOD(Y,X)
+        SAVEY $EQU 2    "SAVE Y
+"DATA-PAD Y ASSIGNMENTS:
+        Y $EQU 0        "Y
+        SAVEX $EQU 1    "SAVE X
+AMOD:   DPY(SAVEX)<DPX(X)               "SAVE X
+        DPX(SAVEY)<DPY(Y);              "SAVE Y
+        JSR DIV                         "DO Y/X
+        DPY<DPX;                        "DPY=Y/X
+        LDSPE 14; DB=DPX                "GET EXPONENT FROM Y/X
+        DPX<DB; DB=-1;                  "MANTISSA OF DELTA<0
+        BDBN .+2                        "OKAY IF Y/X<0
+        DPX<DB; DB=1                    "MANTISSA OF DELTA>0
+        MOV 14,14; FADD DPY,MDPX        "DO Y/X+DELTA
+        FADD
+        DPX<FA;                         "DPX=Y/X+DELTA
+        JSR AINT                        "DO AINT(Y/X)
+        FMUL DPY(1),FA                  "DO AINT(Y/X)*X
+        FMUL
+        FMUL
+        FSUBR FM,DPX(SAVEY);            "DO Y-AINT(Y/X)*X
+        JMP FAPUT                       "PUSH ADDER AND RETURN AMOD(Y,X)
+        $END
+"****** AINT = FLTING-PNT TO FLTING-PNT TRUNCATION /COMMON/ = REL 3.0, NOV 78 **
+        $TITLE AINT
+        $RADIX 8
+        $ENTRY AINT
+"
+"INTERFACE:  DPX(0) = AINT(DPX(0))
+"
+"FORMULA:  AINT(X) = INTEGER PART OF X
+"
+"AUTHOR:  G. DUGGAN, 01-MAR-78
+"
+"SIZE:  6. LOCATIONS
+"
+"SPEED:  0.83 US.
+"
+"SCRATCH:  SP(16,17), DPX(0), FA
+"
+"DESCRIPTION:  AINT COMPUTES THE INTEGER PART OF A FLOATING-POINT NUMBER.
+"SPECIAL CARE IS TAKEN TO PREVENT LOSS OF SIGNIFICANCE DUE TO THE VAGARIES OF
+"THE FIXT OPERATION WHEN THE ARGUMENT EXPONENT IS GREATER THAT 27.
+"
+"S-PAD ASSIGNMENTS:
+        EXPX $EQU 16    "EXPONENT OF X
+        CONS $EQU 17    "CONSTANT
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X, AINT(X)
+AINT:   FIXT DPX(X);                    "TRUNCATE FRACTIONAL PART OF X
+        LDSPE EXPX; DB=DPX(X)           "GET EXPONENT OF X
+        FADD;                           "PUSH ADDER
+        LDSPI CONS; DB=27.              "GET CONSTANT FOR EXPONENT COMPARISON
+        FADD ZERO,FA;                   "NORMALIZE INTEGER PART OF X
+        SUB CONS,EXPX                   "CHECK EXPONENT FOR LOSS OF SIGNIFICANCE
+        FADD;                           "PUSH ADDER
+        BGT LOSS                        "BRANCH IF LOSS OF SIGNIFICANCE
+        DPX(X)<FA; RETURN               "ELSE RETURN INTEGER PART OF X
+LOSS:   RETURN                          "RETURN ORGINAL X
+        $END
+"****** TANH = FLOATING-POINT HYPERBOLIC TANGENT /COMMON/ = REL 3.0, NOV 78 ****
+        $TITLE TANH
+        $RADIX 8
+        $ENTRY TANH
+        $EXT COSH,DIV
+"
+"INTERFACE:  DPX(0) = TANH(X)
+"
+"FORMULA:  TANH(X) = SINH(X)/COSH(X)
+"
+"AUTHOR:  G. DUGGAN, 24-FEB-78
+"
+"SIZE:  2. LOCATIONS
+"
+"SPEED:  13.83 US. (BEST), 15.00 US. (WORST)
+"
+"SCRATCH:  SP(15-17), DPX(0,1), DPY(0-2), FA, FM, TM
+"
+"DESCRIPTION:  TANH COMPUTES THE HYPERBOLIC TANGENT OF A FLOATING-POINT NUMBER.
+"
+TANH:   JSR COSH                        "DO COSH(X) AND SINH(X)
+        JMP DIV                         "RETURN TANH(X)
+        $END
+"****** COSH = FLOATING-POINT HYPERBOLIC COSINE /COMMON/ = REL 3.1, APR 79 *****
+        $TITLE COSH
+        $RADIX 8
+        $ENTRY COSH
+        $EXT SINH,EXP
+"
+"INTERFACE:  DPX(0) = COSH(DPX(0))
+"            DPY(0) = SINH(DPX(0))
+"
+"FORMULA:  COSH(X) = EXP(X)-SINH(X)
+"
+"AUTHOR:  G. DUGGAN, 28-FEB-78
+"REL 3.1: R. COLYAR, APR 79   FORMULA TO CALCULATE COSH(X) CORRECTED, AND
+"                             PROGRAM CHANGED ACCORDINGLY
+"
+"SIZE:  7. LOCATIONS
+"
+"SPEED:  9.8 US. (BEST), 11 US. (WORST)
+"
+"SCRATCH:  SP(16,17), DPX(0,1), DPY(0-2), FA, FM, TM
+"
+"DESCRIPTION:  COSH COMPUTES THE HYPERBOLIC COSINE OF A FLOATING-POINT NUMBER.
+"NOTE THAT SINH(X) IS ALSO RETURNED FOR USE BY TANH.
+"
+"S-PAD ASSIGNMENTS:
+        EXPN $EQU 16    "EXPONENT OF X
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X, COSH(X)
+"DATA-PAD Y ASSIGNMENTS:
+        EXPX $EQU 0     "EXP(X)
+        SINHX $EQU 0    "SINH(X)
+        SAVEDX $EQU 1   "SAVED X
+        SAVESH $EQU 2   "SAVE SINH(X)
+COSH:   JSR SINH                        "DO SINH(X), RETURN WITH
+                                        "DPX(0)=SINH(X)
+                                        "DPY(0)=EXP(X) IF ABS(X).GE.0.5
+                                        "DPY(1)=X
+                                        "SP(16)=EXPONENT OF X
+        FSUB DPY(EXPX),DPX(X);          "DO EXPE(X)-SINH(X)
+        DPY(SAVESH)<DPX(X);             "SAVE SINH(X)
+        MOV EXPN,EXPN                   "CHECK EXPONENT OF X
+        FADD;                           "PUSH ADDER
+        BGE EXPON                       "BRANCH IF ABS.GE.0.5
+        DPX(X)<DPY(SAVEDX);             "RESTORE X
+        JSR EXP                         "DO EXP(X)
+        FSUB DPX(X),DPY(SAVESH)         "DO EXP(X)-SINH(X)
+        FADD                            "PUSH ADDER
+EXPON:  DPX(X)<FA;                      "STORE COSH(X)
+        DPY(SINHX)<DPY(SAVESH);         "STORE SINH(X)
+        RETURN                          "RETURN RESULTS
+        $END
+"****** SINH = FLOATING-POINT HYPERBOLIC SINE /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE SINH
+        $RADIX 8
+        $ENTRY SINH
+        $EXT EXP,FAPUT
+"
+"INTERFACE:  DPX(0) = SINH(DPX(0))
+"            DPY(0) = EXP(DPX(0)) IF ABS(X).GE.0.5
+"            DPY(1) = DPX(0)
+"            SP(16) = EXPONENT OF DPX(0)
+"
+"FORMULA:  SINH(X) = X*(A0+A1*X**2+A2*X**4+A3*X**6) IF ABS(X).LT.0.5
+"                  = (EXP(X)-EXP(-X))/2             IF ABS(X).GE.0.5
+"
+"AUTHOR:  G. DUGGAN, 01-MAR-78
+"
+"SIZE:  24. LOCATIONS
+"
+"SPEED:  4.33 US. (BEST), 10.17 US. (WORST)
+"
+"SCRATCH:  SP(16,17), DPX(0,1), DPY(0-2), FA, FM, TM
+"
+"DESCRIPTION:  SINH COMPUTES THE HYPERBOLIC SINE OF A FLOATING-POINT NUMBER.
+"FOR -0.5<X<0.5, A SEVENTH ORDER POLYNOMIAL APPROXIMATION (HART #1983) IS USED.
+"OUTSIDE THIS RANGE, THE USUAL EXPONENTIAL EXPRESSION IS USED. THIS ENSURES
+"THAT LOSS OF SIGNIFICANCE DUE TO CANCELATION DOES NOT OCCUR WHEN X IS CLOSE
+"TO 0.0 AND BOTH EXP(X) AND EXP(-X) ARE CLOSE TO 1.0. NOTE THAT SEVERAL
+"INTERMEDIATE RESULTS ARE ALSO RETURNED FOR USE BY COSH.
+"
+"S-PAD ASSIGNMENTS:
+        EXPN $EQU 16    "EXPONENT OF X
+        CNT $EQU 17     "LOOP COUNT
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X, SINH(X)
+        XSQ $EQU 1      "X**2
+"DATA-PAD Y ASSIGNMENTS:
+        COEF $EQU 0     "A0, A1, A2, A3
+        EXPX $EQU 0     "EXP(X)
+        SAVEX $EQU 1    "SAVE X
+        SAVEXP $EQU 2   "SAVE EXP(-X)
+SINH:   FMUL DPX(X),DPX(X);             "DO X**2
+        DPY(SAVEX)<DPX(X);              "SAVE X
+        LDSPE EXPN                      "GET EXPONENT OF X
+        FMUL;                           "PUSH MULTIPLIER
+        FSUB ZERO,DPX(X);               "DO -X
+        MOV EXPN,EXPN                   "CHECK EXPONENT
+        FMUL;                           "PUSH MULTIPLIER
+        FADD;                           "PUSH ADDER
+        BGE EXPON                       "BRANCH IF ABS(X).GE.0.05
+        RPSF A3; DPY(COEF)<DB           "FETCH A3
+        FMUL FM,DPY(COEF);              "DO A3*X**2
+        DPX(XSQ)<FM;                    "SAVE X**2
+        CLR CNT                         "SET COUNT TO 0
+        RPSF A2; DPY(COEF)<DB           "FETCH A2
+        FMUL DPX(XSQ),DPY(COEF);        "DO A2*X**2
+        INC CNT                         "SET COUNT TO 1
+        RPSF A1; DPY(COEF)<DB           "FETCH A1
+        FMUL DPX(XSQ),DPY(COEF);        "DO A1*X**2
+        INCL CNT                        "SET COUNT TO 4
+        RPSF A0; DPY(COEF)<DB           "FETCH A0
+        FMUL FM,DPX(XSQ);               "DO A3*X**4
+        FADD ZERO,DPY(COEF);            "PUSH A0 ONTO ADDER
+        INC CNT                         "SET COUNT TO 5
+LOOP:   FMUL FM,DPX(XSQ);               "DO A2*X**4, A3*X**6
+        FADD;                           "PUSH ADDER
+        DEC CNT                         "DECREMENT COUNT
+        FMUL DPX(X),FA;                 "DO X*(A0+A1*X**2+A2*X**4+A3*X**6)
+        FADD FM,FA;                     "DO A0+A1*X**2+A2*X**4+A3*X**6
+        BNE LOOP                        "LOOP UNTIL DONE
+        DPX(X)<FM; RETURN               "RETURN SINH(X)
+EXPON:  DPX(X)<FA;                      "STORE -X
+        JSR EXP                         "DO EXP(-X)
+        DPY(SAVEXP)<DPX(X)              "SAVE EXP(-X)
+        DPX(X)<DPY(SAVEX);              "RESTORE X
+        JSR EXP                         "DO EXP(X)
+        FSUB DPX(X),DPY(SAVEXP);        "DO EXP(X)-EXP(-X)
+        DPY(EXPX)<DPX(X);               "STORE EXP(X)
+        JSR FAPUT                       "PUSH ADDER AND STORE RESULT
+        LDSPE CNT; DPX(X)<DPX(X)        "GET EXPONENT OF EXP(X)-EXP(-X)
+        DEC CNT; DPX(X)<SPFN; WRTEX;    "STORE SINH(X)
+        RETURN                          "RETURN RESULT
+A0:     $FP 0.9999999999
+A1:     $FP 0.1666666774
+A2:     $FP 0.8333118424E-2
+A3:     $FP 0.1997915002E-3
+        $END
+"****** IEXPI = INTEGER TO INTEGER EXPONENTIAL /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE IEXPI
+        $RADIX 8
+        $ENTRY IEXPI
+        $EXT FLOAT,REXPI,FAPUT
+"
+"INTERFACE:  SP(0) = IEXPI(SP(0),SP(1))
+"
+"FORMULA:  I**J = FIX(EXP(LN(FLOAT(I))*FLOAT(J)))
+"
+"AUTHOR:  G. DUGGAN, 03-MAR-78
+"
+"SIZE:  6. LOCATIONS
+"
+"SPEED: 12.7 US (NEG. BASE, ODD POWER)
+"       12.3 US (NEG. BASE, EVEN POWER)
+"       12.2 US (POSITIVE BASE)
+"
+"SCRATCH:  SP(0,1,13-17), DPX(0-2), DPY(0,1), FA, FM, TM
+"
+"DESCRIPTION:  IEXPI COMPUTES THE EXPONENTIAL OF AN INTEGER TO AN INTEGER POWER.
+"       IT GIVES A NEGATIVE VALUE WHEN THE BASE IS NEG. & POWER IS ODD INTEGER.
+"
+"S-PAD ASSIGNMENTS:
+        I $EQU 0        "I, I**J
+        J $EQU 1        "J
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X
+IEXPI:  JSR FLOAT                       "DO FLOAT(I)
+        MOV J,I                         "GET J
+        JSR REXPI                       "DO FLOATI(I)**J
+        FIX DPX(X);                     "FIX FLOAT(I)**J
+        JSR FAPUT                       "PUSH ADDER AND STORE RESULT
+        LDSPI I; DB=DPX(X)             "GET FIX(FLOAT(I)**J)
+        RETURN                          "RETURN I**J
+        $END
+"****** REXPI = FLOATING-POINT TO INTEGER EXPONENTIAL /COMMON/ = REL 3.0, NOV 78
+        $TITLE REXPI
+        $RADIX 8
+        $ENTRY REXPI
+        $EXT FLOAT,REXPR
+"
+"INTERFACE:  DPX(0) = REXPI(DPX(0),SP(0))
+"
+"FORMULA:  X**I = EXP(LN(X)*FLOAT(I))
+"
+"AUTHOR:  G. DUGGAN, 03-MAR-78
+"
+"SIZE:  3. LOCATIONS
+"
+"SPEED: 11.7 US (NEG. BASE, ODD POWER)
+"       11.3 US (NEG. BASE, EVEN POWER)
+"       11.2 US (POSITIVE BASE)
+"
+"SCRATCH:  SP(0,13-17), DPX(0-2), DPY(0,1), FA, FM, TM
+"
+"DESCRIPTION:  REXPI COMPUTES THE EXPONENTIAL OF A FLOATING-POINT NUMBER TO AN
+"INTEGER POWER. GIVES NEGATIVE VALUE IF BASE IS NEG. & POWER IS ODD INTEGER.
+"
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X, X**I
+        SAVEX $EQU 1    "SAVE X
+"DATA-PAD Y ASSIGNMENTS:
+        FLOATI $EQU 0   "FLOAT(I)
+REXPI:  DPX(SAVEX)<DPX(X);              "SAVE X
+        JSR FLOAT                       "DO FLOAT(I)
+        DPY(FLOATI)<DPX(X)              "STORE FLOAT(I)
+        DPX(X)<DPX(SAVEX);              "RESTORE X
+        JMP REXPR                       "RETURN X**I
+        $END
+"****** REXPR = FLTING-PNT TO FLTING-PNT EXPONENTIAL /COMMON/ = REL 3.0, NOV 78
+        $TITLE REXPR
+        $RADIX 8
+        $ENTRY REXPR
+        $EXT LN,EXP
+"
+"INTERFACE:  DPX(0) = REXPR(DPX(0),DPY(0))
+"
+"FORMULA:  X**Y = EXP(LN(X)*Y)
+"
+"HISTORY:   ORIGINAL  G. DUGGAN, 03-MAR-78
+"           REVISION FOR SIGN   D. DAVIS, 13-SEPT-78
+"
+"SIZE:  18. LOCATIONS
+"
+"SPEED:  11.2 US (NEG. BASE, ODD EXP.)
+"        10.8 US (NEG. BASE, EVEN EXP)
+"        10.7 US (POSITIVE BASE)
+"
+"SCRATCH:  SP(13-17), DPX(0-2), DPY(0-2), FA, FM, TM
+"
+"DESCRIPTION:  REXPR COMPUTES THE EXPONENTIAL OF A FLOATING-POINT NUMBER TO A
+"FLOATING-POINT POWER. GIVES A NEGATIVE VALUE ONLY UNDER THE FOLLOWING CONDI-
+"TIONS:         1. THE BASE IS NEGATIVE
+"               2. THE POWER WHEN FIXED TO AN INTEGER IS ODD
+"THE MAGNITUDE IS COMPUTED HITH ALL INFORMATION IN REAL NUMBERS. WILL GIVE
+"CORRECT MAGNITUDE FOR NEG. BASE RAISED TO ODD NON-INTEGER BUT WILL NOT
+"GIVE MEANINGFUL SIGN OR WHETHER REAL OR COMPLEX.
+"
+"S-PAD ASSIGNMENT:
+        J $EQU 13
+        F $EQU 14
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X, X**Y
+"DATA-PAD Y ASSIGNMENTS:
+        Y $EQU 0        "Y
+        SAVEY $EQU 2    "SAVE Y
+REXPR:  CLR F;DPY(SAVEY)<DPY(Y);        "CLEAR SP(14)  AS FLAG,SAVE THE POWER
+        FADD DPX(X),ZERO                "ADD BASE TO ZERO TO TEST FOR NEG. VALUE
+        FIX DPY(Y)                      "FIX POWER
+        FABS DPX(X)                      "GET ABS. VAL. IN CASE NEG.
+        BFGE POS;DPY(Y)<FA;FADD          "BRANCH IF BASE IS NOT NEGATIVE
+        INC F;DPX(X)<FA                  "SET SP(14) AND DPX(0) IF BASE IS NEG.
+POS:    LDSPI J;DB=DPY(Y)               "LOAD FIXED POWER INTO SP(13)
+        AND J,F                         "AND 2 CONDITION, NEG. BASE & ODD POWER
+        JSR LN                          "DO LN(X) WHICH IS RETURNED TO DPX(X)
+        FMUL DPX(X),DPY(SAVEY)          "DO LN(X)*Y
+        FMUL                            "PUSH MULTIPLIER
+        FMUL                            "PUSH MULTIPLIER
+        DPX(X)<FM;                      "STORE LN(X)*Y
+        JSR EXP                         "RETURN X**Y TO DPX(X)
+        MOV F,F                         "PREPARE TO TEST FLAG
+        BNE SIGN                        "BRANCH TO GET NEG. SIGN IF FLAG SET
+        RETURN
+SIGN:   FSUB ZERO,DPX(X)                "NEGATE NEG. BASE
+        FADD
+        DPX(X)<FA;RETURN               "STORE AGAIN IN DPX(X)
+        $END
+"****** LOG = (LOG) SCALAR LOGARITHM BASE 10 /COMMON/ = REL 2.0  , JAN 78 **
+"****** LN = (LOG) SCALAR LOGARITHM BASE E /COMMON/ = REL 2.0  , JAN 78 ****
+"
+"  FOR EITHER MEMORY
+        $TITLE LOG
+        $RADIX 8
+        $ENTRY LOG
+        $ENTRY ALOG10
+        $ENTRY LN
+        $ENTRY ALOG
+"LOGARITHM, BASE E OR BASE 10
+"
+"               --- ABSTRACT ---
+"COMPUTES THE FUNCTION LN(X) OR LOG(X), WHERE X IS IN DPX(DPA)
+"
+"               --- STATISTICS ---
+"LANGUAGE:      AP 120B ASSEMBLER
+"EQUIPMENT:     AP 120 B WITH EITHER MEMORY
+"STORAGE:       PS - 37
+"               MD - NONE
+"               TM - 26
+"               DPX - 3
+"               DPY - 2
+"               SP - 3
+"SPEED:         4.0 US. (LN), 4.7 (LOG)
+"AUTHOR:        MARK CULLER, A.F. CHARLESWORTH
+"DATE:          NOV 1975
+"
+"               --- USEAGE ---
+"SAMPLE CALL    JSR LN  OR JSR LOG
+"ARGUEMENTS:    X IS IN DPX(DPA)
+"RESULTS:       LN(X) OR LOG(X) IN DPX(DPA)
+"SCRATCH:       SP(15-17); DPX(0-2),DPY(0-1),
+"                       DPA IS UNALTERED
+"
+"               --- ERROR CONDITIONS ---
+"1F X IS ZERO, 2**-512 IS RETURNED AND OVERFLOW
+"       IS INDICATED IN THE STATUS REGISTER
+"IF X IS NEGATIVE, LN(ABS(X)), OR LOG(ABS(X)) IS COMPUTED
+"
+"               --- A GORDTHM ---
+"
+"1.     X=U*2**S, 1/2<U<1
+"       THEREFORE: LN(X) = LN(U)+S*LN(2)
+"
+"2.     LN(U) IS APPROXIMATED BY A DEGREE 6 POLYNOMIAL IN V=1-U
+"               THE RANGE OF U (.5-1) IS SPLIT INTO
+"               THREE SMALLER INTERVALS:
+"               1.  (2**-1/3,1)
+"               2.  (2**-2/3,2**-1/3)
+"               3.  (2**-1,2**-2/3)
+"       AN APPROPRIATE BATCH OF COEFFICIENTS IS USED
+"               CORRESPONDING TO THE RANGE OF U"
+"3.     THE POLYNOMIAL IS FACTORED:
+"       (((S*LN(2)+(A+BV))+DV3)+CV2)+V4((E+FV)+GV2)
+"4.     IF DESIRED, LOG(X)=LN(X)*LOG(E)
+"THE TABLE IN TM IS AS FOLLOWS:
+"
+"LOGTBL:ONE     1.0
+"       2**-1/3  .79370 05260
+"       2**-2/3  .62996 05249
+"       LN(2)    .69314 71806
+"       LOG(E)   .43429 44819
+"INT1:  F1      -.14825 42157
+"       B1      -.99999 97290
+"       D1      -.33274 95766
+"       A1      -.57905 56132  E -9
+"       G1      -.32673 03578
+"       E1      -.25777 00332
+"       C1      -.50002 06172
+"INT2:  F2       .11470 25427  E 1
+"       B2      -.99591 78076
+"       D2      -.10032 29591
+"       A2      -.16725 61518  E -3
+"       G2      -.13069 21431  E 1
+"       E2      -.99836 51833
+"       G2      -.54190 43800
+"INT3:  F3       .10112 39163  E 2
+"       B3      -.79241 73643
+"       D3       .43431 41103  E 1
+"       A3      -.13525 63592  F -1
+"       G3      -.52276 85725  E 1
+"       E3      -.96093 14753  E 1
+"       C3      -.18402 11907  E 1
+"DATA PAD MNEMONICS:
+"DPX:
+        X $EQU 0
+        U $EQU 0
+        V $EQU 0
+        XTEMP $EQU 1
+        S $EQU 2
+"DPY:
+        V2 $EQU 0
+        LN2 $EQU 1
+        YTEMP $EQU 1
+"LOCATION OF THE LOG TABLE !!!!!!!!!!!!!!!!!!!!!
+        LOGTBL $EQU !LOG
+        INT2 $EQU LOGTBL+12.
+        INT3 $EQU LOGTBL+19.
+"ENTRY FOR LOG (X),ALOG10(X)................
+ALOG10:
+LOG:    DB=LOGTBL; LDTMA;       "FETCH 1.0
+          CLR 15
+        COM 15; BR COMMON       "SET FOR LOG
+"COME HERE IF X IS NEGATIVE................
+NEG:    FABS DPX(X);            "MAKE POSITIVE
+          LDSPI 17; DB=LOGTBL   "  RESET TO LOGTBL
+        MOV 17,17; SETTMA; FADD
+        DPX<FA;                 "NOW X IS POSITIVE
+          BR COMMON
+"ENTRY POINT FOR LN(X),ALOG(X)....................
+ALOG:
+LN:     DB=LOGTBL; LDTMA;       "FETCH 1.0
+          CLR 15                "  CLEAR FOR LN
+COMMON: DB=DPX(X); LDSPE 17;    "GET S
+          INCTMA;               "GET 2**-(1/3)
+          FADD ZERO,DPX(X)      "SEE IF ZERO
+        FSUB TM,MDPX(U);        "DO V=1.0-U
+          CLR 16;
+          INCTMA;               "  FETCH 2**-(2/3)
+          DB=DPX(X)             "  FOR TEST IN NEXT INST.
+        FSUBR  TM,MDPX(U);      "DO U-2**(-1/3)
+          INCTMA;               "  FETCH LN(2)
+          BDBN NEG              "  SEE IF X<0
+        FSUBR TM,MDPX(U);       "DO U-2**(-2/3)
+          LDSPI 16; DB=27.;     "  EXPONENT FOR FLOATING
+          DPX(V)<FA;            "  SAVE V
+          BFEQ NULL             "  BRANCH IF X=0
+        FMUL DPX(V),DPX(V);     "DO V**2
+          FADD; MOV 17,17;
+          DPX(S)<SPFN;          "  PUT S INTO DPX
+          INCTMA                "  POINT TO LOG(E)
+        BFGE POLY;              "START POLY IF U.GE.2**(-1/3)
+          RTMA; LDSPNL 17;      "  SAVE POINTER TO LOG(E)
+          DPY(LN2)<TM;          "  SAVE LN(2)
+          INCTMA                "  POINT TO F1
+        BFGE POLY;              "START POLY IF U.GE.2**(-2/3)
+          LDTMA; DB=INT2        "  POINT TO F2
+        LDTMA; DB=INT3          "POINT TO F3
+POLY:   FADD ZERO,MDPX(S);      "FLOAT S
+          MOV 16,16;
+          INCTMA; FMUL          "  FETCH B
+        FMUL TM,DPX(V);         "DO F*V
+          INCTMA; FADD          "  FETCH D
+        FMUL TM,DPX(V);         "DO B*V
+          INCTMA;               "  FETCH A
+          DPY(V2)<FM            "  SAVE V**2
+        FMUL TM,DPY(V2);        "DO D*V**2
+          INCTMA                "  FETCH G
+        FMUL DPY(LN2),FA;       "DO LN(2)*S
+          INCTMA;               "  FETCH E
+          DPX(XTEMP)<TM;        "  SAVE A
+          DPY(YTEMP)<FM         "  SAVE FV
+        FMUL TM,DPY(V2);        "DO G*V**2
+          FADD FM,DPX(XTEMP)    "  DO BV+A
+        FMUL FM,DPX(V);         "DO DV2*V
+          FADD TM,DPY(YTEMP);   "  DO E+FV
+          INCTMA                "  FETCH C
+        FMUL DPY(V2),DPY(V2);   "DO V**4
+          FADD FM,FA            "  DO SLN2+(A+BV)
+        FMUL TM,DPY(V2);        "DO C*V**2
+          FADD FM,FA;           "  DO GV2+(E+FV)
+          BR POLY1              "  SKIP AROUND AN INSERT
+"THIS INSERT IS PART OF WHEN X=0..............
+NULL:   DPX(X)<101777           "EXP=1777, MANT=NEG
+        DPY(YTEMP)<77777        "EXP=1777, MANT=POS
+        FMUL DPX(X),DPY(YTEMP); "FORCE NEGATIVE OVERFLOW
+          BR FINISH             "  GO FINISH
+"RESUME POLY HERE................
+POLY1:  FADD FM,FA; FMUL        "DO (SLN2+A+BV)+DV3
+        FMUL FM,FA; FADD        "DO V**4*(E+FV+GV2)
+        FADD FM,FA; FMUL        "DO CV2+(SLN2+A+BV+DV3)
+        FMUL; FADD;             "PUSH BOTH
+          MOV 17,17; SETTMA     "  FETCH LOG(E)
+        FADD FM,FA;             "DO (SLN2+A+BV+CV2+DV3)+(EV4+FV5+GV6)
+          MOV 15,15             "  SEE IF LOG OR LN
+        FADD; BNE LOGFIN        "BRANCH IF LOG
+        DPX(X)<FA; RETURN       "DONE WITH LN
+"COME HERE TO FINISH LOG................
+LOGFIN: FMUL TM,FA      "LOG(X)=LN(X)*LOG(E)
+FINISH: FMUL
+        FMUL
+        DPX(X)<FM; RETURN       "DONE WITH LOG
+        $END
+"****** EXP = SCALAR EXPONENTIAL /COMMON/ = REL 2.0  , JAN 78 **************
+        $TITLE EXP
+        $RADIX 8
+        $ENTRY EXP
+"EXPONENTIAL FUNCTION
+"
+"               --- ABSTRACT ---
+"COMPUTES THE FUNCTION EXP(X), WHERE X IS IN DPX(DPA)
+"
+"               --- STATISTICS ---
+"LANGUAGE:      AP 120B ASSEMBLER
+"EQUIPMENT:     AP-120B WITH EITHER MEMORY
+"STORAGE:       PS - 27
+"               MD - NOT AFFECTED
+"               TM - 12
+"               DPX - 2
+"               DPY - 1
+"               SP - 1
+"SPEED:         4.2 US.
+"AUTHOR:        A.E. CHARLESWORTH
+"DATE:          DEC 1975
+"
+"               --- USEAGE ---
+"SAMPLE CALL:   JSR EXP
+"ARGUMENTS:     X IS IN DPX(DPA)
+"ANSWERS:       EXP(X) IN DPX(DPA)
+"
+"               --- ERROR CONDITIONS ---
+"IF X IF GREATER THAN 354.19 OVERFLOW IS DETECTED
+"       AND 2**512 IS RETURNED
+"IF X IS LESS THAN -355.58, UNDERFLOW IS DETECTED
+"       AND 2**-512 IF RETURNED
+"
+"               --- ALGORITHM ---
+"
+"1.     THE BASE IS CHANGED FROM E TO 2 BY DOING:
+"               Y=X*LOG2(E)
+"2.     Y IS EXPRESSED AS Y=I+F, WHERE:
+"               I IS AN INTEGER, AND F A POSITIVE FRACTION
+"                       BETWEEN 0 AND 1
+"3.     THEN EXP(X)=2**I+2**F
+"4.     2**F IS APPROXIMATED VIA A POLYNOMIAL IN F: (HART #1043)
+"               RANGE: (0,1), PRECISION: 8.73, ORDER: 6
+"5.     THE POLYNOMIAL: P+QF+RF**2+SF**3+TF**4+UF$$5+V*F**6
+"               IS FACTORED AS :
+"               (P+QF)+(F**2)(R+SF)+(F**4)(T+UF+VF**2)
+"
+"
+"THE TABLE IN TM IS AS FOLLOWS:
+"EXPTBL:LOG2(E)= .14426 95040 9  E 1
+"       MAX =    354.19
+"       FRAC =  1000,1777,177777  FRACTION MASK
+"       INT =   1000,4000,0  INTEGER MASK
+"       MIN =   -355.58
+"       U =      .12439 68782 1  E -2
+"       S =      .55483 34198 4  E -1
+"       T =      .96788 40997 3  E -2
+"       V =      .21702 25547 0  E -3
+"       R =      .24022 98362 7  E 0
+"       Q =      .69314 69838 4  E 0
+"       P =      .10000 00007 0  E 1
+"
+"
+"TABLE LOCATION IN TABLE MEMORY!!!!!!!!!!!!!!!!!!!
+        EXPTBL $EQU !EXP
+"DATA PAD MNEMONICS:
+"DPX:
+        X $EQU 0
+        F $EQU 0
+        F2 $EQU 1
+        SCALE $EQU 1
+"DPY:
+        Y $EQU 0
+        TEMPY $EQU 0
+EXP:    DB=EXPTBL; LDTMA        "FETCH LOG2(E)
+        INCTMA                  "FETCH MAX
+        FMUL TM,DPX(X);         "DO Y=X*LOG2(E)
+          INCTMA                "  FETCH FRACTION MASK
+        FMUL; FSUB TM,DPX(X);   "SEE IF TOO BIG
+          INCTMA                "  FETCH INTEGER MASK
+        FMUL; FADD;             "PUSH
+          DPY(TEMPY)<TM;        "  SAVE FRAC MASK
+          INCTMA                "  FETCH MIN
+        FAND FM,DPY(TEMPY);     "GET FRACTION PART
+          DPY(TEMPY)<TM;        "  SAVE INT MASK
+          INCTMA                "  FETCH U
+        FAND FM,DPY(TEMPY);     "GET INTEGER PART
+          DPY(TEMPY)<TM;        "  SAVE MIN
+          INCTMA;               "  FETCH S
+          BFGT NOTBIG           "  BRANCH IF NOT TOO BIG
+"COME HERE IF TOO BIG...................
+BIG:    DPX<1777; WRTEXP; BR ERRCOM   "FORCE OVERFLOW
+"NOT TOO BIG..........
+NOTBIG: FSUB DPX(X),DPY(TEMPY);"SEE IF TOO SMALL
+          FMUL TM,FA;           "  DO F*U
+          DPX(F)<FA;            "  SAVE F
+          INCTMA                "  FETCH T
+        FIX FA;                 "FIX INTEGER PART
+          FMUL DPX(F),DPX(F);   "  DO F**2
+          DPY(TEMPY)<TM;        "  SAVE S
+          INCTMA                "  FETCH V
+        FMUL DPY(TEMPY),DPX(F); "DO S*F
+          DPY(TEMPY)<TM;        "  SAVE T
+          INCTMA                "  FETCH R
+        FADD FM,DPY(TEMPY);     "DO T+UF
+          FMUL;
+          DPY(TEMPY)<TM;        "  SAVE V
+          INCTMA;               "  FETCH Q
+          BFGT NOTSML           "  BRANCH IF NOT SMALL
+"COME HERE IF TOO SMALL.........
+SMALL:  DPX<ZERO; WRTEXP        "FORCE UNDERFLOW
+ERRCOM: FMUL DPX,DPX;           "MAKE THE ERROR HAPPEN
+          BR FINISH
+"COME HERE IF OK.................
+NOTSML: FMUL FM,DPY(TEMPY);     "DO V*F**2
+          DPX(F2)<FM;           "  SAVE F**2
+          DPY(TEMPY)<TM         "  SAVE R
+        FMUL TM,DPX(F);         "DO Q*F
+          FADD FM,DPY(TEMPY);   "  DO R+SF
+          DPY(TEMPY)<FA;        "  SAVE I
+          INCTMA                "  FETCH P
+        FMUL DPX(F2),DPX(F2);   "DO F**4
+          FADD;
+          DB=DPY(TEMPY);
+          LDSPI 17;             "  PUT I INTO S-PAD
+          DPY(TEMPY)<FA         "  SAVE T+UF
+        FMUL DPX(F2),FA;        "DO F**2*(R+SF)
+          FADD FM, DPY(TEMPY);  "  DO VF2+(T+UF)
+          DPY(TEMPY)<TM         "  SAVE P
+        FADD FM,DPY(TEMPY);     "DO P+QF
+          DPX(SCALE)<SPFN; INC 17;"  PUT I+1 INTO SCALE
+          FMUL
+        FMUL FM,FA; FADD;       "DO X**4*(T+UF+VF2)
+          CLR 17
+        FADD FM,FA; FMUL        "DO (P+QF)+(RF2+SF3)
+        FADD ZERO,EDPX(SCALE);  "DO 0.5*2**(I+1)
+          INC 17; FMUL
+        FADD FM,FA              "DO (P+QF+RF2+SF3)+(TF4+UF5+VF6)
+        DPX(SCALE)<FA; FADD     "SAVE SCALE
+        FMUL DPX(SCALE),FA      "DO 2**I*POLY(F)
+FINISH: FMUL                    "WAIT
+        FMUL                    "WAIT
+        DPX(X)<FM; RETURN       "DONE!!!!
+        $END
+"****** IFIX = FLOATING-POINT TO INTEGER CONVERSION /COMMON/ = REL 3.0, MAR 79 *
+"****** INT = FLOATING-POINT TO INTEGER TRUNCATION /COMMON/ = REL 3.0, MAR 79 **
+        $TITLE IFIX
+        $RADIX 8
+        $ENTRY INT
+        $ENTRY IFIX
+        $EXT FAPUT
+"
+"INTERFACE:  SP(0) = IFIX(DPX(0))
+"
+"FORMULA:  IFIX(X) = INT(X) = LOW-ORDER 16 BITS OF INTEGER PART OF X
+"
+"AUTHOR:  G. DUGGAN, 01-MAR-78
+" REVISED: MAR 79  R.S. NORIN          AVOIDS JSR FOLLOWED BY RETURN
+"
+"SIZE:  3. LOCATIONS
+"
+"SPEED:  0.83 US.
+"
+"SCRATCH:  SP(0), DPX(0), FA
+"
+"DESCRIPTION:  IFIX CONVERTS A FLOATING-POINT NUMBER TO AN INTEGER.
+"
+"S-PAD ASSIGNMENTS:
+        INTX $EQU 0     "INT(X), IFIX(X)
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X
+INT:
+IFIX:   FIXT DPX(X);                    "FIX ARGUMENT
+        JSR FAPUT                       "PUSH ADDER AND STORE RESULT
+        LDSPI INTX; DB=DPX(X)           "RETURN INT(X), IFIX(X)
+        RETURN
+        $END
+"****** FLOAT = INTEGER TO FLOATING-POINT CONVERSION /COMMON/ = REL 3.0, NOV 78
+        $TITLE FLOAT
+        $RADIX 8
+        $ENTRY FLOAT
+        $EXT FAPUT
+"
+"INTERFACE:  DPX(0) = FLOAT(SP(0))
+"
+"FORMULA:  FLOAT(I) = 2**E*M
+"          WHERE E = INT(LOG2(ABS(I)))+1
+"                M = I/2**E
+"
+"AUTHOR:  G. DUGGAN, 01-MAR-78
+"
+"SIZE:  3. LOCATIONS
+"
+"SPEED:  0.83 US.
+"
+"SCRATCH:  SP(0), DPX(0), FA
+"
+"DESCRIPTION:  FLOAT CONVERTS AN INTEGER TO A FLOATING-POINT NUMBER.
+"
+"S-PAD ASSIGNMENTS:
+        I $EQU 0        "I
+"DATA-PAD X ASSIGNMENTS:
+        FLOATI $EQU 0   "FLOAT(I)
+FLOAT:  DPX(FLOATI)<SPFN; MOV I,I       "EXTEND SIGN
+        WRTEXP; DPX(FLOATI)<539.        "SET EXPONENT
+        FADD ZERO,DPX(FLOATI);          "NORMALIZE RESULT
+        JMP FAPUT                       "PUSH ADDER AND RETURN FLOAT(I)
+        $END
+"****** FAPUT = STORE ADDER RESULT IN DATA-PAD /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE FAPUT
+        $RADIX 8
+        $ENTRY FAPUT
+"
+"INTERFACE:  DPX(0) = FAPUT()
+"
+"FORMULA:  FAPUT() = PUT RESULT OF PREVIOUS ADDER OPERATION INTO FA AND DPX(0)
+"
+"AUTHOR:  G. DUGGAN, 28-FEB-78
+"
+"SIZE:  2. LOCATIONS
+"
+"SPEED:  0.33 US.
+"
+"SCRATCH:  DPX(0), FA
+"
+"DESCRIPTION:  FAPUT STORES THE RESULT OF THE PREVIOUS ADDER OPERATION INTO
+"DPX(0).
+"
+"DATA-PAD X ASSIGNMENTS:
+        X $EQU 0        "X
+FAPUT:  FADD                            "PUSH ADDER
+        DPX(X)<FA; RETURN               "RETURN ADDER RESULT
+        $END
+"****** FAPUSH = PUSH OUT ADDER RESULT /COMMON/ = REL 3.0, NOV 78 *****
+        $TITLE FAPUSH
+        $RADIX 8
+        $ENTRY FAPUSH
+"
+"INTERFACE:  FA = FAPUSH()
+"
+"FORMULA:  FAPUSH() = PUT RESULT OF PREVIOUS ADDER OPERATION INTO FA
+"
+"AUTHOR:  G. DUGGAN, 28-FEB-78
+"
+"SIZE:  1. LOCATION
+"
+"SPEED:  0.17 US.
+"
+"SCRATCH:  FA
+"
+"DESCRIPTION:  FAPUSH PUSHES OUT THE RESULT OF THE PREVIOUS ADDER OPERATION.
+"
+FAPUSH: FADD; RETURN                    "RETURN ADDER RESULT
+        $END
+"****** DIV = (DIVIDE) SCALAR DIVIDE /COMMON/ = REL 2.1, SEP 79 ************
+        $TITLE DIVIDE
+        $RADIX 8
+        $ENTRY DIV
+"DIVIDE SUBROUTINE:    DOES DPY/DPX
+"                  --- ABSTRACT ---
+"DOES:   DPX(DPA) = DPY(DPA) / DPX(DPA)
+"                  --- STATISTICS ---
+"LANGUAGE:         AP-120B ASSEMBLER
+"EQUIPMENT:        AP-120B WITH EITHER MEMORY
+"SIZE:             28 PROGRAM LOCATIONS
+"SPEED:            3.67 US.
+"AUTHOR:           A.E.CHARLESWORTH
+"                  C. HSIUNG (REVISED TO SAVE ONE CYCLE, AUG. 1979)
+"DATE:             SEPT 75
+"SCRATCH:          SP: 13.-15.;  DPX: 0,1;  DPY: 0  (REL TO DPA)
+"                  --- USEAGE ---
+"THE COMPUTATION  Y / X  IS PERFORMED
+"       STORE Y INTO DPY(DPA)
+"       STORE X INTO DPX(DPA)
+"       AND "JSR" TO DIV
+"       WHICH CAN ALL BE ACCOMPLISHED IN ONE INSTRUCTION
+"FOR EXAMPLE: ASSUME THAT Y IS COMING OUT OF THE ADDER, AND X IS FROM
+"       MEMORY. THEN WE WOULD HAVE:
+"         DPY<FA; DPX<MD; JSR DIV
+"
+"THE ANSWER IS STORED BACK INTO DPX(DPA)
+"       THE ORIGINAL DIVIDEND, Y, IS LOST IN THE COMPUTATION, ALONG
+"         WITH DPX(DPA+1) AND S-PAD REGISTERS 15,16,AND 17 (OCTAL)
+"MAIN DATA MEMORY IS NOT USED, SO A MEMORY FETCH OR STORE MAY BE MADE
+"       BEFORE "JSR"ING AND THE MEMORY CYCLE WILL BE COMPLETED DURING
+"         THE DIVIDE COMPUTATION
+"                  --- ERROR CONDITIONS ---
+"DIVIDE BY ZERO:   THE ANSWER IS FORCED TO THE SIGNED MAXIMUM VALUE,
+"                      I.E. SIGN(Y) * 6.7*10**153
+"       THE "DIVIDE BY ZERO" AND "OVERFLOW" BITS ARE SET IN THE STATUS
+"         REGISTER
+"                  --- ALGORITHM ---
+"DOES THE INVERSE VIA AN INTERPOLATED TABLE LOOKUP
+"
+"1. COMPUTE: Q  =  Y/X
+"   WHICH IS Q = Y * (1/X),
+"
+"WRITE X AS  2**E  *  F, THEN
+"   1/X  =  2**-E  *  1/F
+"
+"SPLIT F INTO 2 PARTS, M AND R,  WHERE M IS THE MOST SIGNIFICANT
+"   N BITS OF THE FRACTION, AND R IS THE REMAINING BITS:
+"
+"   0.1MMMMMMMRRRRRRRRRRRRRRRRRRR      FOR 28 BITS TOTAL, N=8 BITS IN M
+"                                                          19 BITS IN R
+"
+"THEN, 1/F = 1/(M+R)  =  1/M(1+R/M)  =  (1/M) * 1/( 1 + (R/M) )
+"
+"1/M (CALLED MI) IS LOOKED UP IN A TABLE, THUS
+"   1/F  =  MI * 1/( 1 + R*MI )
+"
+"DEFINE:  A = MI*R,  THUS:
+"   1/F  =  MI * 1/( 1 + A )
+"
+"A IS SMALL RELATIVE TO 1, SO EXPAND  1/(1+A) IN A TAYLOR'S SERIES:
+"   1/(1+A)  =  1 - A + A**2 - A**3 + A**4 - . . .
+"
+"2. TO DETERMINE THE LIMITS ON THE EXPANSION:
+"
+"   THE MOST TERMS WILL BE NEEDED IN THE EXPANSION WILL BE NEEDED WHEN
+"   A IS GREATEST.  A IS  MI * R.
+"
+"   SINCE M IS AT LEAST 0.5, THEN MI IS AT MOST 2.0
+"   R IS AT MOST ALMOST 2**-N, WHERE N IS THE NUMBER OF BITS IN M
+"
+"   THUS MAXIMUM A IS:  2**(1-N)
+"
+"FOR N=8:    A         A**2         A**3          A**4
+"            2**-7     2**-14       2**-21        2**-28
+"
+"SINCE  A**4  =  2**-28  IS INSIGNIFICANT IN A 27 BIT FRACTION, WE CAN
+"    IGNORE THE A**4 TERM
+"
+"THUS, THE COMPUTATION FOR Q = Y / X  IS
+"    Q = Y * 2**-E * MI * (1 - A) * (1 + A**2)
+"
+"
+"3. THE TABLE LAYOUT:
+"
+"       M              BITS 2-8   FRACTION      MI (IN TABLE)
+"       0.10000000     0          0.5           2.0
+"       0.10000001     1          0.50390625    1.984496124
+"       0.10000010     2          0.5078125     1.969230769
+"       . . .          . . .      . . .         . . .
+"       0.11000000     64         0.75          1.333333333
+"       . . .          . . .      . . .         . . .
+"       0.11111111     127        0.99609375    1.003921569
+"
+"
+"IF DIVIDE BY ZERO:
+"       THE PROPER STATUS BIT IS SET,
+"       AND SIGNED INFINITY IS FORCED
+"
+"DATA PAD USEAGE:
+"       DPX             DPY
+"0      X               Y
+"1      TEMP
+"TABLE IN TABLE MEMORY
+"MASK:  1000,7,177777
+"ONE:   1.0
+"TABLE: 1.0/(0.5 TO (1.0-1/256) BY 1/256)
+"LOCATION OF INVERSE TABLE !!!!!!!!!!!!!!!
+        INVTBL = !DIV
+"ENTER THE ROUTINE HERE
+DIV:    F2CSM DPX;              "MAKE MANTISSA POSITIVE
+          LDSPI 17; DB=INVTBL+2 "AND GET TABLE ADDR
+        FADD;                   "PUSH ADDER
+          DPY<DPY               "  FOR DIVZ
+        DB=INVTBL; LDTMA;       "GET MASK FROM TABLE
+          LDSPI 15;             "ALSO PUT ADDRESS INTO SPAD
+          DPX<FA                "SAVE X
+        LDSPT 16; DB=DPX;       "SEND M(02-08) TO S-PAD
+          BFEQ DIVZ             "BRANCH IF X=0
+        ADD 16,17; SETTMA       "FETCH MI FROM TABLE
+        FAND TM,MDPX;           "DO M(09-27)*2**-8
+          CLR 17                "CLEAR SP(17)
+        FMUL TM,DPY; FADD       "DO Y*MI
+        FMUL TM,FA;             "DO A=MI*M(09-27)*2**-8
+          INC 15; SETTMA        "FETCH 1.0 FROM TABLE
+        LDSPE 16; DB=DPX;       "SEND EXP TO S-PAD
+          FMUL
+        DPY<FM; FMUL;           "SAVE Y*MI
+          FSUBR FM,ZERO;        "DOES -Y IF NECESSARY
+          DPX<TM;               "SAVE 1.
+          BDBN NEG              "SEE IF X IS NEG
+"COME HERE IF X WAS POSITIVE..............
+POS:    FSUBR FM,DPX;           "1 - A
+          DPX<FM;               "SAVE A
+          COM 16                "PART OF -E
+        FMUL DPX,DPX;           "DO A**2
+          FADD;
+          INC 17;               "IS NOW 1 (WAS CLEARED EARLIER)
+          BR COMMON
+"COME HERE IF DIVIDE BY ZERO...........
+"FORCE SIGNED INFINITY AND SET STATUS BIT
+DIVZ:   DPX<1777;               "A BIG EXPONENT
+          RAPS; LDSPNL 17       "  GET STATUS
+        DPY<DPX; WRTEXP         "ANOTHER BIG EXPONENT
+        LDSPI 16; DB=20000      "DIVZ BIT
+        OR 16,17; DB=SPFN;      "SET BIT IN STATUS
+          LDAPS;
+          FMUL DPX,DPY;         "  FORCE OVERFLOW
+          BR DONE
+"COMMON FOR ALL X
+COMMON: FMUL DPY,FA;            "Y*MI * (1-A)
+          INC 16;               "COMPLETE -E
+          DPX(1)<SPFN           "PUT -E INTO DPX(1)
+        FSUB ZERO,EDPX(1);      "-(-1.0 * 2**-E)
+          INC 17;               "NOW 2 (MAKES A MANTISSA OF -1.0)
+          DPY<TM;               "SAVE 1.
+          FMUL
+        FMUL;
+          FADD FM,DPY           "1 + A2
+        FADD; FMUL FM,FA        "(Y*MI*(1-A)) * (2**-E)
+        FMUL                    "WAIT
+        FMUL
+        FMUL FM,FA;             "(Y*MI*2-E*(1-A)) * (1+A2)
+          BR DONE
+"COME HERE IF X<0.0......................
+NEG:    FSUBR FM,DPX;           "1 - A
+          DPX<FM;               "SAVE A
+          COM 16                "PART OF -E
+        FMUL DPX,DPX;           "DO A**2
+          FADD;
+          DPY<FA;               "SAVE -MI*Y
+          INC 17;               "IS NOW 1 (WAS CLEARED EARLIER)
+          BR COMMON
+DONE:   FMUL
+        FMUL
+        DPX<FM; RETURN
+        $END
+$ENDLIB

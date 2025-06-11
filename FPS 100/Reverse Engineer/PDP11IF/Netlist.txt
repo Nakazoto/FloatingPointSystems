@@ -1,0 +1,207 @@
+  A = left connector, B = right connector
+  1 = leftmost component side, 2 = leftmost solder side
+  99 = righmost component side, 100 = rightmost solder side
+  odd = component side, even = solder side
+
+A1 - +5V
+A2 - +5V
+A3 - GND
+A4 - GND
+A5 - NC
+A6 - G2:9, G3:9, D1:5, D1:6
+A7 - G2:1, G3:1
+A8 - NC
+A9 - H2:2, H2:5, H2:9, H2:12, H3:2, H3:5, H3:9, H3:12
+A10 - D2:8
+A11 - H2:3
+A12 - F2:3, E2:6
+A13 - H2:6
+A14 - F2:6, E2:5
+A15 - H2:8
+A16 - F2:8, E2:4
+A17 - H2:11
+A18 - F2:11, E2:3
+A19 - G2:4
+A20 - G2:5
+A21 - G2:12
+A22 - G2:13
+A23 - H3:3
+A24 - F3:3, E2:11
+A25 - H3:6
+A26 - F3:6, E3:1
+A27 - H3:8
+A28 - F3:8, E3:3
+A29 - H3:11
+A30 - F3:11, E3:5
+A31 - G3:4
+A32 - G3:5
+A33 - G3:12
+A34 - G3:13
+A35 - H4:1, G4:1, F5:1
+A36 - B5:8
+A37 - H4:3
+A38 - F4:1
+A39 - H4:8
+A40 - F4:3
+A41 - G4:3
+A42 - F4:6
+A43 - G4:5
+A44 - F4:11, E5:6
+A45 - B5:6
+A46 - D5:6
+A47 - H4:11, D12:6
+A48 - C5:11, A9:3
+A49 - F5:3
+A50 - A11:1, C5:6, F7:9
+A51 - A52, H6:3, G6:3, F5:5, E5(cut leg, NC)
+A52 - A51
+A53 - A54, H6:5, G6:5, F5:9, E5(cut leg, NC)
+A54 - A53
+A55 - A56, H6:7, G6:7, F5:11, E5(cut leg, NC)
+A56 - A55
+A57 - A58, H6:9, G6:9, F5:13, E5(cut leg, NC)
+A58 - A57
+A59 - C7:1
+A60 - C8:3
+A61 - H8:3, D12:7
+A62 - H7:2
+A63 - H8:6, D12:4
+A64 - H7:4
+A65 - G6:11
+A66 - H7:6
+A67 - H8:8, D12:5
+A68 - H7:8
+A69 - H8:11, D12:11
+A70 - C9:10
+A71 - G9:3, H9:4
+A72 - C9:9
+A73 - G9:6, H9:6
+A74 - G9:2, F9:7, F6:13
+A75 - NC
+A76 - G9:5, F9:9, F6:11
+A77 - G9:8, H9:9
+A78 - G9:9, F9:11, F6:7
+A79 - G9:11, H9:11
+A80 - G9:12, F9:13, F6:9
+A81 - A82, H11:3, G11:3, F10:1, H10:3(US), G10:2(US), G10:3(US)
+A82 - A81
+A83 - A84, H11:5, G11:5, F10:3, H10:6(US), G10:4(US), G10:5(US)
+A84 - A83
+A85 - A86, H11:7, G11:7, F10:5, H10:8(US), G10:7(US), G10:8(US)
+A86 - A85
+A87 - H11:9, G11:9, F10:9, G10:9(US), Jumper(NC - would connect to A88)
+A88 - Jumper(NC - would connect to A87)
+A89 - H16:3, G16:3, F10:11, G10.12(US), Jumper(NC - would connect to A90)
+A90 - Jumper(NC - would connect to A89)
+A91 - H16:5, G16:5, F10:13, G10:14(US), Jumper(NC - would connect to A92)
+A92 - A14:6, Jumper
+A93 - C11:9, C11:10, E9:2
+A94 - C12:6, R(C12)
+A95 - C12:4, R(D11)
+A96 - C12:11, D11:6
+A97 - GND
+A98 - GND
+A99 - +5V
+A100 - +5V
+
+
+B1 - +5V
+B2 - +5V
+B3 - GND
+B4 - GND
+B5 - D11:8
+B6 - C11:6, C18:11, R(B18)
+B7 - D11:11
+B8 - NC
+B9 - H13:3, Jumper, D15:9
+B10 - H12:2
+B11 - H13:6, D12:9
+B12 - H12:4
+B13 - B4:9, C22:9, B68 (edge connector)
+B14 - H12:6
+B15 - H13:8, D15:6
+B16 - H12:8
+B17 - H13.11, D15:4
+B18 - C15:6, R(C15)
+B19 - H14:4, G14:3
+B20 - C11:8
+B21 - H14:6, G14:6
+B22 - C15:8, C15:11
+B23 - NC
+B24 - G14:2, F15:3, F11:3
+B25 - H14:9, G14:8
+B26 - G14:5, F11:5, E11:6
+B27 - H14:11, G14:11
+B28 - G14:9, F15:7, F11:7
+B29 - H15:4, G15:3
+B30 - G14:12, F15:9, F11:9
+B31 - H15:6, G15:6
+B32 - C15:3
+B33 - NC
+B34 - C16:6
+B35 - H15:9, G15:8
+B36 - F15:11, E16:3
+B37 - H15:11, G15:11
+B38 - F15:13, G15:5 
+B39 - H17:2
+B40 - F16:7, F19:3, E16:10
+B41 - H17:4
+B42 - F16:9,  E16:13
+B43 - H17:6
+B44 - G17:5
+B45 - H17:8
+B46 - G17:4, F18:5, E17:14
+B47 - H18:3, D15:11
+B48 - C18:6, C12:9
+B49 - H18:6
+B50 - C18:3, D22:9
+B51 - H17:13
+B52 - H17:10
+B53 - H18:8, D20:6
+B54 - D20:9, 1k -> cap -> GND
+B55 - H18:11, D20:4
+B56 - C18:8
+B57 - H19:4, G19:3
+B58 - G19:2, F19:7
+B59 - H19:6, G19:6
+B60 - G19:5, F19:9
+B61 - NC
+B62 - G19:9, F19:11
+B63 - H19:9, G19:8
+B64 - G19:12, F19:13
+B65 - H19:11, G19:11
+B66 - A21:12, 10k -> 5v, cap -> GND
+B67 - H16:7, G16:7, (plus jumpers that go nowhere)
+B68 - B13 (edge connector)
+B69 - H16:9, G16:9, F20:3
+B70 - B91 (edge connector)
+B71 - H21:3
+B72 - B84 (edge connector)
+B73 - F20:9, (plus jumpers that go nowhere)
+B74 - B86 (edge connector)
+B75 - H21:7, G21:7
+B76 - G1:6
+B77 - H21:9, G21:9
+B78 - G1:9
+B79 - H22:2
+B80 - G22:5, F22:5, E22:4
+B81 - H22:4
+B82 - G22:4, F22:12, E22:3
+B83 - H22:6
+B84 - B72, C22:10, C10:11
+B85 - H22:8
+B86 - B74, C22:11
+B87 - H23:3, D20:11
+B88 - C23:9
+B89 - H23:6, D22:6
+B90 - C23:10
+B91 - B70, C23:7, F6:15, B70
+B92 - C23:11
+B93 - H23:8, D22:4
+B94 - D23:8
+B95 - H23:11, D22:11
+B96 - D23:13
+B97 - GND
+B98 - GND
+B99 - +5V
+B100 - +5V

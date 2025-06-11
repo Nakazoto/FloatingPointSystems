@@ -1,0 +1,11 @@
+
+Known Surviving Systems
+(A system must include a full card set and backplane)
+
+System    Location       Status
+FPS-3000  Usagi's        Has not been powered up
+AP-120B   LSSM           Complete, but has not been powered up
+AP-180V   LSSM           Complete, but has not been powered up
+FPS-100   ????           Complete, in process to relocate for work
+AP-120B   eBay           Seller is currently asking $16,000 (hah!)
+AP-120B   China?         Discord user's bd4sup personal machine

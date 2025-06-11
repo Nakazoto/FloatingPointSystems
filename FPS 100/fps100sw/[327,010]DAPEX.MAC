@@ -1,0 +1,1294 @@
+;/***** DAPEX = HOST DEPENDENT APEX (PDP-11 RSX11M) = REL B.1 , JAN 80 ********
+;;C
+;;C =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+;;C
+;;C	LIST OF SUBROUTINES IN ORDER THEY APPEAR:
+;;C
+;;C		APASGN
+;;C		APRLSE
+;;C		APSUPV
+;;C		SPLDGO
+;;C		RUNAP
+;;C		TSTRUN
+;;C		WTRUN
+;;C		RUNDMA
+;;C		TSTDMA
+;;C		WTDMA
+;;C		APRSET
+;;C		APIENA
+;;C		APIDIS
+;;C		APWI
+;;C		TSTINT
+;;C		APIN
+;;C		APOUT
+;;C
+;;C =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+;;C
+;;C -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+;;C
+;;C      ADDITIONS FOR FPS-100 SUPERVISOR ARE INCLUDED...
+;;C      A COMMON BLOCK IS USED FOR DATA & FLAGS:
+;;C
+;;C      COMMON /APSPVR/ SUPVR,FPSWR,FPLIT,FPERF,FPFNR,RUNFG,FPDAT(8)
+;;C
+;;C      VARIABLES:
+;;C      SUPVR = 0  NO SUPERVISOR RUNNING IN AP
+;;C            > 0  SUPER-100 IS RUNNING IN AP
+;;C            < 0  MINI-100 IS RUNNING IN AP
+;;C      FPSWR  IS SWITCH REG VALUE FOR SENDING TO AP
+;;C      FPLIT  IS LITES REG VALUE FROM LAST RUN OF USER APEX
+;;C                              OR FROM EXAMINE
+;;C     FPERF  IS A FLAG RETURNED BY FUNCTION INTERPRETER
+;;C                 0 IF NO ERROR
+;;C                 1 IF REQUESTED FUNCTION IS NOT IMPLEMENTED
+;;C      FPFNR  IS FUNCTION REGISTER FOR SENDING TO AP
+;;C      RUNFG   IS FLAG  = 0  IF USER AP CODE STOPPED
+;;C                       > 0  IF USER AP CODE RUNNING
+;;C                       < 0  IF AP HAS HALTED
+;;C     FPDAT(8)  IS STORAGE FOR DATUM VALUES FROM FPS-100
+;;C
+;;C -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;
+.IF DF FPS100
+.IFTF
+        .TITLE DAPEX
+        .GLOBL SPLDGO,RUNDMA,RUNAP,TSTDMA,TSTRUN,WTDMA,WTRUN,APIN
+        .GLOBL APIENA,APIDIS,TSTINT,APWI,APSTOP,APSUPV
+        .GLOBL APOUT,APWD,APWR,APRSET,APASGN,APRLSE
+.IFT
+        .GLOBL HPUT,HGET,HTST
+        .GLOBL  LOOKY,VIRP,VGLOB
+.IFTF
+        .MCALL  QIO$,QIOW$,WTSE$,RDAF$,ALUN$,MRKT$,DIR$,SETF$,CLEF$
+        .MCALL  FILIO$,IOERR$,DSAR$S,ENAR$S
+;
+;
+;   THE FOLLOWING EVENT FLAGS AND UNIT NUMBERS ARE USED.
+;
+        RUNEVF  =       22.
+        DMAEVF  =       23.
+        CB5EVF  =       24.
+        TIMEVF  =       CB5EVF
+;
+        LUN     =       3
+        LUN1    =       4
+        PR7     =       7*40
+;
+        FILIO$                  ;DEFINE STANDARD I/O FUNCTIONS
+        IOERR$                  ;DEFINE STANDARD I/O ERROR CODES
+;
+;
+;
+.IFT
+;
+;
+;               *********   PARAMETER ARRANGEMENT   *********
+;
+;               THE FOLLOWING PARAMETERS MUST BE ARRANGED IN THE FOLLOWING
+;               ORDER.  THE DRIVER PLACES VALUES INTO THIS TABLE AND EXPECTS
+;               THIS ORDERING.
+;
+RUNFG:  .WORD   0
+FPLIT:  .WORD   0
+FPERF:  .WORD   0
+FPDAT:  .BLKW    8.
+VPBAD:  .WORD    0.
+;
+;               ***************  END OF ORDER  *************
+;
+;
+;       FPS100 VARIABLES
+;
+VGLOB:  .WORD   0
+SUPVR:  .WORD   0
+FPOPT:  .WORD   0,0,0,0
+        FPSCT=FPOPT+2
+        FPSWR=FPOPT+4
+        FPFNR=FPOPT+6
+.IFTF
+; AVAILABLE AP PHYSICAL CSR ADDRESSES
+;
+;
+        .MACRO CSR N
+        .WORD   APCOM'N
+        .ENDM
+;
+        N=0
+CSRTBL:
+        .REPT   A$$P11
+        CSR     \N
+        N=N+1
+        .ENDR
+;
+;
+;       AP-DEVICE ADDRESSES
+;
+	FPS = 0
+	FMTH = FPS		;FORMAT HIGH REG
+	FMTL = FPS + 2		;FORMAT LOW REG
+	WC = FPS + 100		;WORD COUNT REG OFFSET
+	HMA = FPS + 102		;HOST MEMORY ADDRESS REG OFFSET
+	CTRL = FPS + 104	;CONTROL REG OFFSET
+	APMA = FPS + 106	;AP MEMORY ADDRESS REG OFFSET
+	SWR = FPS + 110		;SWITCH REG OFFSET
+	FN = FPS + 112		;FUNCTION REG OFFSET
+	LITES = FPS + 114	;LIGHTS REG OFFSET
+	ABRT = FPS + 116	;RESET OFFSET
+;
+;       CTRL REGISTER BITS
+        IHHALT = 10000          ;ENABLE AP HALT IRP
+        IHWC   =  4000          ;ENABLE DMA DONE IRP
+        IHCB5  =  2000          ;ENABLE PROGRAMMED IRP (CTRL 5)
+        HDMAGO =     1          ;HOST DMA START
+        APIRT  = 40000          ;INTERRUPT THE AP
+;
+;       OTHER VALUES
+        NEG1   = 177777         ;VALUE = -1
+        PR7    = 7*40           ;PRIORITY LEVEL FOR PS WORD
+        OPTSPD = 1              ;OPTION FOR SPLDGO
+        OPTAPR = 2              ;OPTION FOR RUNAP
+        OPTFNR = 3              ;OPTION FOR FN REG INTERPRET  (APOUT)
+;
+;
+        .MACRO CALL X
+        MOV R5,-(SP)            ;SAVE R5
+        MOV #ZERO,R5            ;POINT TO ZERO ARGS
+        JSR PC,X
+        MOV (SP)+,R5            ;RETRIEVE R5
+        .ENDM CALL
+;
+;
+        .MACRO CALLS X
+        JSR  PC,X               ;ASSUMES  R5  IS PROPERLY SET
+        .ENDM CALLS
+;
+;
+        .MACRO APCON ?XX
+	TST	APCSR
+        BNE     XX
+        JMP     XSTOP
+XX:
+        .ENDM APCON
+;
+;
+        .MACRO RETURN
+        RTS PC
+        .ENDM RETURN
+;
+;
+ZERO:   .WORD 0
+        .WORD  ZERO
+APCSR:  .WORD   0                 ;AP CSR
+;
+;          PAUSE ON FATAL APEX ERROR
+;          CALL APSTOP (N)
+;          N IS AN OCTAL NUMBER
+;
+        .MACRO STOPS N
+        MOV R5,-(SP)            ;SAVE R5
+        MOV #VARG,R5            ;POINT TO ARG LIST
+        MOV #N,VARG1            ;STORE ARG VALUE (DECIMAL)
+        JSR PC,APSTOP           ;CALL APSTOP ROUTINE
+        MOV (SP)+,R5            ;RESTORE R5
+        .ENDM STOPS
+;
+;;            NOTE:  REGARDING  SWR & LITES R/W STATUS BITS
+;;      AP SETS BIT    (ON READ SWR OR WRITE LITES)
+;;      HOST CLEARS    (ON WRITE SWR OR READ LITES)
+;;
+;;   RDWAIT               TEST FN REG BIT
+;;                        LOOP UNTIL AP READS SWR REG
+;;                        ?L GENERATES LOCAL LABELS FOR EACH USE
+;;                           CALL THE MACRO BY JUST SAYING  RDWAIT
+;
+        .MACRO RDWAIT ?L,?K,?M
+        MOV     R0,-(SP)        ;CLEAR TIME OUT COUNT
+        CLR     R0
+        MOV     R2,-(SP)
+        MOV     APCSR,R2
+        APCON                   ;CHECK IF AP ASSIGNED
+L:      TST FN(R2)
+        BPL K
+        STOPS 75.
+K:      BIT FN(R2),#40000
+        BNE     M
+        SOB     R0,L            ;KICK COUNT
+        BR      L               ;TRY AGAIN
+M:
+        MOV     (SP)+,R2
+        MOV     (SP)+,R0
+        .ENDM RDWAIT
+;
+;
+.IFT
+.IFTF
+VARG:   .WORD 1                 ;1 ARG
+        .WORD VARG1             ;ADDRESS OF FIRST ARG
+VARG1:  .WORD 0
+;;C
+;
+;
+;;C -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;
+; AP NOT ASSIGNED YET
+;
+XSTOP:
+        STOPS   101.
+        RETURN
+;
+.IFT
+;;C
+;;C -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+;
+;     CHECK HARDWARE RUNNING.  IF STOPPED, SET  RUNFG = -1
+IFRUN:
+        MOV     R0,-(SP)
+        MOV     APCSR,R0
+        TST FN(R0)
+        BGE 1$                  ;JUMP IF AP RUNNING
+        BIS #NEG1,RUNFG         ;SET = -1
+1$:     MOV     (SP)+,R0
+        RETURN
+;
+;;C -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+;         SEND A MESSAGE TO THE FPS-100
+;         SUBROUTINE SENDER (DATUM, OPTION, SPADCT, BPSWR, FNSTA)
+;         ON ENTRY-  R0      HAS  DATUM VALUE
+;                     FPOPT  HAS  OPTION VALUE
+;                     FPSCT  HAS  SPAD COUNT VALUE
+;                     FPSWR  HAS  BPSWR VALUE
+;                     FPFNR  HAS  FNSTA VALUE
+;
+SENDER: RDWAIT                  ;WAIT FOR FPS-100 TO READ SWR
+        MOV     R2,-(SP)         ;TEMPORARY SAVE
+        MOV     APCSR,R2        ;AP CSR
+        MOV     R0,SWR(R2)            ;SEND DATUM
+        MOV     R3,-(SP)          ;SAVE R3
+        DSAR$S                    ;INTERRUPTS OFF
+        MOV     CTRL(R2),R3       ;CONTROL REGISTER
+        BIC     #HDMAGO,R3        ;MASK OFF START BIT
+        BIS     #APIRT,R3         ;SET FOR INTERRUPT
+        MOV     R3,CTRL(R2)       ;SEND INTERRUPT TO AP
+        BIC     #APIRT,R3         ;CLEAR INTERRUPT ENABLE
+        MOV     R3,CTRL(R2)       ;IMPLEMENT
+        ENAR$S                    ;INTERRUPTS ON
+        MOV     (SP)+,R3          ;RESTORE R3
+        TST R0
+        BNE SDUN                ;RETURN IF HPUT MSG
+;
+;                   FOR APEX MESSAGES
+;
+2$:     INC RUNFG               ;INDICATE AP CODE RUNNING
+;
+;           ENABLE CTRL BIT 5
+        MOV     R3,-(SP)          ;SAVE R3
+        DSAR$S                    ;INTERRUPTS OFF
+        MOV     CTRL(R2),R3       ;CONTROL REGISTER
+        BIC     #HDMAGO,R3        ;MASK OUT START BIT
+        BIS     #IHCB5,R3         ;CTRL BIT 5
+        MOV     R3,CTRL(R2)       ;ENABLE CTRL BIT 5 INTERRUPTS
+        ENAR$S                     ;INTERRUPTS ON
+        MOV     (SP)+,R3          ;RESTORE R3
+;
+        MOV #4,R0               ;SET LOOP COUNTER
+        MOV #FPOPT,R1           ;ADDRESS OF FIRST MESSAGE WORD
+SEND4:  RDWAIT
+        MOV (R1)+,SWR(R2)         ;SEND MESSAGE WORD
+        DEC R0                  ;LOOP COUNTER
+        BNE SEND4               ;NOT DONE YET
+SDUN:   MOV    (SP)+,R2
+        RETURN
+.IFTF
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APASGN = ASSIGN AN AP = REL A.00 , AUG 79 *****************************
+;
+;;       SUBROUTINE APASGN(APNO,ACTION,STATUS)
+;
+;
+;       APNO = 0  - ASSIGN ANY FPS PROCESSOR TO THE TASK
+;            > 0  - ASSIGN (APNO) PROCESSOR TO THE TASK
+;
+;       ACTION = 0  - WAIT FOR PROCESSOR
+;              = 1  - DO NOT WAIT FOR PROCESSOR
+;
+;       STATUS > 0  - PROCESSOR ASSIGNED TO TASK
+;              = -1 - PROCESSOR IN USE BY ANOTHER TASK
+;              = -2 - PROCESSOR NOT AVAILABLE
+;              = -N - DIGITAL I/O AND DIRECTIVE ERROR CODES
+;
+;
+APASGN::
+        MOV     @2(R5),R0               ;ATTACH ANY PROCESSOR ?
+        BEQ     ANYAP                   ;IF EQ, YES
+        DEC     R0                      ;MAKE APNO A UNIT NUMBER
+        MOV     R0,UNIT                 ;PUT IN ALUN$ DPB
+        DIR$    #ASSIGN                 ;ASSIGN LUN TO PROCESSOR
+        BCS     DIRER                   ;IF CS, ERROR
+        MOV     @4(R5),R0               ;WAIT IF PROCESSOR IN USE ?
+        BNE     NOWAIT                  ;IF NE,NO
+        DIR$    #ATTW                   ;ATTACH AND WAIT
+        BCS     DIRER                   ;IF CS, ERROR
+        CMP     #1,IOSB                 ;DID IT ATTACH ?
+        BNE     IOER                    ;IF NE, ERROR
+        MOV     @2(R5),@6(R5)           ;PUT APNO AT STATUS
+        BR      SETCSR                  ;SET THE PROCESSOR CSR
+;
+;
+NOWAIT:
+        DIR$    #ATT                    ;ATTACH PROCESSOR AND CONTINUE
+        BCS     DIRER                   ;IF CS, ERROR
+        TST     IOSB                    ;DID IT ATTACH ?
+        BEQ     TOLATE                  ;IF EQ, NO SOME ONE ELSE HAS IT
+        BMI     IOER                    ;IF MI, ERROR
+        MOV     @2(R5),@6(R5)           ;APNO ATTACHED
+        MOV     UNIT,R0                 ;SET PROCESSOR CSR
+        BR      SETCSR
+;
+TOLATE:
+        DIR$    #DETACH                 ;CAN NOT LEAVE IT ATTACHED
+        BCS     DIRER                   ;IF CS, ERROR
+        TST     IOSB                    ;CHECK I/O STATUS
+        BMI     IOER                    ;IF MI, ERROR
+        MOV     #-1,@6(R5)              ;PROCESSOR IN USE
+        RETURN
+;
+;
+; DIRECTIVE AND I/O ERROR RETURNS
+;
+;
+DIRER:	MOV	$DSW,@6(R5)		;DIRECTIVE ERROR
+	RETURN
+;
+IOER:	MOV	IOSB,@6(R5)		;I/O ERROR
+	RETURN
+;
+;
+; ATTACH ANY PROCESSOR SECTION
+;
+ANYAP:
+        CLR     IFLG                    ;STATUS FLAG
+        CLR     UNIT                    ;PROCESSOR UNIT NUMBER
+TRYAGN: DIR$    #ASSIGN                 ;ASSIGN LUN TO PROCESSOR
+        BCS     NEXT                    ;IF CS, TRY NEXT UNIT
+        BIS     #1,IFLG                 ;SET STATUS FLAG
+        DIR$    #ATT                    ;ATTACH PROCESSOR AND CONTINUE
+        BCS     NEXT                    ;IF CS, TRY NEXT PROCESSOR
+        TST     IOSB                    ;CHECK I/O STATUS
+        BMI     NEXT                    ;IF CS, TRY NEXT PROCESSOR
+        BEQ     BUSY                    ;IF EQ, SOME ONE HAS IT
+        MOV     UNIT,R0                 ;SET UP FOR SETCSR
+        INC     R0                      ;MAKE UNIT = APNO
+        MOV     R0,@6(R5)               ;STATUS = APNO
+        DEC     R0                      ;R0 BACK TO UNIT #
+        BR      SETCSR                  ;SET PROCESSOR CSR
+;
+BUSY:
+        DIR$    #DETACH                 ;DETACH FROM PROCESSOR
+        BCS     DIRER                   ;IF CS, ERROR
+        TST     IOSB                    ;CHECK I/O STATUS
+        BMI     IOER                    ;IF MI, ERROR
+;
+NEXT:
+        INC     UNIT                    ;NEXT UNIT NUMBER
+        CMP     UNIT,#A$$P11              ;ANOTHER PROCESSOR TO TRY ?
+        BNE     TRYAGN                  ;IF NE, TRY AGAIN
+        TST     IFLG                    ;CAN ANYTHING BE ATTACHED ?
+        BNE     WAIT                    ;IF NE, HOPE SO
+        MOV     #-2,@6(R5)              ;LOOKS HOPELESS
+        RETURN
+;
+WAIT:
+        TST     @4(R5)                  ;SHOULD WE WAIT ?
+        BEQ     WAIT1                   ;IF EQ, YES
+        MOV     #-1,@6(R5)              ;NOT AVAILABLE
+        RETURN
+WAIT1:
+        DIR$    #MARK                   ;TRY AGAIN IN FIVE MINUTES
+        DIR$    #TWAIT                  ;TAKE A BREAK
+        JMP     ANYAP                   ;HERE WE GO AGAIN
+;
+SETCSR:
+        MOV     #DMAEVF,EVFLAG          ;SET EVENT FLAGS
+        DIR$    #SETF
+        BCS     DIRER
+        MOV     #RUNEVF,EVFLAG
+        DIR$    #SETF
+        BCS     DIRER
+        MOV     #CB5EVF,EVFLAG
+        DIR$    #SETF
+        BCS     DIRER
+.IFT
+        MOV     UNIT,UNIT1              ;ASSIGN SECOND UNIT FOR FPS100
+        INC     UNIT1                   ;
+        DIR$    #ASGN2                  ;ASSIGN IT
+        BCS     DIRER
+.IFTF
+        MOV     CSRTBL(R0),APCSR        ;SET UP CSR FOR PROCESOR
+	MOV	APCSR,R0		;CLEAR INTERFACE REGS
+	CLR	CTRL(R0)
+	MOV #4000,FN(R0)
+.IFT
+        MOVB    #5,SUPFN                ;SET FUNCTION FOR MODE SET
+        CLR     MODE
+        DIR$    #SETSUP                 ;FORCE TO AP120 MODE
+        BCS     DIRER                   ;IF CS, ERROR
+        TST     IOSB                    ;CHECK I/O STATUS
+        BMI     IOER                    ;IF MI, ERROR
+        DIR$    #RUNWT                  ;WAIT FOR IT TO COMPLETE
+        BCS     1$                      ;IF CS, ERROR
+.IFTF
+        RETURN
+1$:     JMP     DIRER
+;
+;
+;  I/O OPERATIONS
+;
+;
+ASSIGN: ALUN$   LUN,AP,0
+        UNIT=ASSIGN+A.LUNU
+.IFT
+;
+ASGN2:  ALUN$   LUN1,AP,0
+        UNIT1=ASGN2+A.LUNU
+;
+;
+SETSUP: QIO$   5*256.,LUN1,RUNEVF,,IOSB,0,<IRUNFG,11.*2,0,0,0,0>
+        SUPFN=SETSUP+Q.IOFN+1
+        MODE=SETSUP+Q.IOPL+4
+        IRUNFG=RUNFG
+;
+.IFTF
+;
+ATT:    QIO$    IO.ATT,LUN,TIMEVF,,IOSB
+;
+ATTW:   QIOW$   IO.ATT,LUN,TIMEVF,,IOSB
+;
+DETACH:	QIO$	IO.DET,LUN,TIMEVF,,IOSB
+;
+MARK:   MRKT$   TIMEVF,5,2
+;
+TWAIT:  WTSE$   TIMEVF
+;
+SETF:   SETF$   0
+        EVFLAG=SETF+S.ETEF
+;
+IFLG:   .WORD   0
+IOSB:   .BLKW   2
+;
+;
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APRLSE = RELEASE AN AP = REL A.00 , AUG 79 ****************************
+;
+;;       SUBROUTINE APRLSE
+;
+APRLSE:
+        APCON
+        CALL APWD
+.IFT
+        DIR$ #CANSUP           ;CANCEL SUPERVISOR, IF ON
+        DIR$    #TERM                   ;FINISH DRIVER I/O
+.IFTF
+        MOV     ZERO,APCSR
+        DIR$    #DETACH                 ;DETACH THE AP FROM THIS TASK
+        RETURN
+;
+.IFT
+TERM:   QIOW$   6*256.,LUN,CB5EVF,,IOSB
+.IFTF
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APSUPV = INDICATE AP SUPERVISOR ON/OFF = REL A.00 , AUG 79 ************
+;
+;;       SUBROUTINE APSUPV (MODE)
+APSUPV:
+.IFT
+        APCON
+        MOV @2(R5),SUPVR        ; SAVE MODE VALUE
+        BEQ SUPX
+        CLR RUNFG
+        MOV     APCSR,R0        ;AP CSR
+        BIS     #IHCB5,CTRL(R0) ;ENABLE CB5
+        MOVB    #5,SUPFN2       ;SET SUPER FUNCTION
+        MOV     SUPVR,MODE2     ;SET MODE
+        DIR$    #STSUP2         ;ISSUE IT
+.IFTF
+	RETURN
+SUPX:   DIR$ #CANSUP            ;CANCEL SUPERVISOR MODE IN DRIVER
+        RETURN
+;;       END
+;
+STSUP2: QIO$  5*256.,LUN1,,,IOSB,0,<IRUNFG,11.*2,0,0,0,0>
+        SUPFN2=STSUP2+Q.IOFN+1
+        MODE2=STSUP2+Q.IOPL+4
+;
+CANSUP: QIO$  IO.KIL,LUN1,,,IOSB
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** SPLDGO = S-PAD LOAD AND GO = REL A.00 , AUG 79 ************************
+;
+;;       SUBROUTINE SPLDGO(SLIST,NSPADS,STRT,BRKLOC)
+SPLDGO:   APCON
+        CALL APWR
+        MOV     APCSR,R3        ;AP CSR
+        TST (R5)+               ;TO SKIP PARAMETER COUNT
+        MOV (R5)+,R2            ;GET S-PAD VALUE POINTER
+        MOV @(R5)+,R0           ;GET NSPADS
+.IFT
+;   ================= TEST FOR SUPER-100  ============
+        TST SUPVR               ;TEST CONTROL FLAG
+        BGT L2510               ;BRANCH IF SUPER-100 RUNNING
+	DIR$ #CLRRUN	;CLEAR RUN EVENT FLAG
+	BCC 10$
+	JMP ERR
+.IFTF
+10$:    TST R0
+        BEQ SBRGO
+        CLR R1         ;INITIALIZE S-PAD ADDRESS
+LDSP:   MOV R1,SWR(R3)   ;SET S-PAD ADDRESS
+        MOV #513.,FN(R3) ;INTO SPD
+        MOV @R2,SWR(R3)  ;SET PARAMETER VALUE
+        MOV #517.,FN(R3) ;INTO S-PAD
+        TST (R2)+      ;BUMP PARAMETER VALUE POINTER
+        INC R1         ; AND S-PAD ADDRESS
+        DEC R0         ;SEE IF DONE??
+        BNE LDSP
+;
+;
+SBRGO:
+.IFT
+  TST SUPVR
+        BLT SBRGO2              ;GO IF MINI-100
+.IFTF
+        MOV @(R5)+,SWR(R3)        ;SET STARTING ADDRESS INTO TMA
+        MOV #515.,FN(R3)
+        MOV #8.,SWR(R3)           ;PUT STARTING ADDRESS OF BOOT-STRAP STARTER
+        MOV #512.,FN(R3)          ;INTO PSA
+        CLR SWR(R3)                       ;ZERO APSTAT, CLEAR PARITY ENABLE
+        MOV     #518.,FN(R3)                      ;DEP TO APSTAT
+        MOV @(R5)+,SWR(R3)        ;SET PSA BREAKPOINT
+        MOV #8448.,FN(R3)         ;AND GO
+        BR L2530              ;ENABLE HALT IRP
+.IFT
+;
+;                 FOR MINI-100 IN FPS-100
+SBRGO2: MOV @(R5)+,SWR(R3)        ;PUT START ADDR INTO PSA
+        MOV #512.,FN(R3)
+        MOV #8192.,FN(R3)         ;SET CONTINUE BIT
+        BR L2530              ;ENABLE HALT IRP
+;
+;       SUPER-100 RUNNING IN FPS-100
+L2510:  MOV R0,FPSCT            ;SAVE NSPADS
+        MOV R2,-(SP)            ;SAVE SLIST POINTER
+        MOV #OPTSPD,FPOPT       ;OPTION FOR APEX
+        MOV @(R5)+,FPFNR       ;STORE START ADDRESS
+        MOV @(R5)+,FPSWR       ;STORE BRKLOC
+        CLR R0
+        CALLS SENDER            ;SEND MESSAGE TO FPS-100
+        MOV (SP)+,R2            ;POP SLIST POINTER
+        MOV FPSCT,R0            ;GET NSPADS
+        BEQ L2531               ;NO S-PADS
+;
+;       TRANSFER S-PAD VALUES
+4$:     MOV (R2)+,R1            ;GET S-PAD VALUE
+        RDWAIT
+        MOV R1,SWR(R3)            ;SEND S-PAD VALUE
+        DEC R0                  ;LOOP COUNTER
+        BNE 4$
+        BR  L2531
+.IFTF
+L2530:  BIS    #IHHALT,CTRL(R3)            ;ENABLE HALT IRP
+L2531:  RETURN
+;
+CLRRUN:	CLEF$ RUNEVF
+;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** RUNAP = START AN AP-PROGRAM = REL A.00 , AUG 79 ***********************
+;
+;;       SUBROUTINE RUNAP(PSA,NOLOAD,SWR,FN)
+;
+RUNAP:  APCON
+        CALL APWR
+        MOV     APCSR,R3
+        TST (R5)+               ;SKIP PARAMETER COUNT
+.IFT
+;   ================= TEST FOR SUPER-100  ============
+        TST SUPVR               ;TEST CONTROL FLAG
+        BGT L2720               ;BRANCH IF SUPER-100 RUNNING
+.IFTF
+;
+;       CLEAR PARITY ENABLE IN STATUS REGISTER
+;
+        DIR$ #CLRRUN
+        BCC  10$
+        JMP  ERR
+10$:    CLR SWR(R3)
+        MOV #518.,FN(R3)
+;
+        MOV @(R5)+,SWR(R3)        ;PUT 'PSA' INTO THE SWITCHES
+        TST @(R5)+              ;SEE IF LOAD PSA??
+        BNE NOLOAD
+        MOV #512.,FN(R3)          ;PUT 'PSA' INTO PSA IF 'NOLOAD' IS ZERO
+;
+NOLOAD: CLR SWR(R3)               ;CLEAR SWR
+        MOV #1030.,FN(R3)         ;CLEAR PARITY ERROR ENABLE
+        MOV @(R5)+,SWR(R3)        ;PUT 'SWR' INTO THE SWITCHES
+        MOV @(R5)+,R0           ;CLEAR ALL BUT POSSIBLE BREAKPOINT
+        BIC #177360,R0
+.IFT
+        TST SUPVR               ;TEST FOR MINI-100
+        BGE RUNPX
+        CLR R0                  ;FOR MINI-100 BKPT NOT ALLOWED
+.IFTF
+RUNPX:  BIS #8192.,R0           ;SET CONTINUE BIT
+        MOV R0,FN(R3)             ;AND GO
+        BIS #IHHALT,CTRL(R3)      ;SET APHALT BIT
+        BR HTIRP
+.IFT
+;
+;       SUPER-100 RUNNING IN FPS-100
+L2720:  MOV @(R5)+,FPFNR       ;STORE START ADDRESS
+        TST (R5)+               ;SKIP NOLOAD ARG
+        MOV @(R5)+,FPSWR       ;STORE SWR VALUE
+        MOV #OPTAPR,FPOPT       ;OPTION FOR APEX
+        CLR FPSCT               ;S-PAD COUNT = 0
+        CLR R0
+        CALLS SENDER            ;SEND MESSAGE TO FPS-100
+.IFTF
+;
+HTIRP:
+;
+        RETURN
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** TSTRUN = TEST RUN COMPLETE = REL A.00 , AUG 79 ************************
+;
+;;       SUBROUTINE TSTRUN(I)
+;;
+.IFT
+;   ================= TEST FOR SUPER-100  ============
+.IFTF
+TSTRUN:
+        APCON
+        MOV     APCSR,R3        ;AP CSR
+.IFT
+        TST VPBAD               ;CHECK FOR BAD CTL5 MESSAGE
+        BEQ 1$                  ;OK, CONTINUE
+        STOPS 81.               ;BAD MESSAGE, AP DIDN'T RESPOND
+1$:     TST SUPVR               ;TEST CONTROL FLAG
+        BGT L2830               ;BRANCH IF SUPER-100 RUNNING
+.IFTF
+        CLR R1
+        TST FN(R3)
+        BGE 2$
+        INC R1       ;RETURN A 1 IF THE HIGH BIT OF 'FN' WAS ON
+2$:     MOV R1,@2(R5)
+        RETURN
+.IFT
+;
+;       SUPER-100 IS RUNNING IN FPS-100
+L2830:  CALLS IFRUN             ;CHECK HARDWARE
+        MOV #1,R1
+        SUB RUNFG,R1            ;COMPUTE  1-RUNFG
+        MOV R1,@2(R5)           ;STORE IN FIRST ARG
+        RETURN
+.IFTF
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** WTRUN = WAIT FOR RUN COMPLETE = REL A.00 , AUG 79 *********************
+;
+;;       SUBROUTINE WTRUN(IERR)
+;;
+.IFT
+;   ================= TEST FOR SUPER-100  ============
+.IFTF
+WTRUN:
+        APCON
+        MOV APCSR,R3
+        TST VPBAD               ;CHECK FOR BAD CTL5 MESSAGE
+        BEQ 1$                  ;OK, CONTINUE
+        STOPS 81.               ;BAD MESSAGE, AP DIDNT|'T RESPOND
+.IFT
+1$:     TST SUPVR               ;TEST CONTROL FLAG
+        BGT L2900               ;BRANCH IF SUPER-100 RUNNING
+.IFTF
+        DIR$    #RUNWT          ;WAIT FOR AP TO STOP
+        TST SUPVR
+        BLT L2600              ;TEST FOR MINI-100
+        CLR R1
+	MOV LITES(R3),SAVLIT	;SAVE COPY OF LITES FOR GPIOP DIAGS
+        MOV #1030.,FN(R3)         ;GET AP-STATUS
+        BIT LITES(R3),#240        ;CHECK FOR PARITY OR SRAO ERROR
+        BEQ 2$                  ;IF NO ERRORS
+        MOV #2,R1               ;ASSUME PARITY ERROR
+        BIT LITES(R3),#200        ;CHECK FOR PARITY ERROR
+        BNE 2$                  ;IF PARITY ERROR
+        DEC R1                  ;ELSE SRAO ERROR
+2$:     MOV R1,@2(R5)
+        RETURN
+;       MINI-100 IS RUNNING
+;
+L2600:  MOV LITES(R3),@2(R5)
+        RETURN
+;
+RUNWT:  WTSE$   RUNEVF
+SAVLIT:	.WORD 0
+;
+.IFT
+;       SUPER-100 IS RUNNING IN FPS-100
+L2900:                          ;LOOP UNTIL CODE DONE OR AP HALTS
+        TST RUNFG
+        BLE 3$                  ;CODE DONE OR AP HALTED
+        TST FN(R3)
+        BGE L2900               ;LOOP IF AP STILL RUNNING
+        BIS #NEG1,FPLIT         ;SET TO -1 (AP HALTED)
+        BIS #NEG1,RUNFG         ;SET TO -1 (AP HALTED)
+3$:     MOV FPLIT,@2(R5)       ;LITES VALUE IN FIRST ARG
+        RETURN
+.IFTF
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** RUNDMA = START A DMA TRANSFER = REL A.00 , AUG 79 *********************
+;
+;;       SUBROUTINE RUNDMA(HOST,APMA,N,CTRL)
+RUNDMA:
+        APCON
+        CALL    APWD            ; WAIT FOR DMA TO STOP
+        MOV     APCSR,R4        ;CSR POINTER
+        TST     (R5)+
+        MOV     (R5)+,RDMA+Q.IOPL        ;HOST ADDRESS
+        MOV     @(R5)+,APMA(R4)         ;AP ADDRESS
+        MOV     @(R5)+,R0               ;WORD COUNT
+        MOV     @(R5)+,R1               ;CTRL
+        BIT     R1,#4                   ;FORMAT 3 OR 4 ?
+        BNE     1$                      ;IF NE, YES
+        BIT     R1,#2                   ;FORMAT 1 ?
+        BNE     2$                      ;IF NE, YES
+1$:     ASL     R0                      ;MAKE IT COUNT FOR 16 BIT ELEMENTS
+2$:     MOV     R0,WC(R4)               ;SET THE WORD COUNT
+        ASL     R0                      ;MAKE IT BYTE COUNT FOR QIO$
+        MOV     R0,RDMA+Q.IOPL+2        ;QIO$ BYTE COUNT
+        BIC     #61777,CTRL(R4)         ;CLEAR OLD DMA STUFF
+        BIC     #116001,R1              ;KEEP DMA STUFF, NO GO BIT YET
+        BIS     R1,CTRL(R4)             ;SET UP CONTROL
+        DIR$    #RDMA                   ;LET THE SYSTEM SET THE HOST ADDRESS
+        BCS     ERR
+        RETURN
+;
+RDMA:   QIO$    IO.WLB,LUN,DMAEVF
+ERR:    STOPS   7                     ;UNABLE TO DO DMA
+        RETURN
+;
+;/***** TSTDMA = TEST DMA TRANSFER COMPLETE = REL A.00 , AUG 79 ***************
+;
+;;       SUBROUTINE TSTDMA(I)
+TSTDMA:
+        APCON
+        MOV     APCSR,R0        ;AP CSR
+        MOV #1,R1
+        BIC CTRL(R0),R1  ;DO NOT.CTRL.AND.1
+        MOV R1,@2(R5)
+        RETURN
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** WTDMA = WAIT FOR DMA TRANSFER COMPLETE = REL A.00 , AUG 79 ************
+;
+;;       SUBROUTINE WTDMA(IERR)
+;;
+WTDMA:
+        APCON
+        DIR$    #DMAWT                ;WAIT FOR DMA TO FINISH
+        MOV     APCSR,R3        ;AP CSR
+        MOV CTRL(R3),R0           ;GET CONTROL REG
+        BIC #177377,R0
+        SWAB R0
+        MOV R0,@2(R5)           ;RETURN THE DATA LATE BIT
+        RETURN
+DMAWT:  WTSE$   DMAEVF
+;
+;;       END
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APRSET = RE-SET AP HARDWARE = REL A.00 , AUG 79 ***********************
+;
+;;       SUBROUTINE APRSET
+APRSET:
+        APCON
+        MOV     APCSR,R3        ;AP CSR
+        CLR ABRT(R3)
+        CLR CTRL(R3)
+        MOV #4000,FN(R3)
+.IFT
+        CLR RUNFG
+        CLR SUPVR               ;TURN OFF SUPERVISOR FLAG
+        DIR$ #CANSUP            ;CANCEL SUPERVISOR MODE IN DRIVER
+        CLR LITES(R3)
+        CLR FPLIT
+        CLR FPSWR
+        CLR FPERF
+.IFTF
+        MOV  #DMAEVF,EVFLAG    ;SET DMA EVF
+        DIR$ #SETF
+        MOV  #RUNEVF,EVFLAG    ;SET RUN EVF
+        DIR$ #SETF
+        MOV  #CB5EVF,EVFLAG    ;SET CTL5 EVF
+        DIR$ #SETF
+        RETURN
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APIENA = ENABLE PROGRAMMED AP INTERRUPT = REL A.00 , AUG 79 ************
+;
+;;       SUBROUTINE APIENA
+;
+APIENA:
+        APCON
+.IFT
+        TST    SUPVR         ;SUPER-100 OR MINI-100 RUNNING ?
+        BNE     APIERR          ;IF NE,YES
+.IFTF
+        DIR$    #CLRCL5         ;CLEAR CTL5 EVENT FLAG
+        MOV     APCSR,R3        ;AP CSR
+        BIS     #IHCB5,CTRL(R3) ;ENABLE CTL5
+APIEND: RETURN
+APIERR: STOPS 80.
+        RETURN
+CLRCL5: CLEF$   CB5EVF
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APIDIS = DISABLE PROGRAMMED AP INTERRUPT = REL A.00 , AUG 79 ***********
+;
+;;       SUBROUTINE APIDIS
+;
+APIDIS:
+        APCON
+.IFT
+        TST     SUPVR           ;SUPER-100 OR MINI-100 RUNNING ?
+        BNE     APIER           ;IF NE, YES
+.IFTF
+        MOV     APCSR,R3        ;AP CSR
+        BIC     #IHCB5,CTRL(R3) ;DISABLE CTL5
+APIDNE: RETURN
+APIER:  STOPS 80.
+        RETURN
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APWI = WAIT ON PROGRAMMED AP INTERRUPT = REL A.00 , AUG 79 *************
+;
+;;       SUBROUTINE APWI
+;
+APWI:
+        APCON
+.IFT
+        TST     SUPVR           ;SUPER-100 OR MINI-100 RUNNING ?
+        BNE     APWER           ;IF NE, YES
+.IFTF
+        DIR$    #WTAP                 ;WAIT FOR CTL5 INTERRUPT
+APWEND: RETURN
+APWER:  STOPS 80.
+        RETURN
+WTAP:   WTSE$   CB5EVF
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** TSTINT = TEST AP PROGRAMMED INTERRUPT = REL A.00 , AUG 79 **************
+;
+;;       SUBROUTINE TSTINT(FLAG)
+;
+TSTINT:
+        APCON
+.IFT
+        TST     SUPVR           ;SUPER-100 OR MINI-100 RUNNING ?
+        BNE     TSTER           ;IF NE, YES
+.IFTF
+        DIR$   #RDFLG                ;READ EVF'S
+        MOV     #1,@2(R5)
+        BIT     #200,FLGBUF+2   ;CHECK EVF 24.
+        BNE     TSTEND
+        CLR     @2(R5)
+TSTEND: RETURN
+TSTER:  STOPS 80.
+        RETURN
+;
+RDFLG:  RDAF$   FLGBUF
+;
+FLGBUF: .BLKW   4               ;EVF STORAGE
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APIN = INPUT AN AP-120B INTERFACE REGISTER = REL A.00 , AUG 79 ********
+;
+;;       SUBROUTINE APIN(DATA,NUM)
+;;C
+;;C      PARAMETERS:
+;;C      DATA   - RECEIVES THE CURRENT CONTENTS OF REGISTER 'NUM'
+;;C      NUM    - INTERFACE REGISTER NUMBER FROM WHICH DATA IS READ
+;;C               1. SWR    SWITCH REGISTER
+;;C               2. FN     FUNCTION REGISTER
+;;C               3. LITES  LITES REGISTER
+;;C               4. APMA   AP DMA MEMORY ADDRESS REGISTER
+;;C               5. HMA    HOST DMA MEMORY ADDRESS REGISTER
+;;C               6. WC     DMA WORD COUNT REGISTER
+;;C               7. CTRL   DMA CONTROL REGISTER
+;;C               8. FMTH   FORMAT HIGH REGISTER
+;;C               9. FMTL   FORMAT LOW REGISTER
+;;C              10. RESET  DO AN EXTERNAL RESET  (NO-OP FOR APIN)
+;;C              11. IFSTAT INTERFACE STATUS REGISTER (APIN READS, APOUT NO-OP)
+;;C              12. MASK   PAGE SELECT MASK REGISTER
+;;C              13. APMAE  MA EXTENSION
+;;C              14. MAE    APMA EXTENSION
+;;C		 15. SAVED LITES "REGISTER" FOR GPIOP DIAGS
+;;
+APIN:
+        APCON
+        MOV     APCSR,R3        ;AP CSR
+        MOV @4(R5),R1           ;GET REGISTER NUMBER
+.IFT
+;   ================= TEST FOR SUPER-100  ============
+        TST SUPVR
+        BLE 1$                  ;BRANCH IF NOT SUPER-100
+        MOV R1,R2
+        CMP R2,#4               ;TEST NUM-4
+        BGE 1$                  ;NUM IS 4 OR MORE
+        SUB #2.,R2
+        BEQ L3200               ;FUNCTION REG
+        BLT L3100               ;SWITCH REG
+        BGT L3300               ;LITES REG
+.IFTF
+1$:     MOV R1,R2               ;CHECK FOR EXTENDED MEMORY REGISTER READ
+        SUB #11.,R2             ;LOOK FOR 12,13 OR 14
+        BLE APIN1               ;IF LESS THAN 12
+        SUB #4,R2
+        BLT IMASK               ;IF EXTENDED MEMORY REGISTER READ
+;
+APIN1:  ASL R1                  ;CONVERT TO BYTES
+;                                FETCH VALUE & STORE IN FIRST ARG
+        ADD     TABLE(R1),R3            ;ADD REG OFFSET
+        MOV (R3),@2(R5)              ;GET FROM APPROPRIATE DEVICE ADDRESS
+        RETURN
+;
+;       READ MASK OR APMAE OR MAE
+;
+;       THE EXTENDED MEMORY REGISTERS(12,13 AND 14 - SEE ABOVE) CAN NOT BE
+;       READ OR WRITTEN INDIVIDUALLY. A READ OF THE RESET REGISTER WILL
+;       RENDER THE MAE(BITS 0-3),APMAE(BITS 4-7) AND THE MASK(BITS 8-13).
+;       A WRITE OF THE LITES REGISTER WILL SET THE MAE,APMAE AND THE MASK.
+;       THE WRITE FORMAT IS THE SAME AS THAT OF THE READ.
+;
+;       UPON ENTRY OR EXIT THE VALUE OF MASK OR APMAE OR MAE ARE RIGHT
+;       JUSTIFIED, ZERO FILLED.
+;
+IMASK:  MOV ABRT(R3),R2           ;READ MASK,APMAE,MAE
+        CMP #12.,R1             ;CHECK FOR MASK
+        BNE IAPMAE              ;IF NOT MASK
+        SWAB R2                 ;RIGHT JUSTIFY MASK
+        BIC #177700,R2          ;CLEAR ALL BUT MASK
+        MOV R2,@2(R5)           ;RETURN VALUE
+        RETURN
+;
+IAPMAE: CMP #13.,R1             ;CHECK FOR APMAE
+        BNE IMAE                ;IF MAE
+        ASR R2                  ;RIGHT JUSTIFY APMAE
+        ASR R2
+        ASR R2
+        ASR R2
+IMAE:	CMP #15.,R1
+	BEQ XXX
+        BIC #177760,R2          ;CLEAR ALL BUT MAE OR APMAE
+        MOV R2,@2(R5)           ;RETURN REGISTER VALUE
+        RETURN
+XXX:	MOV SAVLIT,@2(R5)
+	RETURN
+;
+.IFT
+;       SUPER-100 IS RUNNING
+;
+L3100:  MOV FPSWR,@2(R5)       ;READ SWR VALUE INTO FIRST ARG
+        RETURN
+L3200:  MOV FPFNR,@2(R5)        ;FUNCTION VALUE
+        RETURN
+L3300:  MOV FPLIT,@2(R5)       ;LITES VALUE TO FIRST ARG
+        RETURN
+.IFTF
+;
+;
+;
+;
+TABLE:  0
+        FPS+110        ;SWR
+        FPS+112        ;FN
+        FPS+114        ;LITES
+        FPS+106        ;APMA
+        FPS+102        ;HMA
+        FPS+100        ;WC
+        FPS+104        ;CTRL
+        FPS+0          ;FMTH
+        FPS+2          ;FMTL
+        FPS+116        ;RESET
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** APOUT = WRITE TO AN INTERFACE REGISTER = REL A.00 , AUG 79 ************
+;
+;;       SUBROUTINE APOUT(DATA,NUM)
+;;
+APOUT:
+        APCON
+        MOV     APCSR,R4        ;AP CSR
+        MOV @4(R5),R1
+.IFT
+;   ================= TEST FOR SUPER-100  ============
+        TST SUPVR
+        BLE 1$                  ;BRANCH IF NOT SUPER-100
+        MOV R1,R2
+        CMP R2,#4               ;TEST NUM-4
+        BGE 1$                  ;NUM IS 4 OR MORE
+        SUB #2.,R2              ;TEST FOR FN REG
+        BEQ L4200               ;WRITE FUNCTION REG
+        BLT L4100               ;WRITE SWITCH REG
+        BGT L4300               ;WRITE LITES REG
+.IFTF
+1$:     MOV R1,R2               ;CHECK FOR EXTENDED MEMORY REGISTER WRITE
+        SUB #11.,R2             ;LOOK FOR 12,13 OR 14
+        BLE APOUT1              ;IF LESS THAN 12
+        SUB #4,R2
+        BLT OMASK               ;IF EXTENDED MEMORY REGISTER WRITE
+;
+APOUT1: ASL R1                  ;CONVERT TO BYTES
+	ADD	TABLE(R1),R4	;ADD REG DISPLACEMENT
+        MOV @2(R5),(R4)          ;STORE INTO APPROPRIATE REGISTER
+        RETURN
+;
+;       WRITE MASK OR APMAE OR MAE
+;
+;       SEE COMMENTS IN APIN FOR EXTENDED MEMORY REGISTERS(MASK,APMAE,MAE)
+;
+OMASK:  MOV ABRT(R4),R3           ;READ MASK,APMAE,MAE
+        MOV @2(R5),R2           ;FETCH REGISTER VALUE
+        CMP #12.,R1             ;CHECK FOR MASK
+        BNE OAPMAE              ;IF NOT MASK
+        BIC #37400,R3           ;CLEAR MASK, KEEP APMAE AND MAE
+        SWAB R2                 ;POSITION MASK TO BITS 8-13
+        BIS R2,R3               ;ADD NEW MASK TO OLD APMAE AND OLD MAE
+        MOV R3,LITES(R4)          ;WRITE TO AP
+        RETURN
+;
+OAPMAE: CMP #13.,R1             ;CHECK FOR APMAE
+        BNE OMAE                ;IF MAE
+        BIC #360,R3             ;CLEAR APMAE, KEEP MASK AND MAE
+        ASL R2                  ;POSITION APMAE TO BITS 4-7
+        ASL R2
+        ASL R2
+        ASL R2
+        BIS R2,R3               ;ADD NEW APMAE TO OLD MASK AND OLD MAE
+        MOV R3,LITES(R4)          ;WRITE TO AP
+        RETURN
+;
+OMAE:   BIC #17,R3              ;CLEAR MAE KEEP APMAE AND MASK
+        BIS R2,R3               ;ADD NEW MAE TO OLD APMAE AND OLD MASK
+        MOV R3,LITES(R4)          ;WRITE TO AP
+        RETURN
+;
+.IFT
+;       SUPER-100 IS RUNNING IN FPS-100
+;
+;       WRITE SWITCH REG
+L4100:  MOV @2(R5),FPSWR       ;STORE DATA
+        RETURN
+;       WRITE FUNCTION REG
+L4200:  MOV @2(R5),FPFNR       ;STORE DATA VALUE
+        CALL APWR
+        MOV #OPTFNR,FPOPT       ;OPTION FOR APEX
+        CLR FPSCT               ;ZERO S-PAD COUNT
+        CLR R0
+        CALLS SENDER            ;SEND MESSAGE TO FPS-100
+        CALL APWR
+        TST FPERF               ;ERROR FLAG FOR UNIMPLEMENTED FUNC
+        BEQ 7$
+        STOPS 69.               ;ERROR.  CALL APSTOP
+7$:     RETURN
+;       CANNOT WRITE LITES REG
+L4300:  RETURN
+;
+;;       END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** HPUT = SEND A DATUM TO FPS-100  = REL A.00 , AUG 79 *******************
+;
+;;      SUBROUTINE HPUT (DEST,DATUM)
+;
+HPUT:
+        APCON
+        TST SUPVR
+;   ============ TEST FOR SUPER-100 OR MINI-100  ============
+        BNE 3$
+        STOPS 74.               ;ERROR EXIT
+3$:     TST (R5)+               ;SKIP PARAMETER COUNT
+        MOV @(R5)+,R0           ;DEST VALUE
+        BLE L5210               ;DEST VALUE OUT OF RANGE?
+        CMP R0,#10              ;COMPUTE DEST-8
+        BGE L5210               ;DEST VALUE OUT OF RANGE?
+        MOV @(R5)+,R1           ;DATUM VALUE
+;            SHIFT LEFT 3 PLACES & TEST IF EXCEEDS 13 BITS
+        ASL R1
+        BCS L5220
+        ASL R1
+        BCS L5220
+        ASL R1
+        BCS L5220
+        BIS R1,R0               ;COMBINE DATUM & DEST
+        MOV R0,FPSWR            ;FOR HOST TO REMEMBER LAST SWR VALUE
+        CLR FPOPT
+        CALLS SENDER            ;SEND MESSAGE TO FPS-100
+        RETURN
+;
+L5210:  STOPS 65.               ;DEST VALUE OUT OF RANGE
+        RETURN
+L5220:  STOPS 66.               ;DATUM EXCEEDS 13 BITS
+        RETURN
+;
+;;      END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** HGET = GET A DATUM FROM FPS-100  = REL A.00 , AUG 79 ******************
+;
+;;      SUBROUTINE HGET (SORS,FLAG,DATUM)
+;
+HGET:                           ;LOOP UNTIL DATUM IS AVAILABLE
+        APCON
+        CALLS HTST
+        TST @4(R5)              ;TEST FLAG
+        BMI HGET                ;TRY AGAIN
+        RETURN
+;
+;;      END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;/***** HTST = TEST IF DATUM IS AVAILABLE  = REL A.00 , AUG 79 ****************
+;
+;;      SUBROUTINE HTST (SORS,FLAG,DATUM)
+;
+HTST:
+        APCON
+        TST SUPVR
+;   ============ TEST FOR SUPER-100 OR MINI-100  ============
+        BNE 3$
+        STOPS 74.               ;ERROR EXIT
+;
+3$:     CALLS IFRUN             ;CHECK HARDWARE
+        BIS #NEG1,@4(R5)        ;SET FLAG = -1
+        TST FPDAT               ;IS FPDAT(0) = 0?
+        BEQ 4$
+        STOPS 67.               ;ERROR EXIT
+;
+4$:     MOV @2(R5),R0           ;SORS VALUE
+        BMI L5710               ;SORS VALUE OUT OF RANGE?
+        CMP R0,#10              ;COMPUTE SORS-8
+        BGE L5710               ;SORS VALUE OUT OF RANGE?
+        TST R0
+        BNE L5630               ;LOOK FOR A CERTAIN DATUM
+;            LOOK FOR LOWEST NUMBERED DATUM
+        MOV #2,R0               ;SORS = 1 (2 BYTE INCREMENTS)
+L5610:  TST FPDAT(R0)
+        BNE L5640               ;FOUND A DATUM?
+        TST (R0)+               ;INCREMENT INDEX
+        CMP R0,#20              ;TEST LOOP COUNTER
+        BNE L5610
+;                     DATUM NOT FOUND
+L5620:  MOV #NEG1,@4(R5)        ;SET FLAG = -1
+        TST RUNFG               ;FPS-100 HALTED?
+        BPL 6$
+        MOV #1,@4(R5)           ;INDICATE HALT
+6$:     RETURN
+;
+L5630:  ASL R0                  ;FOR BYTE INDEX
+        TST FPDAT(R0)
+        BEQ L5620               ;DATUM AVAILABLE?
+;                  FOUND A DATUM
+L5640:                          ;DISABLE IRPS TO CHANGE FPDAT
+        CLR @4(R5)              ;SET FLAG = 0
+        TST RUNFG               ;FPS-100 HALTED?
+        BPL 5$
+        MOV #2,@4(R5)           ;INDICATE HALT
+5$:
+        DSAR$S                  ;DISABLE INTERRUPTS
+        MOV FPDAT(R0),R1        ;;; GET DATUM
+        CLR FPDAT(R0)           ;;; ERASE
+        ENAR$S                  ;ENABLE INTERRUPTS
+        ASR R0                  ;FORM WORD INDEX
+        MOV R0,@2(R5)           ;STORE IN FIRST ARG
+        ASR R1                  ;SHIFT RIGHT 3
+        ASR R1
+        ASR R1
+        BIC #160000,R1          ;LEAVE 13 BITS
+        MOV R1,@6(R5)           ;STORE DATUM
+        RETURN
+;
+L5710:  STOPS 68.               ;SORS VALUE OUT OF RANGE
+        RETURN
+;
+;;      END
+;
+;
+; -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=- -=-
+;;C
+;;      ROUTINES FOR  DEBUG  ONLY
+;;
+;;        NOTE:  DO NOT READ HARDWARE LITES & SWR.
+;;                IT MESSES UP COMMUNICATION PROTOCOL
+;;
+;;      SUBROUTINE LOOKY (SWR,RUNFG,FN,CTRL,LITES)
+;;        PROVIDES VALUES OF CERTAIN VARIABLES & REGISTERS
+LOOKY:
+        APCON
+        CALLS IFRUN             ;CHECK HARDWARE
+        MOV     APCSR,R3        ;AP CSR
+        MOV  FPSWR,@2(R5)       ;  SWR  REG VALUE
+        MOV  RUNFG,@4(R5)       ;RUNFG FLAG VALUE
+        MOV  FN(R3),@6(R5)        ;FUNCTION REG
+        MOV  CTRL(R3),@10(R5)     ;CONTROL REG
+        MOV  FPLIT,@12(R5)      ;LITES REG  LAST VALUE
+        RETURN
+;;
+;;        SUBROUTINE VIRP (PC,SUM,HALT,DMA,CB5)
+;;          READ INTERRUPT VALUES
+VIRP:
+        APCON
+        MOV SUPVR,@2(R5)
+        RETURN
+;;C
+;;C
+.ENDC
+        .END

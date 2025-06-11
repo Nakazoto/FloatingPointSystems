@@ -1,0 +1,12 @@
+FPS-100 Pin Connections
+
+EC1 - VCC
+EC2 - GND
+EC3 - E6.1, E6.3
+EC4 - D6.13?, C6.4?
+EC5 - B1.1
+EC6 - H2.2, F1.2, E1.3
+EC7 - C1.2, A1 Cap
+EC8 - C1.4, A1 Cap
+EC9 - C1.14
+EC10 - C1.12

@@ -1,0 +1,3938 @@
+$LIB
+"****** IPRSRC = IMAGE PROCESSING LIBRARY /FAST/ = REL 1.2, DEC 80 *****
+"
+"     ---HISTORY---
+"REV 1.2:  DEC 80
+"       1. FIXED BUG IN MOVREP.  (SECO 80-0219, TAR 2443, GE0021)
+"
+"REV 1.1:  JAN 80
+"       1. FIXES BUGS IN THE FOLLOWING ROUTINES:
+"              MED2D
+"              CONV2D
+"       2. $RADIX 8 STATEMENT ADDED TO ALL ROUTINES SO ROUTINES WILL ASSEMBLE
+"          CORRECTLY EVEN WHEN ASSEMBLER DEFAULT IS BASE 10 OR 16.
+"
+"ORIGINAL:  APR 79
+"              CONSISTS OF THE FOLLOWING ROUTINES:
+"                    GRAD2D   2-D GRADIENT FILTER
+"                    GRD2DB   2-D GRADIENT FILTER WITH BDRY TEST
+"                    LAPL2D   2-D LAPLACIAN FILTER
+"                    LPL2DB   2-D LAPLACIAN FILTER WITH BDRY TEST
+"                    MED2D    2-D MEDIAN FILTER
+"                    CONV2D   2-D CONVOLUTION (OR CORRELATION)
+"                    MOVREP   SUB-IMAGE MOVE OR INTENSITY REPLACE
+"                    RFFT2D   REAL TWO DIMENSIONAL FFT
+"                    CFFT2D   COMPLEX 2D FFT
+"                    ERFFT2   EXTENDED MEMORY REAL 2D FFT
+"                    ECFFT2   EXTENDED MEMORY COMPLEX 2D FFT
+"             AND UTILITY ROUTINES
+"                    ECVMOV   EXTENDED COMPLEX VECTOR MOVE
+"                    UNESPF   UNNORM EXTENDED S-PAD FLOAT
+"                    ESPFLT   EXTENDED S-PAD FLOAT
+"                    USPFLT   UNSIGNED S-PAD FLOAT
+"
+"----------------------------------------------------------------------
+"****** GRAD2D = 2-D GRADIENT FILTER /COMMON/ = REL 1.0, APR 79 *****
+        $TITLE GRAD2D
+        $RADIX 8
+        $ENTRY GRAD2D,12
+        $EXT SPMUL
+"
+"
+"                 2- DIMENSIONAL IMAGE GRADIENT
+"
+"                         ---ABSTRACT---
+"
+"                 GIVEN A 2- DIMENSIONAL ARRAY OF DATA STORED IN MATRIX A
+"                 WITH
+"                    A=BASE ADDRESS OF MATRIX A
+"                   MA=NUMBER OF ROWS OF A
+"                   NA=NUMBER OF COLUMNS OF A
+"                   IA=INITIAL ROW OF THE SUBMATRIX A' OF A TO BE PROCESSED,
+"                          0<=IA<=MA-1
+"                   JA=INITIAL COLUMN OF THE SUBMATRIX A' TO BE PROCESSED,
+"                          0<=JA<=NA-1
+"                    M=NUMBER OF ROWS IN A',    2<=M<=MA
+"                    N=NUMBER OF COLUMNS IN A',    1<=N<=NA
+"
+"
+"                 THE ELEMENTS OF THE PROCESSED A' ARE PLACED IN C' OF DIMENSION
+"                  MXN, LOCATED AT ROW IC, COLUMN JC, WITHIN THE DESTINATION
+"                 MATRIX C WHOSE BASE ADDRESS IS C.
+"
+"                 THE VALUE OF ELEMENT C'(P,Q) IS GIVEN BY
+"
+"                   C'(P,Q)=MAX{ MAG(A(P-1,Q-1)+A(P-1,Q)+A(P-1,Q+1)-A(P+1,Q-1)
+"                                -A(P+1,Q)-A(P+1,Q+1)), MAG(A(P-1,Q-1)+A(P,Q-1)
+"                                +A(P+1,Q-1)-A(P-1,Q+1)-A(P,Q+1)-A(P+1,Q+1))}
+"
+"                 THAT IS, THE GRADIENT AT THE ELEMENT (P,Q) IS THE MAXIMUM
+"                 OF THE HORIZONTAL AND VERTICAL GRADIENT MAGNITUDES, WHICH
+"                 ARE SOMEWHAT SMOOTHED BY USING THREE POINTS INSTEAD OF ONE
+"                 ON THE BORDERS OF (P,Q).  NO SPATIAL DIFFERENCE IS USED
+"                 FOR SCALING THE RESULT.
+"
+"                 IF A' LIES ON A BOUNDARY OF A, THAT FACT IS IGNORED AND
+"                 WRAP-AROUND EFFECTS MAY BE SEEN ON THE PERIMETER OF C'.
+"                 THAT IS, COLUMN BOTTOMS APPEAR AS VALUES ABOVE THE NEXT
+"                 COLUMN'S TOPS.
+"
+"
+"
+"        FORTRAN CALL:
+"           CALL GRAD2D(A,MA,NA,IA,JA,C,MC,IC,JC,M,N)
+"
+"                       ---STATISTICS---
+"        EQUIPMENT: STANDARD OR FAST MEMORY
+"        LANGUAGE: APAL
+"        AUTHOR: R. L. KIRLIN  AND  CHRISTOPHER C. HSIUNG
+"        DATE : JANUARY,1979
+"        SIZE: 58 + SPMUL (14) = 72 LOCATIONS
+"        SPEED: APPROXIMATELY 1.67*M*N USEC. THERE IS AN ADDITIONAL
+"               5.17*M USEC TIME FOR THE OUTER LOOP, ROW. ON TOP OF
+"               THESE, A SET UP TIME OF 7.67 IS REQUIRED.
+"
+"        SCRATCH: SPAD=(0-14,16-17)
+"                 DPX =(-4,-3,-2,-1,0,1)
+"                 DPY =(-4,-3,-2,-1,1,2,3)
+"
+"                       ---USAGE---
+"
+"
+"
+"
+"
+"
+"       /* SPAD NAMES */
+"
+        A   $EQU 0
+        MA  $EQU 1
+        IA  $EQU 2
+        JA  $EQU 3
+        C   $EQU 4
+        MC  $EQU 5
+        IC  $EQU 6
+        JC  $EQU 7
+        M   $EQU 10
+        N   $EQU 11
+        K   $EQU 12
+        APT $EQU 13
+        CPT $EQU 14
+"
+"       DPX AND DPY NEUMONICS
+"
+"       LHD --- THE SUM OF THE THREE ELEMENTS ON THE LEFT.
+"       MID --- THE SUM OF THE THREE ELEMENTS IN THE MIDDLE.
+"       RHD --- THE SUM OF THE THREE ELEMENTS ON THE RIGHT.
+"       TOP --- THE SUM OF THE THREE ELEMENTS ON THE TOP.
+"       BTM --- THE SUM OF THE THREE ELEMENTS AT THE BOTTOM.
+"       LT  --- THE TOP LEFT ELEMENT OF THE CURRENT NODE.
+"       LM  --- THE MIDDLE LEFT ELEMENT OF THE CURRENT NODE.
+"       LB  --- THE BOTTOM LEFT ELEMENT OF THE CURRENT MODE.
+"       CT  --- THE CENTER TOP ELEMENT OF THE CURRENT NODE.
+"       CM  --- THE CURRENT NODE.
+"       CB  --- THE CENTER BOTTOM ELEMENT OF THE CURRENT NODE.
+"       RT  --- THE TOP RIGHT ELEMENT OF THE CURRENT NODE.
+"       RM  --- THE MIDDLE RIGHT ELEMENT OF THE CURRENT NODE.
+"       RB  --- THE BOTTOM RIGHT ELEMENT OF THE CURRENT NODE.
+"
+"       /* DPX NAMES */
+"
+        LT   $EQU -4
+        RT   $EQU -3
+        CT   $EQU -2
+        RB   $EQU -1
+        CB   $EQU  1
+"
+"       /* DPY NAMES */
+"
+        LHD  $EQU -4
+        PAD  $EQU -3
+        SAVE $EQU -2
+        RM   $EQU -1
+        RHD  $EQU  1
+        MID  $EQU  2
+        LB   $EQU  3
+"
+"
+"
+GRAD2D: LDTMA; DB=!ONE;                                         "FETCH ONE
+         MOV A,16                                               "SAVE A
+        MOV MA,17                                               "SAVE MA
+        MOV JA,0                                                "FORM MA*JA
+        JSR SPMUL                       "PERFORM SP(0)=SP(1)*SP(0)
+        ADD 16,0
+        ADD IA,0
+        MOV 0,16                                                "SAVE A'
+        MOV JC,0
+        MOV MC,1
+        JSR SPMUL                       "TO FIND ADDRESS OF C'
+        ADD C,0
+        ADD IC,0
+        SUB MC,0
+        MOV 0,C                                                 "POINTER TO
+                                        "ROWS OF C'. IT POINTS TO ONE COLUMN BAC
+        MOV 16,A
+        MOV 17,MA
+        DEC A
+        SUB MA,A                                                "POINTER TO ROWS
+                                        "OF A'. IT POINTS TO ONE ROW AND ONE COL
+"
+        ROW:    MOV A,APT; SETMA                                "FETCH LT(J,1)
+                MOV N,K
+                INCMA                                           "FETCH LM(J,1)
+                DPX(LT)<MD
+                INCMA                                           "FETCH LB(J,1)
+                FADD DPX(LT),MD                                 "TO FORM LHD
+                ADD MA,APT; SETMA;                              "FETCH CT(J,1)
+                 FADD DPX(LT),ZERO
+                DPY(LB)<MD
+                INCMA;                                          "FETCH CM(J,1)
+                 FADD DPY(LB),FA                                "FORM LHD
+                DPX(CT)<MD
+                INCMA;                                          "FETCH CB(J,1)
+                 FADD DPX(CT),FA                                "FORM TOP
+                DPY(LHD)<FA;
+                 FADD DPX(CT),MD                                "FORM MID
+                ADD MA,APT; SETMA;                              "FETCH RT(J,1)
+                 FSUBR DPY(LB),FA                               "FORM TOP-BTM
+                DPX(CB)<MD
+                INCMA;                                          "FETCH RM(J,1)
+                 FADD DPX(CB),FA                                "FORM MID
+                DPX(RT)<MD;
+                 FSUBR DPX(CB),FA                               "FORM TOP-BTM
+                INCMA;                                          "FETCH RB(J,1)
+                 DPY(MID)<FA;                                   "MID
+                 FADD ZERO,DPX(RT)                              "FORM RHD
+                FADD DPX(RT),FA;                                "FORM TOP-BTM
+                 DPY(RM)<MD
+                ADD MA,APT; SETMA;                              "FETCH RT(J,2)
+                    FADD DPY(RM),FA                             "FORM RHD
+                MOV C,CPT
+                    DPX(RB)<MD
+                INCMA;                                          "FETCH RM(J,2)
+                    FSUBR DPX(RB),FA                            "FORM TOP-BTM
+                DPX(0)<MD;                                     "RT(J,2)
+                    FADD DPX(RB),FA                             "FORM RHD
+                INCMA;                                          "FETCH RB(J,2)
+                    FABS FA;                                    "|TOP-BTM|
+                    DPY(PAD)<FA
+                DPY(RM)<MD;                                     "OF (J,2)
+                 INC A
+                COLN:   NOP;
+                            FMUL TM,DPX(RB);                    "SAVE RB(J,K)
+                                FSUB DPY(LHD),FA;               "FORM LHD-RHD
+                                DPY(RHD)<FA
+                        NOP;
+                            DPX(RB)<MD;                         "OF (J,K+1)
+                            FMUL;
+                                FSUB DPY(PAD),DPX(LT);          "FOR USE OF
+                                                                "(J,K+1) NODE
+                                DPY(SAVE)<FA                    "|TOP-BTM|
+                        ADD MA,APT; SETMA;                      "FETCH RT(J,K+2)
+                            DPX(LT)<DPX(CT);
+                            FMUL TM,DPY(MID);                   "SAVE MID
+                                FABS FA                         "|LHD-RHD|
+                        NOP;
+                            DPY(LB)<DPX(CB);
+                            DPX(CB)<FM; FMUL;                   "RB>CB
+                                FADD DPY(LB),FA                 "FOR USE OF
+                                                                "(J,K+1) NODE
+                        INCMA;                                  "FETCH RM(J,K+2)
+                            DPX(CT)<DPX(RT);
+                            FMUL;
+                                FSUB DPY(SAVE),FA;              "COMPARE
+                                DPY(PAD)<FA                     "|LHD-RHD|
+                        NOP;
+                            FADD DPX(0),FA;                    "FORM TOP-BTM
+                            DPX(RT)<DPX(0)
+                        INCMA;                                  "FETCH RB(J,K+2)
+                         DPX(0)<MD;
+                            DPY(LHD)<FM;                        "MID>LHD
+                            FADD DPX(RT),DPY(RM)                "FORM RHD
+                        DPY(RM)<MD;                             "OF (J,K+2)
+                            FSUBR DPX(RB),FA;                   "FORM TOP-BTM
+                                BFGE .+2
+                        NOP; NOP; DPY(SAVE)<DPY(PAD)            "|LHD-RHD| IS
+                                                                "LARGER
+                        NOP;
+                            DPY(MID)<DPY(RHD);
+                            FADD DPX(RB),FA;                    "FORM RHD
+                                DEC K
+                        NOP;
+                            FABS FA; DPY(PAD)<FA;               "NEW TOP-BTM
+                                ADD MC,CPT; SETMA; MI<DPY(SAVE); "STORE C(J,K)
+                                BGT COLN
+                DEC M
+                BEQ .+2; INC C
+                JMP ROW
+        RETURN
+        $END
+"****** GRD2DB = 2-D GRADIENT FILTER WITH BDRY TEST /FAST/ = REL 1.0, APR 79 ***
+ $TITLE GRD2DB
+        $RADIX 8
+ $ENTRY GRD2DB,15
+ $EXT SPMUL
+" -------------------------------------------------------------
+                 "2- DIMENSIONAL IMAGE GRADIENT
+                 "        ---ABSTRACT---
+                 "
+                 "GIVEN A 2- DIMENSIONAL ARRAY OF DATA STORED IN MATRIX A
+                 "WITH
+                 "   A=BASE ADDRESS OF MATRIX A
+                 "  MA=NUMBER OF ROWS OF A
+                 "  NA=NUMBER OF COLUMNS OF A
+                 "  IA=INITIAL ROW OF THE SUBMATRIX A' OF A TO BE PROCESSED,
+                 "         0<=IA<=MA-1
+                 "  IJ=INITIAL COLUMN OF THE SUBMATRIX A' TO BE PROCESSED,
+                 "         0<=IJ<=NA-1
+                 "   M=NUMBER OF ROWS IN A',WHERE 1<=M<=MA
+                 "   N=NUMBER OF COLUMNS IN A',WHERE 1<=N<=NA
+                 "
+                 "
+                 "THE ELEMENTS OF THE PROCESSED A' ARE PLACED IN C' OF
+                 "DIMENSIONS MXN, LOCATED AT ROW IC, COLUMN JC, WITHIN THE
+                 "DESTINATION MATRIX C WHOSE BASE ADDRESS IS C.
+                 "
+                 "THE VALUE OF ELEMENT C'(P,Q) IS GIVEN BY
+   "   C'(P,Q)=MAX{ MAG(A'(P-1,Q-1)+A'(P-1,Q)+A'(P-1,Q+1)-A'(P+1,Q-1)
+   "                -A'(P+1,Q)-A'(P+1,Q+1)), MAG(A'(P-1,Q-1)+A'(P,Q-1)
+   "                 +A'(P+1,Q-1)-A'(P-1,Q+1)-A'(P,Q+1)-A'(P+1,Q+1))}
+                 "THAT IS, THE GRADIENT AT THE ELEMENT (P,Q) IS THE MAXIMUM
+                 " OF THE HORIZONTAL AND VERTICAL GRADIENT MAGNITUDES, WHICH
+                 "ARE SOMEWHAT SMOOTHED BY USING THREE POINTS INSTEAD OF ONE
+                 "ON THE BORDERS OF (P,Q).  NO SPATIAL DIFFERENCE IS USED
+                 "FOR SCALING THE RESULT.
+                 "
+                 "IF A' LIES ON A BOUNDARY OF A, THAT FACT IS ACKNOWLEDGED AND
+                 "ZEROS ARE SUBSTITUTED FOR VALUES OF ELEMENTS CALLED FOR
+                 "IN THE CALCULATION WHICH ARE EXTERIOR TO A.
+                 "THIS IS ACCOMPLISHED BY A TREE OF TESTS WHICH
+                 "WILL DETECT UP TO 2 ADJAC. BOUNDARY OVERLAPS OF A' WITH A
+                 "SUCH AS TOP AND RIGHT OR BOTTOM AND LEFT.
+                 "HOWEVER, SINCE EACH A' POINT TO BE FILTERED IS TESTED
+                 "INDIVIDUALLY, MATRICES A OF DIMENSIONS GREATER THAN
+                 "3*3 WILL HAVE A' PROCESSED CORRECTLY,AS
+                 "NO MORE THAN 2 BOUNDARIES OF A CAN BE OVERLAPPED BY
+                 "POINTS A'(P,Q)+-1.
+                 "OVERSIZED INPUT IMAGES WILL ALLOW FOR THIS CASE.
+                 "
+                 "B IS A CALLING PARAMETER WHICH =0 IF NO
+                 "BOUNDARY TESTING IS DESIRED, .N..EQ. 0  OTHER-
+                 "WISE. BOUNDARY TESTING INCREASES PROCESSING
+                 "TIME BY ABOUT 50%,BUT IF B=0 AND C IS STORED ADJACENT
+                 "TO A, THE LAST COLUMN  OF A WILL BE INCOR-
+                 "RECTLY PROCESSED;C VALUES WILL BE TAKEN IN
+                 "AS PART OF A.!!!!!
+" -------------------------------------------------------------
+         "
+         "
+         "FORTRAN CALL:
+         "   CALL GRD2DB(A,MA,NA,IA,JA,C,MC,NC,IC,JC,M,N,B)
+         "
+         "               ---STATISTICS---
+         "EQUIPMENT: FAST MEMORY
+         "LANGUAGE: APAL
+         "AUTHOR: R. L. KIRLIN
+         "DATE : OCTOBER,1978
+         "SIZE: 339 + SPMUL (14) =353 LOCATIONS
+         "SPEED: APPROXIMATE U-SEC
+         "         W/O BOUND TEST            W/ BOUND TEST
+         "        -----------------         --------------------
+         "                              BOUND DETECTED      BOUND NOT DET.
+         "                              ---------------   -------------------
+         " SETUP          8.00          10.17 (TYP)       11.17
+         " COL TOPS       5.33*N        6.50*N             5.33*N
+         " OTHER PTS      3.17*(M-1)*N  4.33*(M-1)*N       3.17*(M-1)*N
+         " COL JUMPS      0.67*(N-1)    1.17*(N-1)         0.67*(N-1)
+         "SCRATCH: ALL SPADS,ALL DPADS
+"
+" --------------------------------------------------------------------
+         "               ---USAGE---
+         "
+         "
+A        $EQU 0                        "SP0 BECOMES A'(P,Q), INCREMENTED
+MA       $EQU 1                        "SP1 BECOMES DECREMENTED ROW COUNTER M(I)
+NA       $EQU 2                        "SP2 REMAIMS NA, # A COLUMNS
+IA       $EQU 3                        "SP3 BECOMES IA+M FOR TOP TEST
+JA       $EQU 4                        "SP4 BECOMES JA+N FOR LH TEST
+C        $EQU 5                        "SP5 BECOMES N, # COLUMNS TO BE PROCESSED
+MC       $EQU 6                        "SP6 REMAINS # C ROWS
+NC       $EQU 7                        "SP7 REMAINS # C COLUMNS
+IC       $EQU 10                       "SP10 BECOMES IA-MA+M+1 FOR BOTTOM TEST
+JC       $EQU 11                       "SP11 BECOMES JA-NN+N+1 FOR RH TEST
+M        $EQU 12                       "SP12 REMAINS # ROWS TO BE PROCESSED
+N        $EQU 13                       "SP13 BECOMES DECREMENTED COLUMN COUNTER
+MCM      $EQU 14                       "SP14 BECOMES MC-M RFOR NEW COLUMN JUMP
+TMPMA    $EQU 15                       "SP15 IS TEMPORARY MA, # A ROWS
+ATOP     $EQU 16                       "SP16 IS TOP-OF-COLUMN,A',INCREMENTED
+                                       "EACH COLUMN
+CADDR    $EQU 17                       "SP17 IS INCREMENTED C' ADDRESS
+                                       "
+                                       "
+GRD2DB:  MOV MCM,MCM                    "TEST INPUT PARAM. B FOR BOUNDARY
+                                      "TESTING
+         BNE BOUND                     "JUMP TO 'NO' IF TESTS NOT WANTED
+         JMP NO                        "OR IF NO BOUNDARIES DETECTED.
+"
+"        -----------------------------------------------------------
+"             ***DETERMINE IF SUBMATRIX A' IS WHOLLY WITHIN***
+         "       A, HAVING NO COINCIDENT BOUNDARIES. IF TRUE,
+         "       BYPASS BOUNDARY TESTING & PROCEED TO NORMAL FILTERING
+         "       ROUTINE, 'NO'.
+"        -------------------------------------------------------------
+         "
+BOUND:   MOV IA,IA
+         BGT LT                        "IF IA=0,THEN TOP,SO JUMP TO YES
+         JMP YES
+LT:      MOV JA,JA
+         BGT RT                        "IF JA=0,THEN LEFT, SO GO YES
+         JMP YES
+RT:      ADD IA,N
+         SUB# NA,N                     "IF IA+N=NA,THEN RIGHT, SO JUMP YES
+         BNE BT; SUB IA,N
+         JMP YES
+BT:      ADD JA,M
+         SUB# MA,M                     "IF JA+M=MA,THEN BOTTOM,SO GO YES
+         BEQ YES; SUB JA,M
+         JMP NO
+                                       "
+                                       "STORE A AND MA IN 14 AND 15 (OCT)
+"
+"           ------------------------------------------------------
+"           ------------------------------------------------------
+"              YES, BOUNDARIES OF A & A' COINCIDE, PROCESS ACCORD.
+"           ------------------------------------------------------
+"           ------------------------------------------------------
+"
+   YES:  MOV A,MCM
+         MOV MA,TMPMA
+                                       "CALCULATE INITIAL C ADDRESS
+         MOV JC,A
+         MOV MC,MA
+         JSR SPMUL
+         ADD C,A
+                                       "NOW C+JC*MC+IC
+         ADD IC,A                      "JC*MC+C+IC,INITIAL C ADDRESS
+         MOV A,CADDR                   "STORE IN 17
+         MOV JA,A                      "SETUP TO GET JA*MA
+                                       "PUT MA BACK IN 1
+         MOV TMPMA,MA
+         JSR SPMUL
+         ADD MCM,A
+         ADD IA,A                      "A+JA*MA+IA=ADDR OF INITIAL(P,Q)
+         MOV MC,MCM                    "DESTROY A,SETUP MC-M IN SP14
+                                       "MOV ROW CTR TO 1 FOR EACH NEW COLUMN
+         MOV M,MA
+         SUB M,MCM
+                                       "DESTROY C, MOV N TO 5 FOR PERIMETER TEST
+                                       "GET IA-MA+M+I INTO IC,AND JA-NA+N+1 INTO
+                                       "FOR BOTTOM & RH TESTS.
+         MOV N,5
+         MOV IA,IC
+         SUB TMPMA,IC
+         ADD M,IC
+         INC IC
+         MOV JA,JC
+         SUB NA,JC
+         ADD N,JC
+         INC JC
+         ADD M, IA                     "GET IA +M AND JA+N FOR TOP & LH TESTS
+         ADD N,JA
+"
+"
+"    -----------------------------------------------------------
+"       CONSIDER THE ARRAY OF POINTS LOCATED BY DIGITS 1-9 BELOW
+"
+"             1         2          3
+"             4         5          6
+"             7         8          9
+"
+"       THESE VALUES AND THEIR ROW AND COLUMN SUMS ARE STORED IN SPAD LOCATIONS
+"       AS SHOWN BELOW.
+"
+"           X-3       X1        Y1      SUM A: Y-4
+"           X-2       X2        Y2      SUM B: Y-3
+"           X-1       X3        Y3      SUM C: Y-2
+"           ---       ---       ---
+"          SUM D:Y0            SUM E:X0
+"       MAG HORIZ GRAD (D-E): Y-1
+"       MAG VERT GRAD (A-C): X-4
+"    -----------------------------------------------------------
+"    -----------------------------------------------------------
+"                             ***********
+"       AS SPAD POINTER IS INCREMENTED ONLY NEW POINTS NEED BE FETCHED
+"       (MAIN LOOP); OLD POINTS 1&3 ARE SUBTRACTED FROM SUMS D AND E
+"       RESPECTIVELY, AND NEW SUMS C,D,&E  AND GRADS CALCULATED.  THE ROW AND
+"       COLUMN VALUES OF POINT 5, THE POINT TO BE PROCESSED, ARE USED TO
+"       DETERMINE WHETHER OR NOT IT IS ON A PERIMETER ROW OR COLUMN
+"       OR CORNER OF OR INTERIOR TO A.
+"    ------------------------------------------------------------
+"
+"                   ---------------------------------------------------
+"                         **** BEGIN TOP-OF-COLUMN PROCESSING****
+"                   ---------------------------------------------------
+"
+"                     ---------------------------------
+"                         ***BEGIN PERIMETER TESTS***
+"                     ---------------------------------
+"
+"
+"                    ------------------------------------
+"                       LOOPC IS COLUMN LOOP
+"                    ------------------------------------
+                                       "TEST FOR LEFT HAND SIDE
+LOOPC:   SUB# N,JA
+                                       "LH IF JA+N-N(I)<=0
+         BGT TESTRH
+         JMP LH
+                                       "NOT LH,TEST RH
+TESTRH:  SUB# N,JC                     "RH IF JA-NA+N-N(I)+1>=0
+         BLT TESTTP
+         JMP RH
+                                       "NOT LH OR RH,TEST TOP
+TESTTP:  SUB# MA,IA                    "TOP IF IA+M-M(I)<=0
+         BGT TESTBT
+         JMP TNLNR1
+                                       "NOT L,NOT R,NOT TOP, TEST BOTTOM
+TESTBT:  SUB# MA,IC
+         BGE .+2                       "BOTTOM IF IA-MA+M-M(I)+1>=0
+         JMP NORMAL
+         JMP BNLNR1
+                                       "IS LH, TEST FOR TOP
+LH    :  SUB# MA,IA                    "TOP IF IA+M-M(I)<=0
+         BGT LTSTBT
+         JMP TL1
+                                       "NOT TOP,TEST BOTTOM
+LTSTBT:  SUB# MA,IC                    "BOTTOM IF IA-MA+M-M(I)+1>=0
+         BGE .+2
+         JMP LNTNB1
+         JMP BL1
+                                       "IS RH,TEST TOP
+RH   :   SUB# MA,IA                    "TOP IF IA +M-M(I)<=0
+         BGT RTSTBT
+         JMP TR1
+                                       "NOT TOP, TEST BOTTOM
+RTSTBT:  SUB# MA,IC                    "BOTTOM IF IA-MA+M-M(I)+1>=0
+         BGE .+2
+         JMP RNTNB1
+         JMP RB1
+                                       "END OF TEST OF INITIAL POINT IN COLUMN
+                                       "
+"   ----------------------------------------------------------
+"               *** SPECIAL CASE LOCATIONS ***
+"   ----------------------------------------------------------
+                                       "
+"          ---------------------
+"                ** TOP LEFT **
+"          ---------------------
+                                       " INITIAL A-ADDRESS  STORED IN SP16
+TL1:     MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1)
+                                       "IN DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;
+          DPX(-2)<ZERO;
+          FADD DPX(2),ZERO
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1) ;
+                                       "IN DPX(-3)
+                                       "ADD (P,Q-1) + (P-1,Q-1)
+         INC A;SETMA;DPX(-3)<ZERO;
+          FADD DPX(-2),ZERO
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q)
+                                       "IN DPX(1);
+                                       "ADD (P-1,Q-1)+(P-1,Q);  STORE (P,Q-1)+
+                                       "(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<ZERO;
+          FADD DPX(-3),ZERO;DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1)
+                                       "IN DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1)
+                                       "IN DPX(-1)
+         SUB TMPMA,A;
+          SETMA;DPX(-4)<MD;
+          FADD DPY(1),FA
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA;
+          DPX(-4)<MD; FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD (P-1,Q+1)+
+                                       "(P,Q+1)
+        DPY(3)<MD; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE ((P-1,Q)+
+                                       "(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<MD; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN
+                                       "DPX(0); ADD ((P-1,Q+1)+(P,Q+1))+
+                                       "(P+1,Q+1)
+         DPY(-1)<ZERO; DPX(0)<FA;
+          FADD DPY(3),FA
+        JMP COMMON                     "FINISH CALCULATIONS IN COMMON
+"
+"        ----------------------------
+"               ** BOTTOM & LEFT **
+"        ----------------------------
+                                       "ADDRESS NEW (P+1,Q-1); SUBTRACT OLD
+                                       "(P-1,Q-1) FROM LH SUM
+                                       "INITIAL A-ADDRESS STORED IN SP16
+BL1:     MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1)
+                                       "IN DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;
+          DPX(-2)<ZERO;
+          FADD DPX(2),ZERO
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1)
+                                       "IN DPX(-3);ADD (P,Q-1)
+                                       "+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<ZERO;
+          FADD DPX(-2),ZERO
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q)
+                                       "IN DPX(1); ADD (P-1,Q-1)+
+                                       "(P-1,Q);  STORE (P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<MD;
+          FADD DPX(-3),MD; DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1)
+                                       "IN DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1)
+                                       "IN DPX(-1)
+         SUB TMPMA,A;SETMA; DPY(1)<MD;
+          DPX(-2)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA; DPX(-4)<MD;
+          FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD (P-1,Q+1)+
+                                       "(P,Q+1)
+         DPY(3)<ZERO; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE ((P-1,Q)+
+                                       "(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<ZERO; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0);
+                                       "ADD ((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<ZERO; DPX(0)<FA;
+          FADD DPY(3),FA
+         JMP COMMON
+"                  ---------------------------------------
+"                         ** LEFT,NOT TOP,NOT BOTTOM **
+"                  ---------------------------------------
+                                       "INITIAL A-ADDRESS  STORED IN SP16
+LNTNB1:  MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1)
+                                       "IN DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;
+          DPX(-2)<ZERO; FADD DPX(2),ZERO
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1)
+                                       "IN DPX(-3); ADD (P,Q-1)
+                                       "+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<ZERO;
+          FADD DPX(-2),ZERO
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q) IN
+                                       "DPX(1); ADD (P-1,Q-1)+ (P-1,Q);
+                                       "STORE (P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<MD;
+          FADD DPX(-3),MD; DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1) IN
+                                       "DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1)
+                                       "IN DPX(-1)
+         SUB TMPMA,A;SETMA; DPY(1)<MD;
+          DPX(-1)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA;
+          DPX(-4)<MD; FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD
+                                       "(P-1,Q+1)+(P,Q+1)
+         DPY(3)<MD; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE ((P-1,Q)+
+                                       "(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<ZERO; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0); ADD
+                                       "((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<MD; DPX(0)<FA;
+          FADD DPY(3),FA
+         JMP COMMON
+"                  ------------------------------------------
+"                         ** RIGHT, NOT TOP, NOT BOTTOM **
+"                  ------------------------------------------
+                                       "INITIAL A-ADDRESS  STORED IN SP16
+RNTNB1:  MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1) IN
+                                       "DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;DPX(-2)<MD;
+          FADD DPX(2),MD
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1)
+                                       "IN DPX(-3); ADD (P,Q-1)
+                                       "+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<MD;
+          FADD DPX(-2),MD
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q)
+                                       "IN DPX(1); ADD (P-1,Q-1)+
+                                       "(P-1,Q);  STORE (P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<MD;
+          FADD DPX(-3),MD; DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1) IN
+                                       "DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1)
+                                       "IN DPX(-1)
+         SUB TMPMA,A;SETMA;
+          DPY(1)<ZERO; DPX(-1)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA;
+          DPX(-4)<ZERO; FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD
+                                       "(P-1,Q+1)+(P,Q+1)
+         DPY(3)<ZERO;
+          FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE
+                                       "((P-1,Q)+(P-1,Q+1)+(P-1,Q-1)) IN
+                                       "DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<MD; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0);
+                                       "ADD ((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<MD; DPX(0)<FA;
+          FADD DPY(3),FA
+         JMP COMMON
+"                  ----------------------------
+"                         ** TOP RIGHT **
+"                  ----------------------------
+                                       "INITIAL A-ADDRESS  STORED IN SP16
+TR1:     MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1)
+                                       "IN DPX(-2); ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;DPX(-2)<MD;
+          FADD DPX(2),MD
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1) IN
+                                       "DPX(-3); ADD (P,Q-1)+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<ZERO;
+          FADD DPX(-2),ZERO
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q) IN
+                                       "DPX(1); ADD (P-1,Q-1)+(P-1,Q); STORE
+                                       "(P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<ZERO;
+          FADD DPX(-3),ZERO; DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1) IN
+                                       "DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1) IN
+                                       "DPX(-1)
+         SUB TMPMA,A;SETMA;
+          DPY(1)<ZERO;DPX(-1)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA;
+          DPX(-4)<ZERO; FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD
+                                       "(P-1,Q+1)+(P,Q+1)
+         DPY(3)<MD; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE
+                                       "((P-1,Q)+(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<MD; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0);
+                                       "ADD ((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<MD; DPX(0)<FA;
+          FADD DPY(3),FA
+         JMP COMMON
+"                  -------------------------------
+"                         ** RIGHT BOTTOM **
+"                  -------------------------------
+                                       "INITIAL A-ADDRESS  STORED IN SP16
+RB1:     MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1) IN
+                                       "DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;DPX(-2)<MD;
+          FADD DPX(2),MD
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1) IN
+                                       "DPX(-3); ADD (P,Q-1)+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<MD;
+          FADD DPX(-2),MD
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q) IN
+                                       "DPX(1); ADD (P-1,Q-1)+(P-1,Q);
+                                       "STORE (P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<MD;
+          FADD DPX(-3),MD; DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1) IN
+                                       "DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1) IN
+                                       "DPX(-1)
+         SUB TMPMA,A;SETMA;
+          DPY(1)<ZERO;DPX(-1)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA;
+          DPX(-4)<ZERO; FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD
+                                       "(P-1,Q+1)+(P,Q+1)
+         DPY(3)<ZERO; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE
+                                       "((P-1,Q)+(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<ZERO; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0);
+                                       "ADD ((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<ZERO; DPX(0)<FA;
+          FADD DPY(3),FA
+         JMP COMMON
+"                  -----------------------------------------
+"                        ** BOTTOM, NOT LEFT, NOT RIGHT **
+"                  -----------------------------------------
+                                       "ADDRESS NEW (P+1,Q); SUBTRACT OLD
+                                       "P-1,Q+1 FROM RH SUM
+                                       "INITIAL A-ADDRESS  STORED IN SP16
+BNLNR1:  MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1) IN
+                                       "DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;DPX(-2)<MD;
+          FADD DPX(2),MD
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1) IN
+                                       "DPX(-3); ADD (P,Q-1)+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<MD;
+          FADD DPX(-2),MD
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q) IN
+                                       "DPX(1); ADD (P-1,Q-1)+(P-1,Q);
+                                       "STORE (P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<MD;
+          FADD DPX(-3),MD; DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1) IN
+                                       "DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1) IN
+                                       "DPX(-1)
+         SUB TMPMA,A;SETMA; DPY(1)<MD;
+          DPX(-1)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA;
+          DPX(-4)<MD; FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD
+                                       "(P-1,Q+1)+(P,Q+1)
+         DPY(3)<ZERO; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE
+                                       "((P-1,Q)+(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<ZERO; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0);
+                                       "ADD ((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<ZERO; DPX(0)<FA;
+          FADD DPY(3),FA
+         JMP COMMON
+"                    ---------------------------------------
+"                         ** TOP, NOT LEFT, NOT RIGHT **
+"                    ---------------------------------------
+                                       "INITIAL A-ADDRESS  STORED IN SP16
+TNLNR1:  MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1) IN
+                                       "DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;DPX(-2)<MD;
+          FADD DPX(2),MD
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1) IN
+                                       "DPX(-3); ADD (P,Q-1)+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<ZERO;
+          FADD DPX(-2),ZERO
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q) IN
+                                       "DPX(1); ADD (P-1,Q-1)+(P-1,Q);
+                                       "STORE (P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<ZERO;
+          FADD DPX(-3),ZERO;DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1) IN
+                                       "DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1) IN
+                                       "DPX(-1)
+         SUB TMPMA,A;SETMA;
+          DPY(1)<ZERO;DPX(-1)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA;
+          DPX(-4)<MD; FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD
+                                       "(P-1,Q+1)+(P,Q+1)
+         DPY(3)<MD; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE
+                                       "((P-1,Q)+(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<MD; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0);
+                                       "ADD ((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<MD; DPX(0)<FA;
+          FADD DPY(3),FA
+         JMP COMMON
+"                    --------------------------------------
+"                         ** NORMAL INTERIOR POINT **
+"                    --------------------------------------
+                                       "INITIAL A-ADDRESS  STORED IN SP16
+NORMAL:  MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+         SUB TMPMA,A;SETMA             "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC A ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA,A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1) IN
+                                       "DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA,A; SETMA;DPX(-2)<MD;
+          FADD DPX(2),MD
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1) IN
+                                       "DPX(-3); ADD (P,Q-1)+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<MD;
+          FADD DPX(-2),MD
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q) IN
+                                       "DPX(1); ADD (P-1,Q-1)+(P-1,Q);
+                                       "STORE (P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<MD;
+          FADD DPX(-3),MD;DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1) IN
+                                       "DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1) IN
+                                       "DPX(-1)
+         SUB TMPMA,A;SETMA; DPY(1)<MD;
+          DPX(-1)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY STORE
+                                       "(P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA;
+          DPX(-4)<MD;FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD
+                                       "(P-1Q+1)+(P,Q+1)
+         DPY(3)<MD; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE
+                                       "((P-1,Q)+(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<MD; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0);
+                                       "ADD ((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<MD; DPX(0)<FA;
+          FADD DPY(3),FA
+                                       "STORE ((P,Q-1)+(P,Q)+(P,Q+1)) IN DPY(-3)
+                                       "ADD (P+1,Q-1)+((P,Q-1)+(P-1,Q-1))
+"        ---------------------------------------------
+"          CALCULATIONS COMMON TO ALL CASES DONE HERE
+"        ----------------------------------------------
+COMMON:  DPY(-3)<FA; FADD DPY(-1),DPX(-1)
+                                       "STORE ((P-1,Q+1)+(P,Q+1)+(P+1,Q+1))
+                                       "IN DPX(0) ADD (P+1,Q+1)+(P+1,Q)
+         DPX(0)<FA; FADD DPY(3),DPX(3)
+                                       "STORE ((P+1,Q-1)+(P,Q-1)+(P-1,Q-1)) IN
+                                       "DPY(0)
+                                       "GET HORIZ GRADIENT;MOV (P+1,Q-1) TO
+                                       "DPX(-1)
+         DPY(0)<FA; FSUB DPX(0),FA;
+          DPX(-1)<DPY(-1)
+                                       "ADD ((P+1,Q+1)+(P+1,Q))+(P+1,Q-1)
+         FADD DPX(-1),FA
+                                       "GET MAG HORIZ GRAD;MOV (P,Q+1) TO DPY(2)
+         FABS  FA;DPY(2)<DPX(-4)
+                                       "STORE ((P+1,Q+1)+(P+1,Q)+(P+1,Q-1)) IN
+                                       "DPY(-2)
+                                       "GET VERT GRADIENT;ADDRESS C(P,Q)
+         DPY(-2)<FA; FSUB DPY(-4),FA
+                                       "STORE MAG HORIZ GRAD IN DPY(-1) &IN
+                                       "C(P,1) AS IF IT WERE MAX
+         DPY(-1)<FA;FADD;MI<FA;
+          MOV CADDR,CADDR;SETMA
+                                       "INCREMENT C-ROW
+                                       "GET MAG VERT GRAD
+         FABS  FA; INC CADDR
+         FADD
+                                       "COMPARE MAG HORIZ WITH MAG VERT GRAD,
+                                       "STORE MAG VERT GRAD IN DPX(-4)
+         FSUB DPY(-1),FA; DPX(-4)<FA
+         FADD
+                                       "IF HORIZ MAG>VERT MAG,BRANCH;HORIZ
+                                       "MAG IS ALREADY STORED
+                                       "DECREMENT ROW COUNTER
+         NOP
+         BFGE NEXTR1;DEC MA
+                                       "IF VERT MAG>HORIZ MAG, STORE VERT MAG
+                                       "DECREMENT C-ROW, THEN RE-INCREMENT
+         MI<DPX(-4);DEC# CADDR;SETMA
+"                                  --------------------------------------------
+                                       "END OF PROCESSING TOP-OF-COLUMN ELEMENT
+                                       "TEST FOR SINGLE ROW PROCESSING
+"                                  ---------------------------------------------
+NEXTR1:  DEC# MA
+         BGE NEWROW
+         JMP NEWCOL
+                                       "
+                                       "
+"                    ---------------------------------------------------
+"                         **** BEGIN WITHIN-COLUMN PROCESSING ****
+"                    ---------------------------------------------------
+                                       "
+                                       "CONTINUE DOWN COLUMN, START LOOP
+                                       "ADDRESS NEW (P+1,Q-1); SUBTRACT OLD
+                                       "(P-1,Q-1) FROM LH SUM
+NEWROW:  INC A;SETMA;FSUB DPY(0),DPX(-3)
+                                       "TEST FOR NEW (P,Q) LOCATION
+                                       "
+"                    --------------------------------
+"                         *** PERIMETER TESTS ***
+"                    --------------------------------
+"
+"                 --------------------------
+"                   LOOPR IS ROW LOOP
+"                 --------------------------
+LOOPR:   SUB# N,JA
+                                       "LH IF JA+N-N(I)<=0
+         BGT TSTRH2
+         JMP LTSBT2
+                                       "NOT LH,TEST RH
+TSTRH2:  SUB# N,JC                     "RH IF JA-NA+N-N(I)+1>=0
+         BLT TSTBT2
+         JMP RTSBT2
+                                       "NOT L,NOT R,NOT TOP, TEST BOTTOM
+TSTBT2:  SUB# MA,IC
+         BGE .+2                       "BOTTOM IF IA-MA+M-M(I)+1>=0
+         JMP NORM2
+         JMP BOTTOM
+                                       "NOT TOP,TEST BOTTOM
+LTSBT2:  SUB# MA,IC                    "BOTTOM IF IA-MA+M-M(I)+1>=0
+         BGE .+2
+         JMP LNTNB2
+         JMP BOTTOM
+                                       "NOT TOP, TEST BOTTOM
+RTSBT2:  SUB# MA,IC                    "BOTTOM IF IA-MA+M-M(I)+1>=0
+         BGE .+2
+         JMP RNTNB2
+         JMP BOTTOM
+"                    ----------------------------------------
+"                         *** SPECIAL CASE LOCATIONS ***
+"                    ----------------------------------------
+"
+"                    ------------------------
+"                         ** BOTTOM LEFT **
+"                    ------------------------
+                                       "ADDRESS NEW (P+1,Q); SUBTRACT
+                                       "OLD(P-1,Q+1)FROM RH SUM
+                                       "INCREMENT DPADS POINTER (MOVING
+                                       "9-PATERN)
+BOTTOM:  ADD TMPMA,A; SETMA;
+          FSUB DPX(0),DPY(1); INCDPA
+                                       "ADDRESS NEW (P+1,Q+1); STORE PARTIAL
+                                       "LH SUM
+         ADD TMPMA,A; SETMA; DPY(0)<FA
+                                       "RESET FOR NEW (P,1) (2 SUBS); GET NEW
+                                       "LH SUM
+                                       "STORE (P+1,Q-1) IN DPX(-1)
+         SUB TMPMA,A; FADD DPY(0), ZERO;
+          DPX(-1)<ZERO
+                                       "STORE (P+1,Q) IN DPX(3); GET PARTIAL
+                                       "BOTTOM SUM; TEMPORARY
+                                       "STORE PARTIAL RH SUM IN DPY(-1)
+         SUB TMPMA,A; DPY(-1)<FA;
+          FADD DPX(-1),ZERO;DPX(3)<ZERO
+                                       "STORE LH SUM IN DPY(0); TEMPORARY
+                                       "STORE (P+1,Q+1) IN DPX(-4);
+                                       "GET RH SUM
+         DPY(0)<FA;DPX(-4)<ZERO;
+          FADD DPY(-1),ZERO
+         JMP COMMN2
+"                   -----------------------------------------
+"                         ** LEFT, NOT TOP, NOT BOTTOM **
+"                   -----------------------------------------
+                                       "ADDRESS NEW (P+1,Q); SUBTRACT
+                                       "OLD(P-1,Q+1)FROM RH SUM
+                                       "INCREMENT DPADS POINTER (MOVING
+                                       "9-PATTERN)
+LNTNB2:  ADD TMPMA,A; SETMA;
+          FSUB DPX(0),DPY(1); INCDPA
+                                       "ADDRESS NEW (P+1,Q+1); STORE PARTIAL
+                                       "LH SUM
+         ADD TMPMA,A; SETMA; DPY(0)<FA
+                                       "RESET FOR NEW (P,Q-1) (2 SUBS); GET NEW
+                                       "LH SUM
+                                       "STORE (P+1,Q-1) IN DPX(-1)
+         SUB TMPMA,A; FADD DPY(0), ZERO;
+          DPX(-1)<ZERO
+                                       "STORE (P+1,Q) IN DPX(3); GET PARTIAL
+                                       "BOTTOM SUM; TEMPORARY
+                                       "STORE PARTIAL RH SUM IN DPY(-1)
+         SUB TMPMA,A; DPY(-1)<FA;
+          FADD DPX(-1),MD;DPX(3)<MD
+                                       "STORE LH SUM IN DPY(0); TEMPORARY STORE
+                                       "(P+1,Q+1) IN DPX(-4);
+                                       "GET RH SUM
+         DPY(0)<FA;DPX(-4)<MD;
+          FADD DPY(-1),MD
+         JMP COMMN2
+"                     ----------------------------------------
+"                         ** RIGHT, NOT TOP, NOT BOTTOM **
+"                     ----------------------------------------
+                                       "ADDRESS NEW (P+1,Q); SUBTRACT
+                                       "OLD(P-1,Q+1)FROM RH SUM
+                                       "INCREMENT DPADS POINTER (MOVING
+                                       "9-PATTERN)
+RNTNB2:  ADD TMPMA,A;SETMA;
+          FSUB DPX(0),DPY(1);INCDPA
+                                       "ADDRESS NEW (P+1,Q+1); STORE PARTIAL
+                                       "LH SUM
+         ADD TMPMA,A; SETMA; DPY(0)<FA
+                                       "RESET FOR NEW (P,Q-1) (2 SUBS); GET NEW
+                                       "LH SUM
+                                       "STORE (P+1,Q-1) IN DPX(-1)
+         SUB TMPMA,A; FADD DPY(0), MD;
+          DPX(-1)<MD
+                                       "STORE (P+1,Q) IN DPX(3); GET PARTIAL
+                                       "BOTTOM SUM; TEMPORARY
+                                       "STORE PARTIAL RH SUM IN DPY(-1)
+         SUB TMPMA,A; DPY(-1)<FA;
+          FADD DPX(-1),MD;DPX(3)<MD
+                                       "STORE LH SUM IN DPY(0); TEMPORARY STORE
+                                       "(P+1,Q+1) IN DPX(-4);
+                                       "GET RH SUM
+         DPY(0)<FA;DPX(-4)<ZERO;
+          FADD DPY(-1),ZERO
+         JMP COMMN2
+"            ------------------------------------
+"                  **NORMAL INTERIOR POINT**
+"            ------------------------------------
+NORM2:   ADD TMPMA,A; SETMA;
+          FSUB DPX(0),DPY(1); INCDPA
+                                       "ADDRESS NEW (P+1,Q+1); STORE PARTIAL
+                                       "LH SUM
+         ADD TMPMA,A; SETMA; DPY(0)<FA
+                                       "RESET FOR NEW (P,Q-1) (2 SUBS); GET NEW
+                                       "LH SUM
+                                       "STORE (P+1,Q-1) IN DPX(-1)
+         SUB TMPMA,A; FADD DPY(0), MD;
+          DPX(-1)<MD
+                                       "STORE (P+1,Q) IN DPX(3); GET PARTIAL
+                                       "BOTTOM SUM; TEMPORARY
+                                       "STORE PARTIAL RH SUM IN DPY(-1)
+         SUB TMPMA,A; DPY(-1)<FA;
+          FADD DPX(-1),MD;DPX(3)<MD
+                                       "STORE LH SUM IN DPY(0); TEMPORARY STORE
+                                       "(P+1,Q+1) IN DPX(-4);
+                                       "GET RH SUM
+         DPY(0)<FA;DPX(-4)<MD;
+          FADD DPY(-1),MD
+                                       "GET BOTTOM SUM;STORE (P+1,Q+1) IN DPY(3)
+COMMN2:  FADD DPX(-4),FA;DPY(3)<DPX(-4)
+                                       "GET HORIZ GRAD; STORE RH SUM IN DPX(0)
+         FSUB DPY(0),FA;DPX(0)<FA
+                                       "GET VERT GRAD;STORE BOTTOM SUM IN
+                                       "DPY(-2)
+         FSUB DPY(-4),FA; DPY(-2)<FA
+                                       "GET MAG HORIZ GRAD
+         FABS FA
+                                       "GET MAX VERT GRAD
+         FABS FA
+                                       "STORE MAG HORIZ GRAD IN DPY(-1)& IN
+                                       "C(P,1) AS IF IT WERE MAX
+         DPY(-1)< FA;FADD;MI<FA;
+          MOV CADDR,CADDR;SETMA
+                                       "COMPARE MAG HORIZ WITH MAG VERT;STORE
+                                       "MAG VERT IN DPX(-4)
+                                       "INC C-ROW
+         FSUB DPY(-1),FA;DPX(-4)<FA;
+          INC CADDR
+         FADD
+         NOP
+                                       "IF HORIZ MAG>VERT MAG,BRANCH; HORIZ
+                                       "MAG IS ALREADY STORED
+         BFGE NEXTR
+                                       "IF VERT MAG>HORIZ MAG,STORE VERT MAG
+                                       "DECREMENT C-ROW, THEN INCREMENT
+         MI<DPX(-4);DEC# CADDR;SETMA
+                                       "DECREMENT ROW COUNTER
+NEXTR:   DEC MA
+                                       "CONTINUE LOOP IF M ROWS HAVE BEEN DONE
+                                       "ADDRESS NEW (P+1,Q-1);SUBTRACT OLD
+                                       "(P-1,Q-1) FROM LH SUM
+         BEQ .+2;INC A;SETMA;
+          FSUB DPY(0),DPX(-3)
+         JMP LOOPR
+"           -------------------------------------------------
+"               RESET FOR NEW COLUMN OR RETURN
+"           -------------------------------------------------
+                                       "SET NEW CENTER ADDRESS; RESET ROW
+                                       "COUNTER
+NEWCOL:  MOV M,MA
+                                       "NEW A&C ADDRESSES
+                                       "ADD MA TO (IC,Q) OF A TO GET (IC,Q+1)
+                                       "ADD MC-M  TO (IC+M,Q) OF C TO GET
+                                       "(IC,Q+1)
+         ADD TMPMA,ATOP
+         ADD MCM,CADDR
+                                       "DECREMENT COLUMN COUNTER
+         DEC N
+         MOV ATOP,A;SETMA;BEQ .+2
+         JMP LOOPC
+         RETURN
+                                       "
+                                       "
+"          ----------------------------------------------------------
+"          ----------------------------------------------------------
+"                *** NO BOUNDARIES DETECTED, OR NONE TESTED ***
+"          -----------------------------------------------------------
+"          -----------------------------------------------------------
+                                       "
+                                       "STORE A AND MA IN 14 AND 15 (OCT)
+NO    :  MOV A,MCM
+         MOV MA,TMPMA
+                                       "CALCULATE INITIAL C ADDRESS
+         MOV JC,A
+         MOV MC,1
+         JSR SPMUL
+         ADD C,A
+                                       "NOW C+JC*MC+IC
+         ADD IC,A                      "JC*MC+C+IC,INITIAL C ADDRESS
+         MOV A,CADDR                   "STORE IN 17
+         MOV JA,A                      "SETUP TO GET JA*MA
+                                       "PUT MA BACK IN 1
+         MOV TMPMA,1
+         JSR SPMUL
+         ADD 14,A
+         ADD IA,A                      "A+JA*MA+IA=ADDR OF INITIAL(P,Q)
+         MOV MC,MCM                    "DESTROY A,SETUP MC-M IN SP14
+         SUB M,MCM
+         MOV M,1                       "ROW COUNTER IN SP1 WILL BE RENEWED EACH
+                                       "COLUMN
+                                       "INITIAL A-ADDRESS  STORED IN SP16
+         MOV A,ATOP; SETMA             "STORE IN 16;ADDRESS (P,Q)
+"          -----------------------------------
+"              LOOPCN IS COLUMN TOP
+"          -----------------------------------
+"
+LOOPCN:  SUB TMPMA, A;SETMA            "ADDRESS (P,Q-1)
+                                       "ADDRESS (P-1,Q-1)
+         DEC 0 ;SETMA
+                                       "ADDRESS(P-1,Q);STORE(P,Q)IN DPX(2)
+         ADD TMPMA, A; SETMA; DPX(2)<MD
+                                       "ADDRESS (P-1,Q+1);STORE(P,Q-1) IN
+                                       "DPX(-2)
+                                       "ADD (P,Q-1)+(P,Q)
+         ADD TMPMA, A; SETMA;DPX(-2)<MD;
+          FADD DPX(2),MD
+                                       "ADDRESS(P,Q+1); STORE (P-1,Q-1) IN
+                                       "DPX(-3);ADD (P,Q-1)+(P-1,Q-1)
+         INC A;SETMA;DPX(-3)<MD;
+          FADD DPX(-2),MD
+                                       "ADDRESS (P+1,Q+1);STORE (P-1,Q) IN
+                                       "DPX(1); ADD (P-1,Q-1)+(P-1,Q);
+                                       "STORE (P,Q-1)+(P,Q)IN DPY(-3)
+         INC A;SETMA;DPX(1)<MD;
+          FADD DPX(-3),MD;DPY(-3)<FA
+                                       "ADDRESS (P+1,Q);STORE (P-1,Q+1) IN
+                                       "DPY(1)
+                                       "TEMPORARILY STORE (P,Q-1)+(P-1,Q-1) IN
+                                       "DPX(-1)
+         SUB TMPMA,A;SETMA; DPY(1)<MD;
+          DPX(-1)<FA; FADD
+                                       "ADDRESS (P+1,Q-1); TEMPORARILY
+                                       "STORE (P,Q+1) IN DPX(-4)
+                                       "ADD (P-1,Q+1) TO ((P-1,Q-1)+(P-1,Q))
+                                       "
+         SUB TMPMA,A; SETMA; DPX(-4)<MD;
+          FADD DPY(1),FA
+                                       "STORE (P+1,Q+1) IN DPY(3),ADD
+                                       "(P-1,Q+1)+(P,Q+1)
+         DPY(3)<MD; FADD DPY(1),DPX(-4)
+                                       "STORE (P+1,Q) IN DPX(3);STORE
+                                       "((P-1,Q)+(P-1,Q+1)+(P-1,Q-1))
+                                       "IN DPY(-4),ADD (P,Q-1)+((P,Q)+(P,Q+1))
+         DPX(3)<MD; DPY(-4)<FA;
+          FADD DPY(-3),DPX(-4)
+                                       "TEMPORARILY STORE (P+1,Q-1) IN DPY(-1);
+                                       "STORE (P-1,Q+1)+(P,Q-1)) IN DPX(0);
+                                       "ADD ((P-1,Q+1)+(P,Q+1))+(P+1,Q+1)
+         DPY(-1)<MD; DPX(0)<FA;
+          FADD DPY(3),FA
+                                       "STORE ((P,Q-1)+(P,Q)+(P,Q+1)) IN DPY(-3)
+                                       "ADD (P+1,Q-1)+((P,Q-1)+(P-1,Q-1))
+        DPY(-3)<FA; FADD DPY(-1),DPX(-1)
+                                       "STORE ((P-1,Q+1)+(P,Q+1)+(P+1,Q+1))
+                                       "IN DPX(0)
+                                       "ADD (P+1,Q+1)+(P+1,Q)
+        DPX(0)<FA; FADD DPY(3),DPX(3)
+                                       "STORE ((P+1,Q-1)+(P,Q-1)+(P-1,Q-1)) IN
+                                       "DPY(0)
+                                       "GET HORIZ GRADIENT;MOV (P+1,Q-1) TO
+                                       "DPX(-1)
+         DPY(0)<FA; FSUB DPX(0),FA;
+          DPX(-1)<DPY(-1)
+                                       "ADD ((P+1,Q+1)+(P+1,Q))+(P+1,Q-1)
+         FADD DPX(-1),FA
+                                       "GET MAG HORIZ GRAD;MOV (P,Q+1) TO DPY(2)
+         FABS  FA;DPY(2)<DPX(-4)
+                                       "STORE ((P+1,Q+1)+(P+1,Q)+(P+1,Q-1)) IN
+                                       "DPY(-2)
+                                       "GET VERT GRADIENT;ADDRESS C(P,Q)
+        DPY(-2)<FA; FSUB DPY(-4),FA
+                                       "STORE MAG HORIZ GRAD IN DPY(-1) &IN
+                                       "C(P,Q) AS IF IT WERE MAX
+         DPY(-1)<FA;FADD;MI<FA;
+          MOV CADDR,CADDR;SETMA
+                                       "INCREMENT C-ROW
+                                       "GET MAG VERT GRAD
+         FABS  FA; INC CADDR
+         FADD
+                                       "COMPARE MAG HORIZ WITH MAG VERT GRAD,
+                                       "STORE MAG VERT GRAD IN DPX(-4)
+         FSUB DPY(-1),FA; DPX(-4)<FA
+         FADD
+                                       "IF HORIZ MAG>VERT MAG,BRANCH;HORIZ MAG
+                                       "IS ALREADY STORED
+                                       "DECREMENT ROW COUNTER
+         NOP
+         BFGE NXTRN1;DEC MA
+                                       "IF VERT MAG>HORIZ MAG, STORE VERT MAG
+                                       "DECREMENT C-ROW, THEN RE-INCREMENT
+         MI<DPX(-4);DEC# CADDR;SETMA
+                                       "END OF PROCESSING TOP-OF COLUMN ELEMENT
+                                       "TEST FOR SINGLE ROW PROCESSING
+NXTRN1:  DEC# 1
+         BGE NWROWN
+         JMP NWCOLN
+                                       "CONTINUE DOWN COLUMN, START LOOP
+                                       "ADDRESS NEW (P+1,Q-1); SUBTRACT
+                                       "OLD (P-1,Q-1) FROM LH SUM
+"         --------------------------------------
+"                LOOPRN IS ROW LOOP
+"         --------------------------------------
+"
+NWROWN:  INC A;SETMA;FSUB DPY(0),DPX(-3)
+                                       "ADDRESS NEW (P+1,Q); SUBTRACT
+                                       "OLD P-1,Q+1 FROM RH SUM
+                                       "INCREMENT DPADS POINTER (MOVING
+                                       "9-PATTERN)
+LOOPRN:  ADD TMPMA,A; SETMA;
+          FSUB DPX(0),DPY(1); INCDPA
+                                       "ADDRESS NEW (P+1,Q+1); STORE PARTIAL
+                                       "LH SUM
+         ADD TMPMA,A; SETMA; DPY(0)<FA
+                                       "RESET FOR NEW (P,1) (2 SUBS); GET NEW
+                                       "LH SUM
+                                       "STORE (P+1,Q-1) IN DPX(-1)
+         SUB TMPMA,A; FADD DPY(0), MD;
+          DPX(-1)<MD
+                                       "STORE (P+1,Q) IN DPX(3); GET PARTIAL
+                                       "BOTTOM SUM; TEMPORARY
+                                       "STORE PARTIAL RH SUM IN DPY(-1)
+         SUB TMPMA,A; DPY(-1)<FA;
+          FADD DPX(-1),MD; DPX(3)<MD
+                                       "STORE LH SUM IN DPY(0); TEMPORARY
+                                       "STORE (P+1,Q+1) IN DPX(-4);
+                                       "GET RH SUM
+         DPY(0)<FA;DPX(-4)<MD;
+          FADD DPY(-1),MD
+                                       "GET BOTTOM SUM;STORE (P+1,Q+1) IN DPY(3)
+         FADD DPX(-4),FA;DPY(3)<DPX(-4)
+                                       "GET HORIZ GRAD; STORE RH SUM IN DPX(0)
+         FSUB DPY(0),FA;DPX(0)<FA
+                                       "GET VERT GRAD;STORE BOTTOM SUM IN
+                                       "DPY(-2)
+         FSUB DPY(-4),FA; DPY(-2)<FA
+                                       "GET MAG HORIZ GRAD
+         FABS FA
+                                       "GET MAX VERT GRAD
+         FABS FA
+                                       "STORE MAG HORIZ GRAD IN DPY(-1)& IN
+                                       "C(P,Q) AS IF IT WERE MAX
+         DPY(-1)<FA;FADD;MI<FA;
+          MOV CADDR,CADDR;SETMA
+                                       "COMPARE MAG HORIZ WITH MAG VERT;STORE
+                                       "MAG VERT IN DPX(-4)
+                                       "INC C-ROW
+         FSUB DPY(-1),FA;DPX(-4)<FA;
+          INC CADDR
+         FADD
+         NOP
+                                       "IF HORIZ MAG>VERT MAG,BRANCH; HORIZ
+                                       "MAG IS ALREADY STORED
+         BFGE NEXTRN
+                                       "IF VERT MAG>HORIZ MAG,STORE VERT MAG
+                                       "DECREMENT C-ROW, THEN INCREMENT
+         MI<DPX(-4);DEC# CADDR;SETMA
+                                       "DECREMENT ROW COUNTER
+NEXTRN:  DEC MA
+                                       "CONTINUE LOOP IF M ROWS HAVE BEEN DONE
+                                       "ADDRESS NEW (P+1,Q-1);SUBTRACT OLD
+                                       "(P-1,Q-1) FROM LH SUM
+         BEQ .+2;INC A;SETMA;
+          FSUB DPY(0),DPX(-3)
+         JMP LOOPRN
+"          ----------------------------------------
+"               RESET FOR NEW COLUMN OR RETURN
+"          ----------------------------------------
+                                       "SET NEW CENTER ADDRESS; RESET ROW
+                                       "COUNTER
+NWCOLN:  MOV M,1
+                                       "NEW A&C ADDRESSES
+                                       "ADD MA TO (P,Q) OF A TO GET (P,Q+1)
+                                        "ADD MC-M  TO (P+1,Q) OF C TO GET
+                                       "(P,Q+1)
+         ADD TMPMA,ATOP
+         ADD 14,CADDR
+                                       "DECREMENT COLUMN COUNTER
+         DEC N
+         MOV ATOP,A;SETMA;BEQ .+2
+         JMP LOOPCN
+         RETURN
+         $END
+"****** LAPL2D = 2-D LAPLACIAN FILTER /COMMON/ = REL 1.0, APR 79 *****
+$TITLE LAPL2D
+        $RADIX 8
+$ENTRY LAPL2D,15
+$EXT SPMUL
+                 "2- DIMENSIONAL IMAGE LAPLACIAN
+                 "        ---ABSTRACT---
+                 "
+                 "GIVEN A 2- DIMENSIONAL ARRAY OF DATA STORED IN MATRIX A
+                 "WITH
+                 "   A=BASE ADDRESS OF MATRIX A
+                 "  MA=NUMBER OF ROWS OF A
+                 "  NA=NUMBER OF COLUMNS OF A
+                 "  IA=INITIAL ROW OF THE SUBMATRIX A' OF A TO BE PROCESSED,
+                 "         0<=IA<=MA-1
+                 "  IJ=INITIAL COLUMN OF THE SUBMATRIX A' TO BE PROCESSED,
+                 "         0<=IJ<=NA-1
+                 "   M=NUMBER OF ROWS IN A',WHERE 1<=M<=MA
+                 "   N=NUMBER OF COLUMNS IN A',WHERE 1<=N<=NA
+                 "
+                 "COLUMNS OF A ARE STORED SEQUENTIALLY IN MAIN DATA
+                 "
+                 "
+                 "THE ELEMENTS OF THE PROCESSED A' ARE PLACED IN C' OF DIMENSION
+                 " MXN, LOCATED AT ROW IC, COLUMN JC, WITHIN THE DESTINATION
+                 "MATRIX C WHOSE BASE ADDRESS IS C.
+                 "
+                 "THE VALUE OF ELEMENT C'(P,Q) IS GIVEN BY
+                 "  C'(P,Q)=128 -4*A'(P,Q)+A'(P,Q-IX)+A'(P-IX,Q)+A'(P,Q+IX)+A'(P
+                 "
+                 "IF A IS PRECEEDED AND SUCCEEDED BY COLUMNS OF ZEROS
+                 "ZEROS WILL BE USED FOR CERTAIN ELEMENTS IN THE
+                 "COMPUTATION OF C'  IF A' IS WITHIN IX OF THE BOUNDARIES
+                 "OF A. WRAP-AROUND AT THE TOP AND BOTTOM OF C' CANNOT
+                 "BE SO EASILY AVOIDED UNLESS THE ORIGINAL IMAGE A
+                 "CONTAINS IX ROWS OF ZEROS AT THE TOP AT THE BOTTOM.
+         "
+         "
+        "FORTRAN CALL:
+        "   CALL LAPL2D(A,MA,NA,IA,JA,C,MC,NC,IC,JC,M,N,IX)
+        "
+        "               ---STATISTICS---
+        "EQUIPMENT: FAST OR STANDARD MEMORY
+        "LANGUAGE: APAL
+        "AUTHOR: R. L. KIRLIN
+        "DATE: JANUARY,1979
+        "SIZE: 62 + SPMUL (14) = 76 LOCATIONS
+         "SPEED: APPROXIMATE U-SEC; ASYMPTOTIC
+"                  2*M*N+1.83N USEC
+        "SCRATCH: ALL SPADS,DPX(O,1),DPY(0,1)
+" -------------------------------------------------------------
+"--------------------------------------------------------------
+        "               ---USAGE---
+        "
+        "
+A  $EQU 0                                         "SP0 BECOMES A'(I),INCREMENTIN
+MA  $EQU 1                                        "SP1 BECOMES M(I), INCREMENTIN
+NA  $EQU 2                                        "SP2 BECOMES IX*MA-IX, ADDRESS
+IA  $EQU 3
+JA  $EQU 4
+C  $EQU 5
+MC $EQU 6                              "SP 6 BECOMES MC-M FOR C COL JUMPS
+NC $EQU 7                              "SP 7 BECOMES IX*MA,ADDRESS JUMP
+IC $EQU 10
+JC $EQU 11
+M  $EQU 12
+N  $EQU 13                                        "SP13 BECOMES N(I),COLUMN COUN
+IX $EQU 14                                        "SP14 REMAINS IX
+MAM $EQU 15                                      "SP15 BECOMES MA-M, FOR CHANGIN
+IXMX $EQU 16                                     "SP16 BECOMES IX*MA+IX FOR ADRE
+CI $EQU 17                                       "SP17 BECOMES C'(I),INCREMENTIN
+ CON1: $FP 128.
+ CON2: $FP -4.
+"
+"
+LAPL2D : MOV A,MAM
+         MOV MA,IXMX
+                                                  "CALCULATE INITIAL C ADDRESS
+         MOV JC,A
+         MOV MC,MA
+         JSR SPMUL
+         ADD C,A
+                                                  "NOW C+JC*MC+IC
+         ADD IC,A                                 "JC*MC+C+IC,INITIAL C ADDRESS
+         MOV A,CI                                 "STORE IN 17, WHERE IT WILL BE
+         MOV IXMX,A                                " GET IX*MA INTO SP7
+         MOV IX,MA
+         JSR SPMUL
+         MOV A,NC                                  "STORE IN 7,DESTROYING NC
+         MOV JA,A                                 "CALCULATE INITIAL ADDRESS
+         MOV IXMX,MA
+         JSR SPMUL
+         ADD MAM,A
+         ADD IA,A                                 "A+JA*MA+IA=ADDR OF INITIAL A'
+         MOV IXMX,MAM                                "STORE MA IN 15;GET MA-M
+         SUB M,MAM
+         MOV M,MA                                  "ROW CTR IN SP1 WILL BE DECRE
+         SUB M,MC                                 "INCREMENT FROM C' BOTTOM TO T
+         ADD IX,NC                                 "GET IX*MA+IX
+         MOV NC,IXMX                                 "STORE IN 16
+         SUB IX,NC                                 "RESTORE 7 TO IX*MA
+         SUB IX,NC                                 "GET IX*MA-IX
+         MOV NC,NA                                  "STORE IN 2, DESTROY NA
+         ADD IX,NC                                 "RESTORE 7 TO IX*MA
+         RPSF CON2 ; DPX(0)<DB                    "STORE CONSTANT -4 IN DPX(0)
+         RPSF CON1; DPY(0)<DB                      "STORE CONSTANT 128 IN DPY(0)
+"           ----------------------------------------------
+"                LOOPCN IS COLUMN LOOP
+"           ----------------------------------------------
+"
+                                                 "ADDRESS FIRST ELEMENT
+        DEC CI                         "DEC FOR LATER INC
+LOOPCN: SUB NC,A;SETMA                 "GET LEFT HAND VALUE (L)
+        NOP
+        ADD NA,A;SETMA                 "GET TOP VALUE (T);
+        DPX(1)<MD                      "STORE L
+        ADD IXMX,A;SETMA               "GET RH VALUE (R)
+        FADD DPX(1),MD                 "GET L+T
+        SUB NA,A;SETMA;FADD            "GET B (BOTTOM VALUE)
+        DPX(1)<MD                      "STORE R
+        SUB IX,A;SETMA;                "GET M (CENTER CALUE)
+          FADD DPX(1),FA               "GET R+(L+T)
+        FADD;
+          DPX(1)<MD                    "STORE B
+        FADD DPX(1),FA                 "GET B+(R+L+T)
+LOOP:   FADD;FMUL DPX(0),MD;            "GET -4*M
+          INC A                        "SET NEW CENTER
+        SUB NC,A;SETMA;FMUL;           "GET L
+          FADD DPY(0),FA               "GET 128+B+R+L+T
+        FMUL;FADD
+        ADD NA,A;SETMA;                "GET T
+          FADD FM,FA                   "128+B+R+L-4*M
+        DPX(1)<MD;                     "STORE L
+          FADD
+        ADD IXMX,A;SETMA;              "GET R
+          DPY(1)<FA                    "STORE C'
+        FADD DPX(1),MD                 "GET L+T
+        SUB NA,A;SETMA;FADD            "GET B
+        DPX(1)<MD                      "STORE R
+        SUB IX,A;SETMA;                "GET M
+          FADD DPX(1),FA                  "GET R+(L+T)
+        DEC MA;FADD;                   "TEST ROW
+          DPX(1)<MD                    "STORE B
+        INC CI;SETMA;MI<DPY(1);        "STORE C'
+          BGT LOOP;
+          FADD DPX(1),FA               "GET B+(R+L+T)
+"
+"          -----------------------------------
+"            SET UP FOR NEW COLUMN
+"          -----------------------------------
+NEWCOL: MOV M,MA                                  "START NEW COLUMN,ROW COUNTER
+        ADD MC,CI                                 "GET NEW C'ADDRESS
+        ADD MAM,A
+        DEC N                                 "GET NEW A'ADDRESS BY ADDING MA-M
+        BEQ.+2
+        JMP LOOPCN
+        RETURN
+        $END
+"****** LPL2DB = 2-D LAPLACIAN FILTER WITH BDRY TEST /FAST/ = REL 1.0, APR 79 **
+$TITLE LPL2DB
+        $RADIX 8
+$ENTRY LPL2DB,16
+$EXT SPMUL
+                 "2- DIMENSIONAL IMAGE LAPLACIAN
+                 "        ---ABSTRACT---
+                 "
+                 "GIVEN A 2- DIMENSIONAL ARRAY OF DATA STORED IN MATRIX A
+                 "WITH
+                 "   A=BASE ADDRESS OF MATRIX A
+                 "  MA=NUMBER OF ROWS OF A
+                 "  NA=NUMBER OF COLUMNS OF A
+                 "  IA=INITIAL ROW OF THE SUBMATRIX A' OF A TO BE PROCESSED,
+                 "         0<=IA<=MA-1
+                 "  IJ=INITIAL COLUMN OF THE SUBMATRIX A' TO BE PROCESSED,
+                 "         0<=IJ<=NA-1
+                 "   M=NUMBER OF ROWS IN A',WHERE 1<=M<=MA
+                 "   N=NUMBER OF COLUMNS IN A',WHERE 1<=N<=NA
+                 "
+                 "COLUMNS OF A ARE STORED SEQUENTIALLY IN MAIN DATA
+                 "
+                 "
+                 "THE ELEMENTS OF THE PROCESSED A' ARE PLACED IN C' OF DIMENSION
+                 " MXN, LOCATED AT ROW IC, COLUMN JC, WITHIN THE DESTINATION
+                 "MATRIX C WHOSE BASE ADDRESS IS C.
+                 "
+                 "THE VALUE OF ELEMENT C'(P,Q) IS GIVEN BY
+                 "  C'(P,Q)=128 -4*A'(P,Q)+A'(P,Q-IX)+A'(P-IX,Q)+A'(P,Q+IX)+A'(P
+                 "
+                 "IF A' LIES OUTSIDE THE BOUNDARY OF A, THAT FACT IS ACKNOWLEDGE
+                 "ZEROS ARE SUBSTITUTED FOR VALUES OF THOSE ELEMENTS
+                 "THIS IS ACCOMPLISHED BY A TREE OF TESTS WHICH
+                 "WILL DETECT UP TO 2 ADJAC. BOUNDARY OVERLAPS OF A'(P,Q)+-IX
+                 "WITH A, SUCH AS TOP AND RIGHT OR BOTTOM AND LEFT.
+                 "HOWEVER, SINCE EACH A' POINT TO BE FILTERED IS TESTED
+                 "INDIVIDUALLY, MATRICES A OF DIMENSIONS GREATER THAN
+                 "(2*IX+1)*(2*IX+1) WILL HAVE A' PROCESSED CORRECTLY,AS
+                 "NO MORE THAN 2 BOUNDARIES OF A CAN BE OVERLAPPED BY
+                 "POINTS A'(P,Q)+-IX.
+                 "OVERSIZED INPUT IMAGES WILL ALLOW FOR THIS CASE.
+                 "
+                 "B IS A CALLING PARAMETER WHICH =0 IF NO
+                 "BOUNDARY TESTING IS DESIRED, .N..EQ. 0  OTHER-
+                 "WISE. BOUNDARY TESTING INCREASES PROCESSING
+                 "TIME BY ABOUT 50%,BUT IF B=0 AND C IS STORED ADJACENT
+                 "TO A, THE LAST COLUMNS (IX)  OF A WILL BE INCOR-
+                 "RECTLY PROCESSED;C VALUES WILL BE TAKEN IN
+                 "AS PART OF A.!!!!!
+         "
+         "
+        "FORTRAN CALL:
+        "   CALL LPL2DB(A,MA,NA,IA,JA,C,MC,NC,IC,JC,M,N,IX,B)
+        "
+        "               ---STATISTICS---
+        "EQUIPMENT: FAST MEMORY
+        "LANGUAGE: APAL
+        "AUTHOR: R. L. KIRLIN
+        "DATE : OCTOBER,1978
+        "SIZE: 309 + SPMUL (14) =323 LOCATIONS
+         "SPEED: APPROXIMATE U-SEC
+         "         W/O BOUND TEST            W/ BOUND TEST
+         "        -----------------         --------------------
+         "                              BOUND DETECTED      BOUND NOT DET.
+         "                              ---------------   -------------------
+         " SETUP          11.50          15.83 (TYP)       14.83
+         " COL TOPS       2.83*N        4.17*N             2.83*N
+         " OTHER PTS      2.67*(M-1)*N  4.00*(M-1)*N       2.67*(M-1)*N
+         " COL JUMPS      1.00*(N-1)    1.00*(N-1)         1.00*(N-1)
+        "SCRATCH: ALL SPADS,DPX(0,1),DPY(0,1)
+" -------------------------------------------------------------
+"--------------------------------------------------------------
+        "               ---USAGE---
+        "
+        "
+A  $EQU 0                                         "SP0 BECOMES A'(I),INCREMENTIN
+MA  $EQU 1                                        "SP1 BECOMES M(I), INCREMENTIN
+NA  $EQU 2                                        "SP2 BECOMES IX*MA-IX, ADDRESS
+IA  $EQU 3                                        "SP3 BECOMES IA-IX, FOR TOP TE
+JA  $EQU 4                                        "SP4 BECOMES JA-IX, FOR LH TES
+C  $EQU 5                                         "SP5 BECOMES N, FOR LH & RH TE
+MC  $EQU 6                                        "SP6 BECOMES MC-M, TO CHG COLS
+NC  $EQU 7                                        "SP7 BECOMES IX*MA, ADDRESS JU
+IC  $EQU 10                                       "SP10 BECOMES IA-MA+IX, FOR BO
+JC  $EQU 11                                       "SP11 BECOMES JA-NA+IX, FOR RH
+M  $EQU 12                                        "SP12 REMAINS M FOR TOP AND BO
+N  $EQU 13                                        "SP13 BECOMES N(I),COLUMN COUN
+IX $EQU 14                                        "SP14 REMAINS IX
+MAM $EQU 15                                      "SP15 BECOMES MA-M, FOR CHANGIN
+IXMX $EQU 16                                     "SP16 BECOMES IX*MA+IX FOR ADRE
+CI $EQU 17                                       "SP17 BECOMES C'(I),INCREMENTIN
+ CON1: $FP 128.
+ CON2: $FP -4.
+"
+"
+"           ----------------------------------------------
+"                IS BOUNDARY TESTING DESIRED?
+"           ----------------------------------------------
+LPL2DB:  MOV MAM,MAM                    "TEST INPUT PARAM. B FOR BOUNDARY
+                                      "TESTING
+         BNE BOUND                     "JUMP TO 'NO' IF TESTS NOT WANTED
+         JMP NO                        "OR IF NO BOUNDARIES DETECTED.
+"         ------------------------------------------------------------
+"
+"             ***DETERMINE IF SUBMATRIX A' PLUS AN IX BORDER IS WHOLLY WITHIN***
+         "       A, HAVING NO OVERLAPPING BOUNDARIES. IF TRUE,
+         "       BYPASS BOUNDARY TESTING & PROCEED TO NORMAL FILTERING
+         "       ROUTINE, 'NO'.
+"         ------------------------------------------------------------
+         "
+BOUND:   SUB# IX,IA
+         BGE LT                        "IF IA-IX<0,THEN TOP,SO JUMP TO YES
+         JMP YES
+LT:      SUB# IX,JA
+         BGE RT                        "IF JA-IX<0,THEN LEFT, SO GO YES
+         JMP YES
+RT:      ADD IA,N
+         ADD IX,N
+         SUB# NA,N                     "IF IA+N+IX>NA,THEN RIGHT, SO JUMP YES
+         BGT YES1; SUB IA,N
+         SUB IX,N                       "RESTORE N+IX TO N
+         JMP BT
+YES1:    SUB IX,N                       "RESTORE N+IX TO N
+         JMP YES
+BT:      ADD JA,M
+         ADD IX,M
+         SUB# MA,M                     "IF JA+M+IX>MA,THEN BOTTOM,SO GO YES
+         BGT YES2; SUB JA,M
+         SUB IX,M                      "RESTORE M+IX TO M
+         JMP NO
+YES2:    SUB IX,M                      "RESTORE M+IX TO M
+                                       "
+                                       "STORE A AND MA IN 14 AND 15 (OCT)
+                                  "
+                                  "
+                                  "
+"        ------------------------------------------------------------
+"              YES, CHECK FOR BOUNDARIES,AND PROCESS ACCORDINGLY
+"        ------------------------------------------------------------
+                                                  "STORE A AND MA IN 15 AND 16 (
+   YES:  MOV A,MAM
+         MOV MA,IXMX
+                                                  "CALCULATE INITIAL C ADDRESS
+         MOV JC,A
+         MOV MC,MA
+         JSR SPMUL
+         ADD C,A
+                                                  "NOW C+JC*MC+IC
+         ADD IC,A                                 "JC*MC+C+IC,INITIAL C ADDRESS
+         MOV A,CI                                 "STORE IN 17, WHERE IT WILL BE
+                 MOV IXMX,A                                " GET IX*MA INTO SP7
+         MOV IX,MA
+         JSR SPMUL
+         MOV A,NC                                  "STORE IN 7,DESTROYING NC
+         MOV JA,A                                 "CALCULATE INITIAL ADDRESS
+         MOV IXMX,MA
+         JSR SPMUL
+         ADD MAM,A
+         ADD IA,A                                 "A+JA*MA+IA=ADDR OF INITIAL A'
+         MOV IXMX,MAM                                "STORE MA IN 15;GET MA-M
+         SUB M,MAM
+         MOV M,MA                                  "ROW CTR IN SP1 WILL BE DECRE
+         SUB M,MC                                 "INCREMENT FROM C' BOTTOM TO T
+         MOV N,5                                  "N IS NOT DECREMENTED HERE;FOR
+         MOV IA,IC                                "DESTROY IC
+         SUB MAM,IC                                "GET IA-MA+IX+M FOR BOTTOM PE
+         ADD IX,IC
+         MOV JA,JC                                "DESTROY JC
+         SUB NA,JC                                "GET JA-NA+IX+N FOR RH PERIM T
+         ADD IX,JC
+         ADD N,JC
+         ADD IX,NC                                 "GET IX*MA+IX
+         MOV NC,IXMX                                 "STORE IN 16
+         SUB IX,NC                                 "RESTORE 7 TO IX*MA
+         SUB IX,NC                                 "GET IX*MA-IX
+         MOV NC,NA                                  "STORE IN 2, DESTROY NA
+         ADD IX,NC                                 "RESTORE 7 TO IX*MA
+         SUB IX,IA                             "FOR TOP TEST
+         ADD M,IA
+         SUB IX,JA                                 "FOR LH TEST
+         ADD N,JA
+         RPSF CON2 ; DPX(0)<DB                    "STORE CONSTANT -4 IN DPX(0)
+         RPSF CON1; DPY(0)<DB                      "STORE CONSTANT 128 IN DPY(0)
+"           ----------------------------------------------
+"                LOOPC IS COLUMN LOOP
+"           ----------------------------------------------
+"
+                                                 "ADDRESS FIRST ELEMENT
+LOOPC:  MOV A,A;SETMA
+"
+"           -------------------------------
+"                 LOOPR IS ROW LOOP
+"           -------------------------------
+"
+                                                 "TEST FOR LH SIDE
+LOOPR:  SUB# N,JA                                  "LH IF JA+N-N(I)-IX<0
+        BGE TESTRH
+        JMP LH
+                                                 "NOT LH, TEST RH
+TESTRH: SUB# N,JC
+        BGE .+2                           "RH IF JA-NA+N-N(I)+IX>=0
+        JMP TESTTP
+        JMP RH
+                                                 "NOT LH OR RH, TEST TOP
+TESTTP: SUB# MA,IA                                "TOP IF IA+M-M(I)-IX<0
+        BGE TESTBT
+        JMP TNLNR1
+                                                 "NOT L,NOT R, NOT TOP, TEST BOT
+TESTBT: SUB# MA,IC
+        BGE .+2                        "BOTTOM IF IA-MA+M-M(I)+IX>=0
+        JMP NORMAL
+        JMP BNLNR1
+                                                 "IS LH,TEST FOR TOP
+LH:     SUB# MA,IA
+        BGE LTSTBT
+        JMP TL1
+                                                 "NOT TOP,TEST BOTTOM
+LTSTBT: SUB# MA,IC
+        BGE .+2
+        JMP LNTNB1
+        JMP BL1
+                                                 "IS RH, TEST TOP
+RH:     SUB# MA,IA
+        BGE RTSTBT
+        JMP TR1
+                                                 "NOT TOP TEST BOTTOM
+RTSTBT: SUB# MA,IC
+        BGE .+2
+        JMP RNTNB1
+        JMP RB1
+                                                "END OF TEST OF INITIAL POINT
+"           ----------------------------------
+"             A' IS AT TOP,NOT LEFT,NOT RIGHT
+"           ----------------------------------
+TNLNR1: SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<MD                             "STORE (P,Q-IX)
+        FADD DPX(1),ZERO;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,MD                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<MD                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+        JMP NEWCOL
+"
+"           ---------------------------------------
+"             A' IS AT BOTTOM, NOT LEFT,NOT RIGHT
+"           ---------------------------------------
+"
+BNLNR1:  SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<MD                             "STORE (P,Q-IX)
+        FADD DPX(1),MD;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,MD                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<ZERO                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+        JMP NEWCOL
+"
+"           ---------------------------------------
+"             A' IS AT TOP LEFT CORNER OF A
+"           ---------------------------------------
+"
+TL1  : SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<ZERO                             "STORE (P,Q-IX)
+        FADD DPX(1),ZERO;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,MD                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<MD                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+        JMP NEWCOL
+"
+"           ----------------------------------------
+"             A' IS AT LEFT, NOT TOP OR BOTTOM
+"           ----------------------------------------
+"
+LNTNB1: SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<ZERO                             "STORE (P,Q-IX)
+        FADD DPX(1),MD;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,MD                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<MD                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+        JMP NEWCOL
+"
+"           --------------------------------------
+"              A' IS IN BOTTOM LEFT CORNER
+"           --------------------------------------
+"
+BL1  :  SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<ZERO                             "STORE (P,Q-IX)
+        FADD DPX(1),MD;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,MD                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<ZERO                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+        JMP NEWCOL
+"           ---------------------------------------
+"             A' IS IN TOP RIGHT CORNER OF A
+"           ---------------------------------------
+"
+TR1   : SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<MD                             "STORE (P,Q-IX)
+        FADD DPX(1),ZERO;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,ZERO                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<MD                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+        JMP NEWCOL
+"
+"           ---------------------------------------
+"            A' IS ON RIGHT, NOT TOP OR BOTTOM
+"           ---------------------------------------
+RNTNB1: SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<MD                             "STORE (P,Q-IX)
+        FADD DPX(1),MD;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,ZERO                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<MD                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+        JMP NEWCOL
+"
+"           -------------------------------------
+"             A' IS IN RIGHT BOTTOM CORNER OF A
+"           -------------------------------------
+RB1   : SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<MD                             "STORE (P,Q-IX)
+        FADD DPX(1),MD;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,ZERO                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<ZERO                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+        JMP NEWCOL
+"
+"           --------------------------------------
+"            A' IS NOT ON BOUNDARIES OF A
+"           --------------------------------------
+"
+NORMAL: SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<MD                             "STORE (P,Q-IX)
+        FADD DPX(1),MD;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,MD                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<MD                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPR                                "CONTINUE ROW LOOP
+"
+"          --------------------------------------
+"            RESETS FOR NEW COLUMN OR RETURN
+"          --------------------------------------
+"
+NEWCOL: MOV M,MA                                  "START NEW COLUMN,ROW COUNTER
+        ADD MC,CI                                 "GET NEW C'ADDRESS
+        ADD MAM,A
+        DEC N                                 "GET NEW A'ADDRESS BY ADDING MA-M
+        BEQ.+2
+        JMP LOOPC                                 "ADDRESS NEW (P,Q) UNLESS DONE
+        RETURN
+"           ----------------------------------------------
+"           *** NO BOUNDARIES DETECTED , OR NONE TESTED ***
+"           ----------------------------------------------
+   NO :  MOV A,MAM
+         MOV MA,IXMX
+                                                  "CALCULATE INITIAL C ADDRESS
+         MOV JC,A
+         MOV MC,MA
+         JSR SPMUL
+         ADD C,A
+                                                  "NOW C+JC*MC+IC
+         ADD IC,A                                 "JC*MC+C+IC,INITIAL C ADDRESS
+         MOV A,CI                                 "STORE IN 17, WHERE IT WILL BE
+         MOV IXMX,A                                " GET IX*MA INTO SP7
+         MOV IX,MA
+         JSR SPMUL
+         MOV A,NC                                  "STORE IN 7,DESTROYING NC
+         MOV JA,A                                 "CALCULATE INITIAL ADDRESS
+         MOV IXMX,MA
+         JSR SPMUL
+         ADD MAM,A
+         ADD IA,A                                 "A+JA*MA+IA=ADDR OF INITIAL A'
+         MOV IXMX,MAM                                "STORE MA IN 15;GET MA-M
+         SUB M,MAM
+         MOV M,MA                                  "ROW CTR IN SP1 WILL BE DECRE
+         SUB M,MC                                 "INCREMENT FROM C' BOTTOM TO T
+         MOV N,5                                  "N IS NOT DECREMENTED HERE;FOR
+         ADD IX,NC                                 "GET IX*MA+IX
+         MOV NC,IXMX                                 "STORE IN 16
+         SUB IX,NC                                 "RESTORE 7 TO IX*MA
+         SUB IX,NC                                 "GET IX*MA-IX
+         MOV NC,NA                                  "STORE IN 2, DESTROY NA
+         ADD IX,NC                                 "RESTORE 7 TO IX*MA
+         RPSF CON2 ; DPX(0)<DB                    "STORE CONSTANT -4 IN DPX(0)
+         RPSF CON1; DPY(0)<DB                      "STORE CONSTANT 128 IN DPY(0)
+"           ----------------------------------------------
+"                LOOPCN IS COLUMN LOOP
+"           ----------------------------------------------
+"
+                                                 "ADDRESS FIRST ELEMENT
+LOOPCN: MOV A,A;SETMA
+"
+"          -----------------------------------
+"               LOOPRN IS ROW LOOP
+"          -----------------------------------
+LOOPRN: SUB NC,A;SETMA                            "ADDRESS (P,Q-IX)
+        ADD NA,A;SETMA                            "ADDRESS (P-IX,Q)
+        ADD IXMX,A; SETMA;                         "ADDRESS (P,Q+IX)
+          FMUL DPX(0),MD                         "GET -4(P,Q)
+        SUB NA,A;SETMA;FMUL;                           "ADDRESS (P+IX,Q)
+          DPX(1)<MD                             "STORE (P,Q-IX)
+        FADD DPX(1),MD;                          "GET (P,Q-IX)+(P-IX,Q)
+          SUB IX,A;SETMA;FMUL                         "RESET (P,Q)
+        FADD FM,MD                               "GET -4(P,Q)+(P,Q+IX)
+        FADD DPY(0),FA;                          "GET 128+(P,Q-IX)+(P-IX,Q)
+          DPY(1)<MD                             "STORE (P+IX,Q) IN DPY(1)
+        FADD DPY(1),FA                           "GET (P+IX,Q)-4(P,Q)+(P,Q+IX)
+        FADD;DPX(1)<FA                           "STORE 128+(P,Q-IX)+(P-IX,Q)
+        FADD DPX(1),FA                           "GET LAPLACIAN
+        FADD                                     "
+        MOV CI,CI;SETMA;MI<FA                    "STORE C'
+        INC CI                                   "GET NEXT ROW OF C
+        DEC MA                                    "DECREMENT ROW COUNTER
+        BEQ .+2;                                 "CONTINUE IF NOT BOTTOM
+          INC A;SETMA                            "ADDRESS NEW ROW
+        JMP LOOPRN                                "CONTINUE ROW LOOP
+"
+"          -----------------------------------
+"            SET UP FOR NEW COLUMN
+"          -----------------------------------
+        MOV M,MA                                  "START NEW COLUMN,ROW COUNTER
+        ADD MC,CI                                 "GET NEW C'ADDRESS
+        ADD MAM,A
+        DEC N                                 "GET NEW A'ADDRESS BY ADDING MA-M
+        BEQ.+2
+        JMP LOOPCN
+        RETURN
+        $END
+"****** MED2D = 2-D MEDIAN FILTER /COMMON/ = REL 1.1, DEC 79 *****
+$TITLE MED2D
+        $RADIX 8
+$ENTRY MED2D,15
+ $EXT SPMUL
+ $EXT SPFLT
+ $EXT VCLR
+                 "2- DIMENSIONAL IMAGE MEDIAN FILTER
+                 "        ---ABSTRACT---
+                 "
+                 "GIVEN A 2- DIMENSIONAL ARRAY OF DATA STORED IN MATRIX A
+                 "WITH
+                 "   A=BASE ADDRESS OF MATRIX A
+                 "  MA=NUMBER OF ROWS OF A
+                 "  NA=NUMBER OF COLUMNS OF A
+                 "  IA=INITIAL ROW OF THE SUBMATRIX A' OF A TO BE PROCESSED,
+                 "         0<=IA<=MA-1
+                 "  IJ=INITIAL COLUMN OF THE SUBMATRIX A' TO BE PROCESSED,
+                 "         0<=IJ<=NA-1
+                 "   M=NUMBER OF ROWS IN A',WHERE 1<=M<=MA
+                 "   N=NUMBER OF COLUMNS IN A',WHERE 1<=N<=NA
+                 "
+                 "COLUMNS OF A ARE STORED SEQUENTIALLY IN MAIN DATA
+                 "
+                 "
+                 "THE ELEMENTS OF THE PROCESSED A' ARE PLACED IN C' OF DIMENSION
+                 " MXN, LOCATED AT ROW IC, COLUMN JC, WITHIN THE DESTINATION
+                 "MATRIX C WHOSE BASE ADDRESS IS C.
+                 "
+                 "THE VALUE OF ELEMENT C'(P,Q) IS GIVEN BY
+                 "THE MEDIAN OF ALL ELEMENTS A'(T,U) FOR
+                 "ALL   P-IX.LE.T.LE.P+IX,Q-IX.LE.U.LE.Q+IX
+                 "
+"                  THE MEDIAN IS THAT LEAST HISTOGRAM LEVEL SUCH THAT
+"                 THE TOTAL COUNT CT IN ALL LEVELS UP TO AND INCLUDING
+"                 THE MEDIAN IS >= HALF THE NUMBER OF PIXELS IN THE
+"                 FILTER AREA: CT>=(2*IX+1)**2/2
+                 "  H=BASE ADDRESS OF HISTOGRAM ARRAY WHICH WILL
+                 "      HAVE LENGTH 2**(#BITS/IMAGE ELEMENT)
+"                "  L=2**(#BITS/IMAGE ELEMENT)
+                 "
+                 "IF C IS STORED ADJACENT
+                 "TO A, THE LAST COLUMNS (IX)  OF A WILL BE INCOR-
+                 "RECTLY PROCESSED;C VALUES WILL BE TAKEN IN
+                 "AS PART OF A.!!!!!
+                 "TO AVOID THIS SORT OF PROBLEM, ADD IX COLUMNS
+                 "OF ZEROS BEFORE AND AFTER A.
+                 "IX ROWS AT TOP AND BOTTOM WILL SUFFER FROM
+                 "WRAP AROUND ERROR,IN ANY EVENT.
+         "
+         "
+         "FORTRAN CALL:
+        "   CALL MED2D(A,MA,IA,JA,C,MC,IC,JC,M,N,IX,H,L)
+        "
+        "               ---STATISTICS---
+        "EQUIPMENT: FAST OR SLOW  MEMORY
+        "LANGUAGE: APAL
+        "AUTHOR: R. L. KIRLIN
+        "HISTORY: 7TH OCT.'79.D.GANGULY MADE MINOR MODIFICATION TO
+        "         LINE OF CODE BEFOR DECMED: TO PREVENT THE ROUTINE
+        "         FROM EXITTING PREMATURELY.
+        "DATE : FEBRUARY, 1979
+        "SIZE:187 + SPMUL (14) + SPFLT (5) + VCLR (4 STND, 16 FAST)
+        "          = 210 STND, 222 FAST  LOCATIONS
+        "SPEED: APPROXIMATE U-SEC
+"                (14*(2*IX+1)+4*D+30)*M*N/6
+"                 WHERE D IS THE AVERAGE DIFFERENCE IN MEDIAN
+"                 VALUES IN WINDOWS AROUND ADJACENT POINTS,AND
+"                 30  IS THE AVG NO. STEPS OF SETUP PER PIXEL.
+"
+"                 D WAS FOUND BY HUANG, YANG, AND TANG TO BE
+"                 LESS THAN 10 FOR TWO REPRESENTATIVE IMAGES
+"                 (IEEE TRANS.ASSP,FEB. 1979, PP.13-18.
+"        EXAMPLE: M=N=256, L=256, IX=1, D=10
+"                  APPROXIMATE TIME = 1.223 SEC.
+        "SCRATCH: ALL SPADS,ALL DPADS
+" -------------------------------------------------------------
+"--------------------------------------------------------------
+        "               ---USAGE---
+        "
+        "
+A   $EQU 0       "A'(I) ADDRESS
+MED  $EQU 1       "MEDIAN
+V   $EQU 2       "VALUE OF A', USED FOR ADDR'G HIST
+VH  $EQU 3       "  "
+C   $EQU 4       "C'(I) ADDRESS
+CJMP $EQU 5       "MC
+AJMP $EQU 6      "A-JMP FOR FILTERING,STEP TO NEXT POINT IN ROW
+FROW $EQU 7      "COUNTER FOR ROW IN FILTER
+N   $EQU 10      "N
+NI  $EQU 11      "N(I) COLUMN CTR
+AJMP1 $EQU 12    "A-JMP FOR NEW COL FOR FIRST POINT IN ROW FILTER
+H   $EQU 13      "H
+FCOL $EQU 14     "COL CTR FOR FILTER
+LOADA $EQU 15    "A-JMP TO LOAD NEW COL FOR NORMAL IN-ROW POINT
+S   $EQU 16
+ CON1: $FP 1.
+ CON2: $FP -1.
+"
+"
+"       DATAPAD ASSIGNMENTS:
+"         DPX               DPY
+"         ---               ---
+"   -4                       S**2/2
+"   -3   AROJMP
+"   -2   CROJMP
+"   -1   M(I)                 -1
+"    0                      A' VALUE
+"    1                         1
+"    2   OLD MEDIAN
+"    3       CT
+"
+"
+"           ----------------------------------------------
+MED2D: RPSF CON1;DPY(1)<DB     "GET 1 INTO DPY(1)
+        RPSF CON2;DPY(-1)<DB     "GET -1 INTO DPY(-1)
+"      -----------------------------------
+"         GET ADDR FIRST A'(0,0)
+"      -----------------------------------
+        MOV A,17                       "STORE A IN 17
+        MOV VH,A                        "GET INITIAL A ADDRESS
+          JSR SPMUL                    "JA*MA
+        ADD A,17                       "A+JA*MA
+        ADD V,17                      "A+JA*MA+IA,TEMP STORE IN MI
+"     -------------------------------------
+"        GET FIRST A' UNDER FILTER
+"     -------------------------------------
+        MOV AJMP1,A                        "GET IX*MA+IX
+          JSR SPMUL                    "  FOR UPPER LH FILTER
+        ADD AJMP1,A                    "IX*MA+IX
+        SUB A,17                       "INIT POINT FOR FILTER
+        MOV 17,V                       "TEMP STORE A' IN V
+"      -----------------------------------
+"          GET C'(0,0), SET CT=0
+"      -----------------------------------
+        MOV MED,VH;                    "TEMP STORE MA IN VH
+          FADD ZERO,ZERO               "GET CT=0 INTO DPX(3)
+        MOV CJMP,MED;FADD              "GET INIT C ADDRESS
+        MOV FROW,A;                    "JC IN SP1
+          DPX(3)<FA                    "ZERO =INIT CT
+          JSR SPMUL
+        ADD A,C                        "C+JC*MC
+        ADD AJMP,C                       "C+JC*MC+IC
+"      ------------------------
+"         GET S=2*IX+1
+"      ------------------------
+        MOVL AJMP1,S                     "S=2*IX+1 IS FILTER COL LENGTH
+        INC S                        "STORE IN IX
+"      ---------------
+"        GET AJMP1
+"      ---------------
+        MOV VH,AJMP1                    "GET MA
+        SUB S,AJMP1                     "MA-S-1 FOR FIRST-OF-ROW FIL COL JMP
+        DEC AJMP1
+        MOV S,FROW                     "TEMP STORE S HERE
+"     ----------------
+"       FLOAT L
+"     ----------------
+        MOV FCOL,17                  "FLOAT L
+        JSR SPFLT
+        FIX DPX(1);
+          MOV FROW,A                      "GET S*S/2
+        FADD;
+          MOV FROW,MED
+        DPY(-3)<FA                    "FIX L IN DPY(-3)
+"     -----------------
+"       GET S**2/2
+"     -----------------
+        JSR SPMUL
+        MOVR A,17                      "S**2/2
+        JSR SPFLT
+        DPY(-4)<DPX(1);                "S**2/2 IN DPY(-4)
+"      ----------------------
+"        GET INIT MEDIAN GUESS
+"      -------------------------
+          MOVR FCOL,FCOL               "L/2-1 IS INIT GUESS AT MEDIAN
+        DEC FCOL
+        MOV FCOL,17                     "FOR  FLOAT
+        JSR SPFLT
+        DPX(2)<DPX(1);                 "STORE INIT MED IN DPX(2)
+"       -----------------
+"         SET M AND N
+"       -----------------
+          MOV N,17                     "FLOAT M INTO DPX(-1)
+        JSR SPFLT
+        DPX(-1)<DPX(1);
+          MOV NI,N                     "STORE N
+"    ------------------------
+"      GET CROJMP
+"    ------------------------
+        MOV NI,A                       "N
+        DEC A                            "N-1
+        MOV CJMP,MED                   "MC IN SP 1
+        JSR SPMUL
+        DEC A                          "(N-1)*MC-1
+        MOV A,17                       "FOR FLOAT
+        JSR SPFLT
+        FIX DPX(1);
+          MOV FROW,A                   "S
+        FADD;ADD N,A                   "S+N
+        DPX(-2)<FA;                "CROJMP IN DPX(-2)
+"     ---------------------
+"       GET AROJMP
+"     ---------------------
+          DEC A
+        DEC A                          "S+N-2
+        MOV VH,MED                     "MA IN SP 1
+        JSR SPMUL                       "GET (S+N-2)*MA
+        MOV A,17                       "FLOAT (S+N-2)*MA+S
+        ADD FROW,17                    "ADD S
+        JSR SPFLT
+        FIX DPX(1);
+          MOV FROW,A                   "S
+        FADD;DEC A                     "S-1
+        DPX(-3)<FA                 "STORE AROJMP IN DPX(-3)
+"    -------------------
+"       GET LOADA & AJMP
+"    -------------------
+        JSR SPMUL
+        MOV A,AJMP                     "(S-1)*MA
+        ADD FROW,AJMP                  "   "      +S
+        INC AJMP                       "AJMP=JMP FROM LOAD COL TO UNLOAD COL
+        ADD MED,A                      "S*MA
+        SUB FROW,A                     "S*MA-S
+        DEC A                          "S*MA-S-1=LOADA
+        MOV A,LOADA                    "STORE
+        MOV VH,A                       "PUT INIT A IN A
+        MOV FCOL,MED                   "PUT INIT MED IN MED
+        ADD H,MED                      "MED IS MED ADDR
+        MOV FROW,S                     "PUT S IN S
+        MOV S,FCOL                     "SET FILTER COL CTR
+        MOV V,A                        "PUT A IN A
+"---------------------------------------------------------------------
+"        GET FIRST-OF-ROW HISTOGRAM
+"---------------------------------------------------------------------
+FIRST:  MOV A,A;SETMA
+        NOP
+        NOP
+        FIX MD;
+          INC A;SETMA                  "GET NEXT A'
+        FADD
+        DPY(0)<FA                      "TEMP STORE FIRST A'
+LOADC1: DB=DPY(0);LDSPI V;             "WILL ADD TO BASE HIST ADDR
+          FIX MD
+        ADD H,V;SETMA;                 "HIST ADDR
+          FSUB DPX(2),DPY(0)           "TEST MED - A'
+        DPY(0)<FA;FADD                 "TEMP STORE NEXT A'
+        FADD DPY(1),DPX(3)             "INC CT IN CASE
+        FADD DPY(1),MD;                "INC H-VALUE
+          INC A;SETMA;                 "GET NEXT A'
+          BFGE INCCT0                  "GO INC CT IF A'<=MED
+        DEC FROW;FADD                  "DEC ROW CTR
+        MOV V,V;SETMA;MI<FA;           "STORE INC'D H
+          BGT LOADC1                   "LOOP IF FILTER COL NOT DONE
+        BR NEWCOL;                     "GO SETUP NEW FCOL
+          MOV S,FROW                   "RENEW FILTER ROW CTR
+INCCT0: DEC FROW;FADD;                 "DEC FILTER ROW CTR
+          DPX(3)<FA                    "STORE INC'D CT
+        MOV V,V;SETMA;MI<FA;           "STORE INC'D H
+          BGT LOADC1
+        MOV S,FROW                   "RENEW FILTER ROEW CTR
+"    ---------------------------------
+"        START NEXT FILTER COLUMN
+"    ----------------------------------
+NEWCOL: DEC FCOL                       "TEST FILTER COL
+        BGT SETCOL
+        FSUB DPY(-4),DPX(3);         "S**2/2-CT FOR TEST
+          MOV S,FCOL                      "RENEW FILTER COL CTR
+        JMP GETMED                    "GO GET MED IF S**2 VALUES OBTAINED
+SETCOL: ADD AJMP1,A                    "SET UP NEW COL
+        JMP FIRST
+"     ----------------------------------
+"          START NORMAL UNLOAD & LOAD
+"      ----------------------------------
+"
+"            ---------------------
+"             UNLOAD LEFT COLUMN
+"            ---------------------
+NORMAL: MOV A,A;SETMA
+        NOP
+        NOP
+        FIX MD;
+          INC A;SETMA                  "GET NEXT A'
+        FADD
+        DPY(0)<FA                      "TEMP STORE FIRST A'
+UNLDCL: DB=DPY(0);LDSPI V;             "WILL ADD TO BASE HIST ADDR
+          FIX MD
+        ADD H,V;SETMA;                 "HIST ADDR
+          FSUB DPX(2),DPY(0)           "TEST MED - A'
+        DPY(0)<FA;FADD                 "TEMP STORE NEXT A'
+        FADD DPY(-1),DPX(3)             "DEC CT IN CASE
+        FADD DPY(-1),MD;                "DEC H-VALUE
+          INC A;SETMA;                 "GET NEXT A'
+          BFGE DWNCT                   "GO DEC CT IF A'<=MED
+        DEC FROW;FADD                  "DEC ROW CTR
+        MOV V,V;SETMA;MI<FA;           "STORE DEC'D H
+          BGT UNLDCL                   "LOOP IF FILTER COL NOT DONE
+        BR LOAD;                     "GO SETUP NEW FCOL
+          MOV S,FROW                   "RENEW FILTER ROW CTR
+DWNCT : DEC FROW;FADD;                 "DEC FILTER ROW CTR
+          DPX(3)<FA                    "STORE DEC'D CT
+        MOV V,V;SETMA;MI<FA;           "STORE DEC'D H
+          BGT UNLDCL
+        MOV S,FROW                    "RENEW FILTER ROW CTR
+"      ----------------------------
+"         LOAD RIGHT-HAND COLUMN
+"      ----------------------------
+LOAD:   ADD LOADA,A;SETMA
+        NOP
+        NOP
+        FIX MD;
+          INC A;SETMA                  "GET NEXT A'
+        FADD
+        DPY(0)<FA                      "TEMP STORE FIRST A'
+LOADCL: DB=DPY(0);LDSPI V;             "WILL ADD TO BASE HIST ADDR
+          FIX MD
+        ADD H,V;SETMA;                 "HIST ADDR
+          FSUB DPX(2),DPY(0)           "TEST MED - A'
+        DPY(0)<FA;FADD                 "TEMP STORE NEXT A'
+        FADD DPY(1),DPX(3)             "INC CT IN CASE
+        FADD DPY(1),MD;                "INC H-VALUE
+          INC A;SETMA;                 "GET NEXT A'
+          BFGE INCCT1                  "GO INC CT IF A'<=MED
+        DEC FROW;FADD                  "DEC ROW CTR
+        MOV V,V;SETMA;MI<FA;           "STORE INC'D H
+          BGT LOADCL                  "LOOP IF FILTER COL NOT DONE
+        BR GETMED;                     "GO GET MEDIAN
+          FSUB DPY(-4),DPX(3)          "(S**2)/2-CT FOR TEST
+INCCT1: DEC FROW;FADD;                 "DEC FILTER ROW CTR
+          DPX(3)<FA                    "STORE INC'D CT
+        MOV V,V;SETMA;MI<FA;           "STORE INC'D H
+          BGT LOADCL
+"   ----------------------------------------------------
+"      INC OR DEC OLD MED TO GIVE LEAST CT>=(S**2)/2
+"    ---------------------------------------------------
+        FSUB DPY(-4),DPX(3)            "(S**2)/2-CT,TEST FOR CT TOO SMALL
+GETMED: MOV S,FROW;                    "RENEW FILTER ROW CTR
+          FSUB DPY(-4),DPX(3)          "TEST AGAIN FOR CT TOO LARGE
+        FADD
+        BFGT INCMED                    "GO INC MED IF CT<S**2/2
+        BFLT DECMED                    "GO DEC MED IF CT>S**2/2
+        MOV C,C;SETMA;MI<DPX(2)         "OLD MED OK
+        DEC NI ;FADD DPY(-1),DPX(-1)
+        FADD;JMP TSTCOL
+DECMED: MOV MED,MED;SETMA              "ADDRESS MED TO DECREASE CT
+        NOP
+        NOP
+        FSUB DPX(3),MD                 "DECREASE CT
+        FADD DPX(2),DPY(-1);           "DEC MED IN DPX(2)
+          DEC MED;SETMA                "ADDR LOWER SLOT
+DMED:   FSUBR DPY(-4),FA;               "TEST CT-(S**2)/2
+          DPX(3)<FA                    "STORE NEW CT
+        MOV C,C;SETMA;MI<FA;           "STORE MED EACH TRY
+          DPX(2)<FA;FADD               "STORE DEC'D MED
+        FSUB DPX(3),MD                 "DECREASE CT
+        BFGE DMED;                     "LOOP UNTIL CT  <(S**2)/2
+          FADD DPX(2),DPY(-1);         "DEC MED IN DPX(2)
+          DEC MED; SETMA               "ADDR NEXT LOWER SLOT
+        INC MED                        "UNLOOP MED & INC TO CT>=(S**2)/2
+INCMED: INC MED;SETMA                  "ADDRESS MED +1 SLOT
+        NOP
+        NOP
+        FADD DPX(3),MD                 "INCREASE CT
+        FADD DPX(2),DPY(1);           "INC MED IN DPX(2)
+          INC MED;SETMA                "ADDR HIGHER SLOT
+IMED:   FSUB DPY(-4),FA;               "TEST -CT+(S**2)/2
+          DPX(3)<FA                    "STORE NEW CT
+        MOV C,C;SETMA;MI<FA;           "STORE MED EACH TRY
+          DPX(2)<FA;FADD               "STORE INC'D MED
+        FADD DPX(3),MD                 "INCREASE CT
+        BFGT IMED;                     "LOOP IF CT NOT >OR=(S**2)/2
+          FADD DPX(2),DPY(1);         "INC MED IN DPX(2)
+          INC MED; SETMA               "ADDR NEXT HIGHER SLOT
+        DEC MED
+        DEC MED;                       "UNLOOP TO TRUE MED
+          FADD DPY(-1),DPX(-1)         "DEC M IF NEW ROW
+        DEC NI;FADD                    "DEC COL CTR
+TSTCOL: BEQ NEWROW
+        SUB AJMP,A                      "JUMP A TO UNLOAD COL
+        ADD CJMP,C                      "JUMP C TO NEXT COL
+        JMP NORMAL
+NEWROW: BFNE CLEAR;DPX(-1)<FA;              "REPLACE DEC'D M(I)
+         MOV S,NI                         "STORE S TEMP
+        JMP DONE
+"   ----------------------------------------
+"        MUST CLEAR HISTOGRAM AND SET CT=0
+"    ----------------------------------------
+CLEAR:  MOV MED,FCOL;                      "STORE MED TEMP
+          FADD ZERO,ZERO                   "START TO GET CT=0
+        MOV A,VH;FADD                    "STORE A TEMP
+        MOV LOADA,FROW;                  "STORE LOADA TEMP
+          DPX(3)<FA                         "CT=0
+        LDSPI V;DB=DPY(-3)               "HIST LENGTH
+        MOV H,A                          "HIST ADDR
+        LDSPI MED;DB=ZERO
+        INC MED                          "1 IS VECTOR INCREM
+        JSR VCLR
+        MOV VH,A                       "PUT A BACK
+        MOV FCOL,MED                   "PUT MED BACK
+        MOV FROW,LOADA                 "PUT LOADA BACK
+        MOV NI,S                          "PUT S BACK
+        MOV S,FROW                     "RENEW ROW CTR
+        MOV S,FCOL                     "RENEW FCOL
+        LDSPI 17;DB=DPX(-3)
+        SUB 17,A                    "JUMP A TO LOAD INIT HISTOGRAM
+        LDSPI 17; DB=DPX(-2)
+        SUB 17,C                    "JUMP C TO NEW ROW
+        MOV N,NI                        "RENEW COL CTR
+        JMP FIRST
+DONE:   RETURN
+      $END
+"****** CONV2D = 2-D CONVOLUTION (OR CORRELATION) /COMMON/ = REL 1.1, JAN 80 ***
+ $TITLE CONV2D
+        $RADIX 8
+ $ENTRY CONV2D,17
+ $EXT SPMUL
+ $EXT SPDIV
+ $EXT VMOV
+ $EXT VRVRS                   "NEW! INSERTED JAN '80
+ $EXT DOTPR
+ $EXT SPFLT
+"
+"       CONVOLVES (OR CORRELATES) A FILTER MATRIX B WITH AN IMAGE
+"       ARRAY A', WHICH IS A SUBMATRIX OF A, AND PUTS THE RESULT
+"       IN C',A SUBMATRIX OF C.
+"
+"       FORTRAN CALL:
+"          CALL CONV2D(A,MA,IA,JA,M,N,B,MB,NB,B0,C,MC,IC,JC,R)
+"       WHERE
+"         A = BASE ADDRESS OF SOURCE MATRIX A, STORED COLUMNWISE
+"         MA = NUMBER OF COLUMNS OF A
+"         IA = ROW OF A WHICH DESIGNATES FIRST ROW OF A'
+"              0<=IA<=MA-1
+"         JA = COLUMN OF A WHICH DESIGNATES FIRST COLUMN OF A'
+"              0<=JA<=NA
+"         M = NUMBER OF ROWS OF A'
+"         N = NUMBER OF COLUMNS OF A'
+"         B = BASE ADDRESS OF FILTER B,STORED COLUMNWISE
+"         MB = NUMBER OF ROWS OF B
+"         NB = NUMBER OF COLUMNS OF B
+"         B0 = ELEMENT OF B VECTOR WHICH HAS INDICES (0,0)
+"              0<=B0<=MB*NB-1
+"         C = BASE ADDRESS OF DESTINATION MATRIX C (SEE NOTE)
+"         MC = NUMBER OF ROWS OF C
+"         IC = ROW OF C WHICH DESIGNATES FIRST ROW OF C'
+"              0<=IC<=MC-1
+"         JC = COLUMN OF C WHICH DESIGNATES FIRST COLUMN OF C'
+"              0<=JC<=NC-1
+"         R = 1 IF CORRELATION IS DESIRED
+"           = 0 IF CONVOLUTION IS DESIRED
+"
+"         NOTE: MB*NB+1 WORDS OF MAIN DATA FOLLOWING THE VECTOR
+"               B ARE USED FOR STORING VECTOR A2 AS DISCUSSED
+"               BELOW.  DO NOT STORE C IN THAT SPACE.  FURTHER, STORING
+"               OF B DIRECTLY AFTER A WILL CAUSE B ELEMENTS TO APPEAR
+"               AS PART OF IMAGE A AND MIGHT CONTRIBUTE TO THE FILTERING
+"               RESULT.SIMILARLY,A SHOULD BE FOLLOWED BY COLUMNS OF
+"               ZEROS IF HORIZONTAL WRAP-AROUND IS TO BE AVOIDED;
+"               VERTICAL WRAP AROUND CANNOT BE AVOIDED WHEN A' EXTENDS
+"               TO THE TOP OR BOTTOM VICINITY OF A,AS DETERMINED
+"               BY THE VERTICAL DIMENSION OF B.
+"
+"
+"
+"       IF R=0, ELEMENTS IN B WILL BE REVERSED IN ORDER FOR
+"       SUBSEQUENT MULTIPLICATION WITH A' ELEMENTS
+"       AS IS INHERENT IN CONVOLUTION.  ALSO THE COUNT TO
+"       BO  BECOMES MB*NB-B0-1 (DONE BY PROGRAM).
+"
+"       EACH POINT C'(P,Q), 0<=P<=M-1,0<=Q<=N-1, WILL BE CALCULATED
+"       AS DOUBLE SUM  A'(P+U,Q+V)*B(U,V) FOR -IB<=U<=-IB+MB-1
+"       AND -JB<=V<=-JB+MB-1, WHERE IB AND JB LOCATE THE (0,0)
+"       ELEMENT B0 OF B, (WHERE B0 IS  AFTER REVERSAL FOR CONVOLUTION
+"       IF NECESSARY); 0<=IB<=MB-1, 0<=JB<=NB-1.
+"
+"       THIS IS ACCOMPLISHED BY STORING THE NECESSARY ELEMENTS
+"       OF A' IN A VECTOR A2 AND GETTING THE DOT PRODUCT A2*B.
+"       WHEN THE NEXT POINT IN ROW P, A'(P,Q+1), IS TO BE
+"       FILTERED, ONLY THE NEW COLUMN OF ELEMENTS
+"       (P-JB,Q+1) THROUGH (P-JB+MB-1,Q+1) NEED BE OBTAINED.
+"       PREVIOUS A' VALUES NEEDED ARE SHIFTED DOWN IN THE
+"       VECTOR A2 VIA VMOV, AND THE NEW ELEMENTS FILL TO THE END.
+"
+"
+"EQUIPMENT: FAST OR SLOW MEMORY
+"LANGUAGE: APAL
+"AUTHOR: R. L. KIRLIN
+"DATE: JANUARY, 1979
+"   MODIFIED DEC '79, JD ELLIOTT, TO SEPERATE USE OF FLOATING AND INTEGER
+"            VALUES IN THE DATA PADS. THAT IS SO THAT ONE NUMBER WILL NOT
+"            BE READ AS BOTH A FLOATING AND INTEGER NUMBER.
+"
+"   MODIFIED JAN '80, D.GANGULY. B IS NOW REVERSED (FOR CONVOLUTION) USING
+"            VRVRS.
+"
+"             THE B VECTOR IS RESTORED AFTER CONVOLUTION.
+"
+"SIZE: 406  (BASE 8)       (167NS MEMORY)
+"      370                 (333NS MEMORY)
+"SPEED: APPROXIMATE, ASYMPTOTIC ; MICRO-SECONDS
+"            BEST          TYP          WORST
+"       .5*MB*NB*N*M    .5*MB*NB*M*N     .7*MB*NB*M*N        (167 NS MEMORY)
+"       .8*MB*NB*N*M    .8*MB*NB*M*N     1.0*MB*NB*M*N        (333 NS MEMORY)
+"         IF SIGNIFICANT, ADD (.4 MIN TO 1.0 MAX)*MB*M*N
+"SCRATCH: ALL SPADS,ALL DPADS
+"
+"-------------------------------------------------
+"-------------------------------------------------
+"
+"
+"
+"                 ORIGINAL
+"                  VALUE
+"                ----------
+A       $EQU 0        " A
+AADDR   $EQU 1        " MA
+IA      $EQU 2        " IA
+JA      $EQU 3        " JA
+M0      $EQU 4        " M
+B       $EQU 5        " N
+N       $EQU 6        " B
+MB      $EQU 7        " MB
+NB      $EQU 10       " NB
+NI      $EQU 11       " B0
+CADDR   $EQU 12       " C
+MC      $EQU 13       " MC
+PNTJMP  $EQU 14       " IC
+MBI     $EQU 15       " JC
+R       $EQU 16       " R
+SCR     $EQU 17
+"
+"
+"       DATAPAD ASSIGNMENTS:
+"         DPX               DPY
+"         ---               ---
+"   -4    MB*NB(FLOATING)     R
+"   -3   CROJMP               A
+"   -2    MA                 M(I) (FLOATING)
+"   -1    B               MB*NB(I) (FLOATING)
+"    0    SCRATCH         SCRATCH
+"    1    SCRATCH         SCRATCH
+"    2    MB*NB (INTEGER)  A2ADDR
+"    3      1.              AROJMP
+"
+"
+CON1: $FP 1.
+"------------------------------------------------------------
+"------------------------------------------------------------
+"
+CONV2D: RPSF CON1; DPX(3)<DB
+"          -------------------------------------------
+"             SAVE PARAMETERS AND GET JUMP INTERVALS
+"          --------------------------------------------
+        MOV B,SCR                      "MOV N OUT OF B
+        MOV N,B;DPX(-1)<SPFN            "PUT B INTO B;STORE IN DPX(-1)
+        MOV SCR,N                       "PUT N INTO N
+        MOV R,R;DPY(-4)<SPFN            "STORE R IN DPY(-4)
+        MOV M0,SCR
+        JSR SPFLT                      "FLOAT M
+          MOV A,A;DPY(-3)<SPFN            "STORE A IN DPY(-3)
+        MOV AADDR,AADDR;DPX(-2)<SPFN   "STORE MA IN DPX(-2)
+"              ----------------------------------
+"                 GET A2 VECTOR ADDRESS
+"              ----------------------------------
+        MOV MB,A;                    "SETUP MB*NB
+            "  DPX(1) WAS SETUP BY LAST JSR SPFLT
+          DPY(-2)<DPX(1)                " M IS DECREMENTED ROW CTR HERE
+        MOV NB,AADDR
+        JSR SPMUL
+        DPX(2)<SPFN;                    " STORE INTEGER MB*NB
+        MOV A,SCR
+        JSR SPFLT                       "FLOAT MB*NB
+        FIX DPX(1);                     "FIX MB*NB
+          MOV A,SCR                     "MB*NB
+        ADD B,SCR;                      "MB*NB+B=A2 VECTOR ADDR
+          DPY(2)<SPFN;FADD              "STORE A2ADDR IN DPY(2)
+        DPY(-1)<FA;                     "STORE MB*NB IN DPY(-1)
+          SUB NI,A                     "ASSUME CONVOLUTION,B0=MB*NB-B0-1
+        DPX(-4)<DPY(-1)            "STORE MB*NB IN DPX(-4) TOO
+"      -------------------------------------------
+"        IF CONVOLUTION, COUNT B0 FROM OTHER END
+"      -------------------------------------------
+        LDSPI R;DB=DPY(-4)              "GET R FOR CONVOL TEST
+        MOV R,R
+        BNE B0SET;                      "FLIP B0 IF R=0
+          DEC A
+        MOV A,NI                       "NEW B0 NOW IN NI
+"            ----------------------------------
+"              GET INITIAL C' AND C-ROW JUMP
+"            ----------------------------------
+"
+B0SET:  MOV MBI,A                    "MOV JC TO 0,GET INITIAL C'
+        MOV MC,AADDR                  "MOV MC TO 1
+        JSR SPMUL                      "GET MC*JC
+        ADD PNTJMP,A                   "IC+MC*JC
+        ADD A,CADDR                    "C+IC+MC*JC=INITIAL C' ADDR
+        MOV N,A                        "NEED N*MC-1=CROWJUMP
+        JSR SPMUL                      "N*MC
+        DEC  0;DPX(-3)<SPFN           "N*MC-1 STORED IN DPX(-3)
+"        -----------------------------------------
+"           GET NEW A' COLUMN UNDER FILTER JUMP
+"           AND A' ROW JUMP
+"        -----------------------------------------
+        LDSPI A;DB=DPX(-2)                  "GET MA IN SP 0
+        MOV A,AADDR                    "AND INTO SP 1
+        SUB MB,A                       "MA-MB
+        MOV A,PNTJMP                 "**MA-MB IS A ADDR JUMP IN ROW**
+        MOV NB,A                       "GET (NB+N-1)*MA-1
+        DEC A
+        ADD N,A                        "NB+N-1
+        JSR SPMUL                      "(NB+N-1)*MA
+        DEC A;DPY(3)<SPFN          "**(NB+N-1)*MA-1=A-ROW JUMP**
+"             ---------------------------------
+"                GET IB &JB,LOCATE B0
+"             ---------------------------------
+        MOV NI,A                       "MOV B0 TO SP 0 TO GET IB AND JB
+        MOV MB,AADDR                   "MOV MB TO SP 1 FOR DIV
+        JSR SPDIV                      "GETS FIXED(B0/MB)=JB
+        MOV A,SCR                        "TEMP STORE JB IN SCR
+        JSR SPMUL                      "GET MB*JB
+        SUB A,NI                        "B0-MB*JB=IB
+"            ------------------------------------
+"               GET FIRST A' UNDER FILTER
+"            ------------------------------------
+        MOV JA,A                        "MOV JA TO SP 0
+        SUB SCR,A                        "JA-JB
+        LDSPI AADDR;DB=DPX(-2)
+        JSR SPMUL                      "MA*(JA-JB)
+                                       "WON'T WORK IN APSIM IF JA-JB=-1
+        ADD IA,A                     "IA+MA*(JA-JB)
+        SUB NI,A                       "IA+MA*(JA-JB)-IB
+        LDSPI MBI; DB=DPY(-3)               "A IN SP 15
+        ADD A,MBI                       "ADDR FIRST A' UNDER ULH FILTER
+"      ---------------------------------------------
+"        IF CONVOLUTION,REVERSE FILTER VECTOR
+"      ---------------------------------------------
+        LDSPI R;DB=DPY(-4)              "GET R FOR CONVOL TEST
+        MOV R,R
+        BNE LOAD                       "REVERSE IF R=0
+RVRSE:  MOV B,A                        "YES,SETUP FOR VECTOR REVERSER
+        LDSPI AADDR;DB=1              "1 IS VECT MOV INCREMENT
+        LDSPI IA; DB=DPX(2)                "MB*NB = LENGTH OF B.
+        JSR VRVRS                       " REVERSE B.THIS IS NEW.INSERTED JAN '80
+LOAD:   MOV MBI,SCR
+"      -----------------------------------------------------
+"           LOAD A2 WITH ELEMENTS UNDER FILTER, FIRST A'
+"     -------------------------------------------------------
+LOADA2: MOV MB,MBI                      "FOR DECREMENTING FILTER ROW CTR
+        MOV SCR,AADDR;SETMA               "ADDR FIRST A ELEM UNDER ULH
+        LDSPI SCR;DB=DPY(2)                "GET FIRST A2 ADDR INTO SP 17
+        FSUB DPY(-1),DPX(3);         "DECREMENT MB*NB(I)
+          MOV N,NI                   "FOR DECREMENTING ROW CTR
+        MOV SCR,SCR;SETMA;MI<MD;       "STORE FIRST A2
+          FADD
+        INC AADDR;SETMA;               "NEXT A' ADDR
+          DPY(-1)<FA                    "DECREMENTED COUNT IN DPY(-1)
+        DEC MBI                        "DECREMENT FILTER ROW CTR
+        BEQ NWFCOL                   "GO NEW COL IF MB=1
+DWNFCL: FSUB DPY(-1),DPX(3);           "DEC MB*NB(I)
+          INC AADDR;SETMA;             "NEXT A'
+          DPX(0)<MD
+        DEC MBI;FADD                   "DECREM FILTER ROW CTR
+        INC SCR;SETMA;MI<DPX(0);      "STORE A' IN NEXT A2
+             "  BRANCH BACK IF COL OF "A2" IS NOT FILLED YET.
+          BGT DWNFCL;                   "TEST MB(I)
+            DPY(-1)<FA                  "DECREMENTED COUNT
+        "  BRANCH TO A NEW COL IF ALL POINTS OF "A2" ARE NOT FILLED YET.
+        BFGT NWFCOL                      "TEST ELEM COUNT OF A2
+        ADD PNTJMP,AADDR;                "ADD TO ADDRESS AS IF NEXT COL
+           BR A2DONE
+NWFCOL: FSUB DPY(-1),DPX(3);            "DECREM MB*NB(I)
+          ADD PNTJMP,AADDR;SETMA         "ADDR NEXT A'
+        MOV MB,MBI; FADD               "RESET ROW CTR
+        INC AADDR;SETMA;                 "ADDR NEXT A'
+          DPY(-1)<FA
+        DEC MBI
+        INC SCR;SETMA;MI<MD;            "STORE NEXT A2
+          BEQ TSTMN1                   "TEST ROW CTR
+        BFGE DWNFCL                       "TEST ELEM COUNT
+        BR A2DON1                       "NORMAL OUT HERE
+TSTMN1: BFGT NWFCOL                    "COLUMN DONE,HOW ABOUT VECTOR?
+                                       "THIS TEST FOR SINGLE ROW FILTERS
+        ADD PNTJMP,AADDR;              "COME OUT NORMALLY
+          BR A2DONE
+A2DON1: DEC AADDR                      "WAS INC TOO MUCH IN NWFCOL LOOP
+"    ----------------------
+"        GET DOT PRODUCT
+"    ----------------------
+A2DONE: MOV AADDR,MBI                  "TEMP STORE LAST A'ADDR IN MBI
+        LDSPI A;DB=DPX(-1)                  "B ADDR IN SP 0
+        LDSPI AADDR;DB=1               "1 IS VECT MOV INCREMENT
+        LDSPI IA;DB=DPY(2)             "A2 ADDR IN SP 2
+        MOV AADDR,JA                   "1 = INC
+        MOV CADDR,M0                   "DESTINATION OF PROD
+        LDSPI B; DB=DPX(2)                 "MB*NB=LENGTH OF VECTORS
+        JSR DOTPR
+"    ---------------------------------
+"        NOW C' IS STORED, CHECK FOR
+"        COLUMN END AND LAST ROW
+"     --------------------------------
+        MOV MBI,SCR                    "PUT LAST ADDR IN SCR
+        FSUB DPY(-2),DPX(3);           "DECR & TEST ROW CTR M(I)
+          MOV MB,MBI                   "RESTORE FILTER ROW CTR
+        DPY(-1)<DPX(-4);             "RESTORE A2 ELEM CTR, MB*NB(I)
+          DEC NI;FADD                  "DEC COLUMN CTR
+        BGT JMPNXT;                    "CONTINUE ALONG A' ROW IF NOT DONE
+          ADD MC,CADDR                 "ADDR NEXT C'
+        BR .+2
+JMPNXT: JMP NXTPNT
+        BFGT NEWROW;                     "IF ROWS DONE, QUIT
+          DPY(-2)<FA                       "STORE DECR'D ROW CTR
+"   --------------------------------------------------------------------
+"     RE-REVERSE B IF IN CONVOLUTION MODE.
+"     -------------------------------------------------------------------
+        LDSPI B;DB = DPX(-1)               "FETCH B.
+        LDSPI R;DB = DPY(-4)               "FETCH R.
+        MOV R,R
+        BNE RTRN
+        MOV B,A                            "YES.GET READY FOR REVERSAL.
+        LDSPI AADDR;DB = 1
+        LDSPI IA;DB = DPX(2)
+                 "THIS IS THE ADDR. INCREMENT.
+        JSR VRVRS                          "DO THE REVERSING.
+        NOP
+RTRN:   RETURN
+"        --------------------------
+"           DO NEW ROW
+"        --------------------------
+NEWROW: LDSPI R;DB=DPX(-3)             "C-ROW JUMP IN R
+        SUB R,CADDR                    "NEW C' ADDR
+        LDSPI A;DB=DPY(3)                "PUT AROWJMP IN A
+        SUB A,SCR                  "NEW A' ADDR IN SCR
+        JMP LOADA2                     "GO LOAD A2 AGAIN
+"     ---------------------------------------
+"       DO NEW POINT IN SAME ROW OF A'
+"     ---------------------------------------
+"      --------------------------------------
+"          SETUP FOR SHIFTING A2
+"      --------------------------------------
+NXTPNT: MOV MB,A;                     "NEED ADD MB TO A2ADDR
+          FIX DPY(-1)                   " GET MB*NB POINTER.
+          FADD;
+        MOV SCR,MBI                  "SAVE A' ADDR, VMOV DESTROYS SCR
+                DPX(0)<FA;      " TEMP STORAGE OF INTEGER MB*NB
+        LDSPI IA;DB=DPY(2)                 "A2 BASE IS DESTINATION BASE
+        ADD IA,A                       "A2 BASE +MB IS SOURCE ADDR
+        LDSPI M0;DB=DPX(0)                 "MB*NB
+        SUB MB,M0                      "MB*(NB-1) IS LENGTH
+        LDSPI AADDR;DB=1               "1 IS VECT MOV INCREMENT
+        MOV AADDR, JA
+        JSR VMOV                       "A2 IS SHIFTED
+"      --------------------------------------------
+"       LOAD NEW A' COL INTO LAST MB OF A2
+"      --------------------------------------------
+        LDSPI A;DB=DPY(2)                  "A2 BASE ADDR
+        LDSPI IA;DB=DPX(0)                  "MB*NB
+        ADD A,IA                        "A2ADDR+MB*NB
+        SUB MB,IA                       "A2ADDR +MB*NB-MB=ADDR OF LAST
+                                       "  MB ELEM'S IN A2
+        MOV MBI,A                      "ADDR OF SOURCE VECTOR, A'
+        MOV MB,M0                      "MB IS VECTOR LENGTH
+        JSR VMOV                       "MOV A' ELEMENTS INTO A2
+"       ------------------------
+"         SET UP FOR DOT PRODUCT
+"       ------------------------
+        MOV MBI,AADDR                   "MOV COL TOP A'ADDR;
+        LDSPI A;DB=DPX(-2)                  "MA IN A
+        ADD A,AADDR                     "A'+MA= NEW COL TOP
+        JMP A2DONE
+        $END
+"*** MOVREP = SUB-IMAGE MOVE OR INTENSITY REPLACE /COMMON/ = REL 1.1, DEC 80
+ $TITLE MOVREP
+        $RADIX 8
+ $ENTRY MOVREP,13
+ $EXT SPMUL
+ $EXT VMOV
+"
+"
+"         SUB-IMAGE MOVE AND INTENSITY REPLACEMENT
+"      ----------ABSTRACT----------
+"
+"       GIVEN A 2-DIMENSIONAL ARRAY A, IT IS DESIRED TO
+"       MOVE A SUB-ARRAY A' TO A SUB-ARRAY C' OF ARRAY
+"       C, AND/OR REPLACE A' ELEMENT VALUES ACCORDING
+"       TO A TRANSFER FUNCTION DESCRIBED BY A LOOKUP
+"       TABLE STORED IN MAIN DATA BEGINNING AT LOCATION
+"       T. IF T=0, NO LOOKUP TABLE IS SPECIFIED AND
+"       THE ROUTINE SIMPLY MOVES A' UNCHANGED.  THE TABLE
+"       ENTRIES CORRESPOND TO NEW VALUES OF A'; THE TABLE
+"       ADDRESSES ARE CALCULATED BY ADDING T TO THE VALUE
+"       OF THE ORIGINAL A'.
+"
+"       FORTRAN CALL:
+"            CALL MOVREP(A,MA,IA,JA,C,MC,IC,JC,M,N,T)
+"
+"       -----HISTORY-----
+"
+"ORIGINAL: L. KIRLIN       JAN 79
+" REV 1.1: T.E. SKINNER    DEC 80  FIXED INDEXING (TAR #2443, GE0021)
+"
+"       -----STATISTICS----
+"
+"       EQUIPMENT: FAST OR STANDARD MEMORY
+"       LANGUAGE: APAL
+"       SIZE:129 (BASE 8)        (167 NS MEMORY)
+"            114                 (333 NS MEMORY)
+"       SPEED: APPROXIMATE, ASYMPTOTIC ; MICRO-SECONDS
+"             ----------------------------
+"                   SUB-IMAGE MOVE
+"             ----------------------------
+"        BEST      TYP         WORST
+"       .5*N*M    .5*M*N     .7*M*N        (167 NS MEMORY)
+"       .8*N*M    .8*M*N     1.0*M*N        (333 NS MEMORY)
+"         IF SIGNIFICANT, ADD (1.67 TO 3.17)*N
+"
+"              -------------------
+"                  REPLACEMENT
+"              ------------------
+"           1.67*N + 0.83*M*N             (167  NS MEMORY)
+"           1.67*N +   M*N                (333  NS MEMORY)
+"
+"-----------------------------------------------------------------
+"-----------------------------------------------------------------
+"               ---USAGE---
+"
+"
+"        S-PAD ASSIGNMENTS          ORIGINAL
+"          ------------               -----
+        A     $EQU 0    "               A
+        AJMP  $EQU 1    "              MA
+        IA    $EQU 2    "              IA
+        JA    $EQU 3    "              JA
+        C     $EQU 4    "              C
+        CJMP  $EQU 5    "              MC
+        MA    $EQU 6    "              IC
+        MC    $EQU  7   "              JC
+        M     $EQU 10    "              M
+        N     $EQU 11    "              N
+        T     $EQU 12   "              T
+       ROW    $EQU 13
+       LEVEL  $EQU 14
+       LASTA  $EQU 15
+       LASTC  $EQU 16
+       TEMP   $EQU 17
+"
+"
+MOVREP: MOV A,LASTA                    "TEMP STORE
+        MOV JA,A                       "SETUP JA*MA
+        JSR SPMUL
+        ADD A,LASTA                    "A+JA*MA
+        ADD IA,LASTA                   "A+JA*MA+IA=INIT A' ADDR
+        MOV AJMP,TEMP                  "TEMP STORE MA
+        MOV CJMP,AJMP                  "SETUP FOR MC*JC
+        MOV MC,A                       "JC IN SP 0
+        JSR SPMUL
+        ADD A,C                        "C+MC*JC
+        ADD MA,C                       "C+MC*JC+IC
+        MOV TEMP,MA                    "MA INTO MA
+        MOV CJMP,MC                    "MC INTO MC
+        MOV MA,AJMP                    "MA
+        SUB M,AJMP                     "MA-M
+        DEC AJMP                       "MA-M-1=A' ADDR JUMP
+        SUB M,CJMP                     "MC-M=ADDR JMP FOR C'
+        MOV M,ROW                      "ROW CTR
+"         --------------------------------
+"           TEST FOR REPLACEMENT
+"         --------------------------------
+        MOV T,T                        "TEST FOR TRANSFER FUNCTION
+        BGT NEWVAL;MOV LASTA,A;SETMA    "1. GET FIRST PIXEL
+        JMP MOVSUB                     "2.T=0, JUST MOV A' TO C'
+NEWVAL: DEC C
+"        -----------------------------
+"           BEGIN LEVEL REPLACEMENT
+"        -----------------------------
+        NOP                            "3.
+COLTOP: FIX MD                              "4. FIX PIXEL VALUE
+        FADD                                "5.
+        INC A;SETMA;                        "1. GET PIXEL VALUE
+             DPX(0)<FA                      "   STORE LAST VALUE
+             DB=DPX(0);LDSPI LEVEL          "2. VALUE BECOMES ADDRESS
+             ADD# LEVEL,T;SETMA             "3. ADDRESS HISTOGRAM
+        FIX MD                              "4. FIX PIXEL VALUE
+        FADD                                "5.
+COLUM:  INC A;SETMA;                        "1. GET NEXT PIXEL
+             DPX(0)<FA                      "   STORE FIXED PIXEL VALUE
+             DB=DPX(0);LDSPI LEVEL;         "2. VALUE BECOMES ADDRESS
+                  FADD ZERO,MD              "   TEMP STORE REPLACEMENT IN FADDR
+             ADD# LEVEL,T;SETMA             "3. ADDRESS HISTOGRAM
+        FIX MD;                             "4. FIX PIXEL VALUE
+                  DEC ROW                   "   COUNT DOWN ROWS
+        FADD;                               "5. PUSH
+                  INC C;SETMA;MI<FA ;       "   REPLACE PIXEL
+                  BGT COLUM                 "   TEST ROW
+        DEC N                           "DECR COL CTR
+        BEQ DONE;                       "IF COLS DONE QUIT
+          ADD CJMP,C                    "ADDR NEW C' COL TOP
+        ADD AJMP,A;SETMA                    "1.ADDR NEXT A' COL TOP
+        ADD M,ROW                           "2.
+        JMP COLTOP                          "3.
+DONE:   RETURN
+"        ----------------------
+"          JUST MOVE A' TO C'
+"        ----------------------
+MOVSUB: LDSPI AJMP;DB=1                "INC FOR VECTOR MOV
+        MOV C,IA                        "DESTIN VECTOR ADDR
+        MOV AJMP,JA                    "INC FOR MOV
+        MOV C,T                        "SAVE C
+        MOV M,C                        "ELEM COUNT
+        JSR VMOV                       "MOV COLUMN OF A'
+        DEC N                          "DECR COL CTR
+"        -------------------------------
+"            MOVE CONSECUTIVE COLUMNS
+"        -------------------------------
+MVLOOP: ADD MA,LASTA
+        MOV LASTA,A                    "NEW COL TOP ADDR
+        ADD MC,T
+        MOV T,IA                       "NEW C' ADDR
+        MOV M,C
+        JSR VMOV                       "MOVE A' TO C'
+        DEC N                          "DEC COL CTR
+        BGT MVLOOP                     "TEST COL CTR
+        RETURN
+        $END
+"****** RFFT2D = REAL TWO DIMENSIONAL FFT / COMMON / = REL 2.2, SEP 78 ***
+        $TITLE RFFT2D
+        $RADIX 8
+        $ENTRY RFFT2D,4
+        $EXT SAVESP,SETSP
+        $EXT XRFFT
+        $EXT XCFFT
+        $EXT CTOR
+        $EXT RTOC
+"
+"
+"          --- ABSTRACT ---
+"
+"
+"DOES AN IN PLACE TWO DIMENSIONAL REAL FFT WHOSE
+"DIMENSIONS 2*N1*N2 ARE .LEQ. 65536.
+"
+"
+"          --- STATISTICS ---
+"
+"LANGUAGE:      APAL
+"EQUIPMENT:     AP-120B WITH EITHER MEMORY
+"SIZE:          64 PS WORDS
+"
+"
+"         --- HISTORY ---
+"
+"ORIGINAL:      G.J. THROOP, DEC 77
+"
+"
+"       THE PROGRAM CALCULATES A TWO DIMENSIONAL DISCRETE
+"       FOURIER TRANSFORM OF A REAL ARRAY.  DATA IS ASSUMED
+"       TO BE IN EITHER COLUMN OR ROW ORDER.  INTERPRETATION OF
+"       THE RESULTS DEPENDS ON WHICH ORDER IS ASSUMED.
+"
+"       IF DATA IS ASSUMED TO BE IN ROW ORDER, WITH N1 COLUMNS
+"       AND N2 ROWS, THE FOLLOWING DESCRIPTION IS APPLICABLE:
+"
+"       DATA IS FIRST TRANSFORMED BY REAL FFTS ON THE N2 ROWS
+"       OF LEGTH N1.  THEN THE DATA IS TRANSFORMED BY N1/2
+"       COMPLEX FFTS ON COLUMNS OF N2/2 COMPLEX POINTS.
+"       A SPECIAL SCRAMBLE-UNSCRAMBLE PASS IS NECESSARY TO
+"       TREAT THE FIRST TWO COLUMNS.
+"
+"
+"        RRRRRRRR        RRRIRIRI        RRRIRIRI
+"        RRRRRRRR        RRRIRIRI        RRRIRIRI
+"        RRRRRRRR        RRRIRIRI        RRRIRIRI
+"        RRRRRRRR  >     RRRIRIRI   >    IIRIRIRI
+"        RRRRRRRR        RRRIRIRI        RRRIRIRI
+"        RRRRRRRR        RRRIRIRI        IIRIRIRI
+"        RRRRRRRR        RRRIRIRI        RRRIRIRI
+"        RRRRRRRR        RRRIRIRI        IIRIRIRI
+"
+"
+        L $EQU 0                        "LEFT HALF FLAG
+        R $EQU 2000                     "RIGHT HALF FLAG
+"       NAMES FOR S-PAD:
+        A $EQU 0                        "ARRAY BASE ADDRESS
+        N1 $EQU 1                       "LENGTH OF ROWS
+        N2 $EQU 2                       "LENGTH OF COLUMNS = # ROWS
+        F $EQU 3                        "FORWARD - INVERSE FFT FLAG
+        "THE FOLLOWING ARE SCRATCH
+        J $EQU 4                        "COUNTS ROWS OR COLUMNS
+        AN $EQU 5                       "ADDRESS FOR START OF ROW OR COLUMN
+        MDEL $EQU 6                     "MEMORY INCREMENT
+        LN $EQU 7                       "NUMBER OF ELEMENTS = MDEL*N1 OR MDEL*N2
+        NCTR $EQU 10                    "NUMBER OF POINTS IN FFT
+        C $EQU 6                        "ADDRESS FOR MOV
+        D $EQU 7                        "ADDRESS FOR MOV
+        K $EQU 4                        "INCREMENT FOR MOV
+"       THE FOLLOWING ARE S-PAD NAMES FOR XCFFT AND XRFFT
+        AFFT $EQU 0                     "BASE ADDRESS OF FFT
+        N $EQU 1                        "NUMBER OF POINTS OF FFT
+        DI $EQU 2                       "SPACING OF FFT
+"       F $EQU 3                        "FORWARD INVERSE FFT FLAG
+"
+"
+"
+RFFT2D: MOV F,F                         "TEST FOR FORWARD OR INVERSE FFT
+        BGT FRWD                        "BRANCH IF FORWARD FFT
+INV:    MOV F,15                        "SAVE FORWARD INVERSE FLAG
+        MOV N1,3                        "SET MEMORY SPACING
+        MOV N2,1                        "NUMBER OF REAL ELEMENTS
+        JSR RTOC
+        MOV 3,N1                        "RESTORE N1
+        MOV 15,F                        "RESTORE FORWARD INVERSE FLAG
+        JSR DOCOL                       "GO DO COLUMNS
+        JSR DOROW                       "DO ROWS NEXT
+        NOP                             "BECAUSE OF HARDWARE FUNNY
+        RETURN
+FRWD:   JSR DOROW                       "DO ROWS FIRST
+        JSR DOCOL                       "DO COLUMNS NEXT
+        MOV F,15                        "TO SAVE FORWARD-INVERSE FLAG
+        MOV N1,3                        "SET MEMORY SPACING
+        MOV N2,1                        "NUMBER OF REAL ELEMENTS
+        JSR CTOR                        "DO COMPLEX TO REAL UNSCRAMBLE
+        MOV 3,N1                        "RESTORE N1
+        MOV 15,F;                       "RESTORE FORWARD-INVERSE FLAG
+        RETURN
+DOROW:  MOV N2,J                                "COUNTS # ROWS
+        MOV A,AN                                "A RUNNING ADDRESS FOR ROWS
+        LDSPI MDEL; DB=2                        "MEMORY SPACING FOR ROW ELEMENTS
+        MOV N1,LN                               "ROW ADDRESS INCREMENT
+        MOV N1,NCTR                             "TO DO A N1 POINT FFT
+        JSR RLOOP                               "GO DO ALL THE ROWS
+        NOP
+        RETURN
+"       NOW DO SET UP TO DO THE COLUMN FFTS
+"       NOW DO (N-2)/2 COMPLEX COLUMN FFTS
+DOCOL:  MOV N1,MDEL                             "MEMORY SPACING IS 2*NI
+        MOV A,AN                                "TO SET BASE ADDRESS
+        MOV N2,NCTR                             "DO A N2 POINT FFT
+        LDSPI LN; DB=2                          "COLUMN ADDRESS INCREMENT
+        MOV N1,J                                "DO N1/2 N2 POINT COLUMN CFFTS
+        JSR CLOOP                               "GO DO N-2 COMPLEX FFTS
+        NOP
+        RETURN
+RLOOP:  JSR SAVESP                              "SAVE S-PADS
+        $VAL 0,11,0,ADDR-.
+        MOV AN,AFFT                             "BASE ADDRESS OF FFT
+        MOV NCTR,N                              "NUMBER OF POINTS IN FFT
+        MOV F,2                                 "SET FORWARD INVERSE FLAG FOR RF
+        MOV MDEL,DI                             "SET MEMORY SPACING FOR ROWS
+        JSR XRFFT                               "GO DO A REAL TRANSFORM
+        JSR STSP                                "RESTORE S-PADS
+        DEC J                                   "DECREMENT ROW COUNTER
+        BGT .+2                                 "BRANCH IF NOT DONE ALL ROWS
+                RETURN
+        ADD LN,AN; BR RLOOP                     "GET ADDRESS OF NEXT ROW
+CLOOP:  JSR SAVESP                              "SAVE S-PADS
+        $VAL 0,11,0,ADDR-.
+        MOV AN,AFFT                             "BASE ADDRESS OF FFT
+        MOV NCTR,N                              "NUMBER OF POINTS IN FFT
+        MOV MDEL,DI                             "SET SPACING OF FFT
+        MOV F,F                                 "SET FORWARD-INVERSE FLAG
+        JSR XCFFT                               "GO DO IT
+        JSR STSP
+        SUB LN,J                                "DECREMENT COLUMN COUNTER
+        BGT .+2                                 "BRANCH IF NOT DONE ALL COLUMNS
+        RETURN                                  "EXIT CLOOP
+        ADD LN,AN; BR CLOOP                     "INCREMENT COLUMN ADDRESS
+STSP:   JSR SETSP                               "GO TO SUBROUTINE
+        $VAL 0,11,L,ADDR-.
+        $VAL R,ADDR-.,L,ADDR+1-.
+        $VAL R,ADDR+1-.,L,ADDR+2-.
+        $VAL R,ADDR+2-.,L,ADDR+3-.
+        $VAL R,ADDR+3-.,L,ADDR+4-.
+        NOP
+        RETURN
+ADDR:   $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $END
+"***** CFFT2D = COMPLEX 2D FFT /COMMON/ = REL 2.2, SEP 78 *****
+"
+        $TITLE CFFT2D
+        $RADIX 8
+        $ENTRY CFFT2D,4
+        $EXT SAVESP,SETSP
+        $EXT XCFFT
+"
+"                 --- ABSTRACT ---
+"
+"DOES AN IN PLACE TWO DIMENSIONAL COMPLEX FFT WHOSE
+"DIMENSIONS 2*N1*N2 ARE .LEQ. 65536.
+"
+"
+"
+"
+"                 - STATISTICS ---
+"
+"LANGUAGE:              APAL
+"EQUIPMENT:             AP-120B
+"SIZE:                  36 PROGRAM LOCATIONS
+"AUTHOR:                G. J. THROOP
+"DATE:                  DEC 77
+"
+"
+"
+"
+"                 --- USEAGE ---
+"
+"DATA IS ASSUMED TO BE STORED IN EITHER ROW OR COLUMN ORDER.
+"THE USUAL FPS CONVENTION CONCERNING COMPLEX PAIRS IS ADOPTED,
+"REAL AND IMAGINARY PARTS OF A COMPLEX PAIR ARE ASSUMED TO BE
+"IN ADJACENT MEMORY LOCATIONS.
+"
+"THE IMPLEMENTATION OF CFFT2D IS A STRAIGHT FORWARD CHAINING
+"OF XCFFT.  FOR PROPER SCALING, THE RESULTS OF A FORWARD
+"TRANSFORM SHOULD BE MULTIPLIED BY 1/(N1*N2).  THE RESULT OF
+"AND INVERSE CFFT2D IS PROPERLY SCALED.
+"
+"
+"
+"
+"       NAMES FOR SAVESP AND SETSP:
+"
+        L $EQU 0                        "LEFT HALF FLAG
+        R $EQU 2000                     "RIGHT HALF FLAG
+"
+"
+"
+"       NAMES FOR S-PAD:
+        A $EQU 0                        "BASE ADDRESS OF ARRAY
+        N1 $EQU 1                       "LENGTH OF ROWS = # COLUMNS
+        N2 $EQU 2                       "LENGTH OF COLUMNS = # ROWS
+        F $EQU 3                        "FORWARD - INVERSE FFT FLAG
+"
+"
+"       THE FOLLOWING ARE SCRATCH:
+"
+        J $EQU 4                        "COUNTS ROWS OR COLUMNS
+        AN $EQU 5                       "ADDRESS FOR START OF ROW OR COLUMN
+        MDEL $EQU 6                     "MEMORY INCREMENT
+        LN $EQU 7                       "NUMBER OF ELEMENTS = MDEL*N1 OR MDEL*N2
+        NCTR $EQU 10                    "NUMBER OF POINTS IN FFT
+"       SCRATCH (TOTAL) :
+"
+"       S-PADS:  3-17
+"       DPX:  -4 TO 3; DPY:  -4 TO 3 (RELATIVE TO DPA)
+"
+"       THE FOLLOWING ARE S-PAD NAMES FOR CFFT
+        AFFT $EQU 0                     "BASE ADDRESS OF FFT
+        N $EQU 1                        "NUMBER OF POINTS OF FFT
+        DI $EQU 2                       "SPACING OF FFT
+CFFT2D: LDSPI MDEL; DB=2                "ROW ELEMENTS ARE SPACED BY 2
+        MOV N2,J                                "COUNTS # ROWS
+        MOV A,AN                                "A RUNNING ADDRESS FOR ROWS
+        MOVL N1,LN
+        MOV N1,NCTR                             "TO DO A N1 POINT FFT
+        JSR LOOP                                "GO DO ALL THE ROWS
+"       NOW DO SET UP TO DO THE COLUMN FFTS
+        MOVL N1,MDEL                            "MEMORY SPACING IS 2*N1
+        MOV A,AN                                "BASE ADDRESS = A
+        MOV N2,NCTR                             "DO A N2 POINT FFT
+        MOV N1,J                                "DO N1 COLUMN FFTS
+        LDSPI LN; DB=2                          "COLUMN ADDRESS INCREMENT
+        JSR LOOP
+        NOP
+        RETURN
+LOOP:   JSR SAVESP                              "SAVE S-PADS
+        $VAL 0,11,0,ADDR-.
+        MOV AN,AFFT                             "BASE ADDRESS OF FFT
+        MOV NCTR,N                              "NUMBER OF POINTS IN FFT
+        MOV MDEL,DI                             "SET SPACING OF FFT
+        MOV F,F                                 "SET FORWARD INVERSE FLAG
+        JSR XCFFT                               "GO DO IT
+        JSR SETSP                               "RESTORE S-PADS
+        $VAL 0,11,L,ADDR-.
+        $VAL R,ADDR-.,L,ADDR+1-.
+        $VAL R,ADDR+1-.,L,ADDR+2-.
+        $VAL R,ADDR+2-.,L,ADDR+3-.
+        $VAL R,ADDR+3-.,L,ADDR+4-.
+        DEC J                           "DECREMENT ROW COUNTER
+        BGT .+2                         "BRANCH IF NOT DONE
+        RETURN
+        ADD LN,AN; BR LOOP                      "INCREMENT ADDRESS
+ADDR:   $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $END
+"****** ERFFT2 = EXTENDED MEMORY REAL 2D FFT / COMMON / = REL 1.0, APR 79 ***
+"
+        $TITLE ERFFT2
+        $RADIX 8
+        $ENTRY ERFFT2,7
+        $EXT SAVESP,SETSP,ECVMOV,CFFT,RFFT
+        $EXT CTOR, RTOC
+        $EXT UNESPF,SPFLT
+"
+"       --- ABSTRACT ---
+"
+"       PERFORMS A REAL 2D FFT ON AN ARRAY WHICH IS IN EXTENDED
+"       MEMORY.  A WORK VECTOR 'X' IS PROVIDED BY THE USER SO THAT
+"       CALCULATIONS NEED NOT BE DONE "IN SITU".
+"       EXTENDED ARRAYS AND EXTENDED VECTORS ARE DEFINED BY A
+"       20 BIT ADDRESS, THE HIGH 4 BITS IN ONE WORD, AND THE LOW
+"       16 BITS IN A SECOND.
+"
+"       THE ARRAY IS ASSUMED TO BE IN EXTENDED MEMORY AT ADDRES
+"       C = 65536*CH + CL.
+"       THE WORK VECTOR IS AT ADDRESS X = 65536*XH + XL.
+"       NAMES FOR S-PAD
+"
+        CH $EQU 0               "SOURCE ARRAY BASE ADDRESS (PAGE NUMBER)
+        CL $EQU 1               "SOURCE ARRAY BASE ADDRESS (WITHIN PAGE)
+        N1 $EQU 2               "LENGTH OF ROWS = # OF COLUMNS
+        N2 $EQU 3               "LENGTH OF COLUMNS = # OF ROWS
+        F $EQU  4               "FORWARD-INVERSE FFT FLAG
+        XH $EQU 5               "WORK VECTOR BASE ADDRESS (PAGE NUMBER)
+        XL $EQU 6               "WORK VECTOR BASE ADDRESS (WITHIN PAGE)
+"       NAMES FOR SAVESP AND SETSP
+        L $EQU  0               "LEFT HALF FLAG
+        R $EQU  2000            "RIGHT HALF FLAG
+"       THE FOLLOWING ARE SCRATCH NAMES FOR S-PAD
+        J $EQU 7                "COUNTS NUMBER OF ROWS OR COLUMNS
+        TN1 $EQU 10             "STORAGE FOR COMPLEX COLUMN COUNT
+"       NAMES FOR DPX
+        CC $EQU -4              "FLOATED C ADDRESS
+        XX $EQU -3              "FLOATED WORK VECTOR ADDRSS
+"       NAMES FOR DPY
+        FNM1 $EQU -4            "FLOATED VECTOR LENGTH - 1
+        F2   $EQU -4            "FLOATED 2.0
+        FN   $EQU -3            "FLOATED VECTOR LENGTH = 2*N1 OR = 2*N2
+ERFFT2: MOV F,F                         "TO TEST FORWARD-INVERSE FLAG
+        BGT FRWD
+INV:    JSR DOCOL
+        JSR DOROW
+        NOP
+        RETURN
+FRWD:   JSR DOROW                       "GO DO REAL ROW TRANSFORMS
+        JSR DOCOL                       "GO DO COMPLEX COLUMN TRANSFORMS
+        NOP
+        RETURN
+DOROW:  MOV CH,16                       "FLOAT BASE ADDRESS C
+        MOV CL,17                       "AND UNNORMALIZE BY POSITIONING
+        JSR UNESPF                      "LEADING 0.110 IN MANTISSA
+        MOV XH,16;                      "FLOAT BASE ADDRESS X
+        DPX(CC)<DPX(1)                  "FLOATED ARRAY BASE ADDRESS
+        MOV XL,17                       "AND UNNORMALIZE BY POSITIONING
+        JSR UNESPF                      "LEADING 0.110 IN MANTISSA
+        DPX(XX)<DPX(1);                 "FLOATED WORK VECTOR ADDRESS
+        MOV N1,17                       "TO FLOAT N1 = LENGTH OF ROWS
+        JSR SPFLT
+        DPY(FN)<DPX(1);                 "FLOATED ROW LENGTH
+        FSUBR TM,DPX(1)                 "TO GET N2 - 1
+        MOV N2,J;                       "TO COUNT THE NUMBER OF ROWS
+        FADD
+        DPY(FNM1)<FA;
+        JSR RLOOP                       "GO DO THE ROWS
+        NOP
+        RETURN                          "FINISHED WITH ROWS
+DOCOL:  MOV CH,16                       "FLOAT BASE ADDRESS C
+        MOV CL,17                       "AND UNNORMALIZE BY POSITIONING
+        JSR UNESPF                      "LEADING 0.110 IN MANTISSA
+        DPX(CC)<DPX(1);                 "FLOATED ARRAY BASE ADDRESS
+        MOV XH,16                       "FLOAT WORK VECTOR ADDRESS X
+        MOV XL,17                       "AND UNNORMALIZE BY POSITIONING
+        JSR UNESPF                      "LEADING 0.110 IN MANTISSA
+        DPX(XX)<DPX(1);                 "FLOATED WORK VECTOR ADDRESS
+        MOVR N1,TN1                     "SET COMPLEX COLUMN COUNT
+        LDTMA; DB=!TWO;                 "FETCH 2.0
+        MOVR N1,J                       "NUMBER OF COLUMNS = N1/2
+        MOV N1,17                       "TO FLOAT N1 = DISTANCE BETWEEN ELEMENTS
+        DPY(F2)<TM;                     "STORE 2.0
+        JSR SPFLT                       "GO FLOAT 2*N2
+        DPY(FN)<DPX(1);                 "FLOATED ROW LENGTH
+        JSR CLOOP
+        NOP
+        RETURN
+        "BECAUSE STORING DATA IN EXTENDED MEMORY DESTROYS THE
+        "SIMILARITY IN TREATMENT OF ROWS AND COLUMS, SPECIAL
+        "TREATMET IS NEEDED FOR EACH
+        "WE HAVE ASSUMED THAT DATA IS STORED IN ROW ORDER.
+        "THUS EVERY COLUMN WILL EXTEND ACROSS PAGE BOUNDARIES.
+        "THUS IN CALCULATING ROW TRANSFORMS, ALSMOST ALL CAN BE
+        "DONE IN PLACE.  A TEST IS MADE TO DETERMINE WHEN A ROW
+        "CROSSES PAGES, AND THESE FEW ROWS ARE MOVED TO THE WORK
+        "VECTOR 'X' WHERE THEY ARE TRANSFORMED, AND THEN RETURNED.
+        "ROW ADDRESSES ARE UPDATED BY DPX(CC) + DPY(FN)
+        "WHERE FN = FLOATED 2*N1
+        "TO DETERMINE WHEN A ROW CROSSES PAGE BOUNDARIES, A TEST
+        "IS MADE:
+        "       IF DPX(CC) + DPY(FNM1)  IS IN A DIFFERENT PAGE
+        "       THEN THE ROW CAN NOT BE DONE IN PLACE.
+        "PAGES CAN BE TESTED AS FOLLOWS:
+        "       LDSPI 16; DB=DPX(CC)/2
+        "       LDSPI 17; (DB=DPX(CC) + FNM1)/2
+        "THEN IS (16) IS GREATER THAN (17) THE ROW EXTENDS ACROSS
+        "PAGES.
+RLOOP:  JSR SAVESP                      "TO SAVE S-PADS FROM CFFT
+        $VAL 0,11,0,ADDR-.
+        LDSPI 16; DB=DPX(CC);           "GET ADDRESS OF ROW START
+        FADD DPX(CC),DPY(FNM1)          "CALCULATE END OF ROW
+        FADD;MOVR 16,16
+        DPX<FA
+        LDSPI 17; DB=DPX                "GET ADDRESS OF ROW END
+        MOVR 17,17
+        SUB 17,16;                      "SEE IF ROW CROSSES PAGE BOUNDARY
+        DPX<DPX(CC)                     "SOURCE VECTOR ADDRESS FOR ECVMOV
+        BGE .+2;                        "BRANCH IF NOT SAME PAGE
+        DPX(1)<DPX(XX);                 "DESTINATION VECTOR ADDRESS FOR ECVMOV
+        MOVR N1,16                      "VECTOR LENGTH FOR ECVMOV
+        JMP SAMEPG                      "ELSE IN SAME PAGE
+        LDTMA; DB=!TWO                  "ADDRESS INCREMENT FOR ECVMOV
+        NOP
+        DPY(1)<TM                       "DESTINATION VECTOR INCREMENT
+        DPY<TM;                         "SOURCE VECTOR INCREMENT
+        JSR ECVMOV                      "LOAD CROSS PAGE ROW INTO WORK VECTOR
+        LDMA; DB=DPX(XX);               "SET PAGE
+        LDSPI 0                         "SET VECTOR ADDRESS
+        MOV N1,1;                       "TO DO A FFT OF LENGTH N1
+        INCDPA                          "BUMP DPA TWICE TO SAVE FROM CFFT
+        MOV F,2;                        "SET FORWARD-INVERSE FLAG FOR CFFT
+        INCDPA
+        JSR RFFT
+        JSR STSP                        "RESTORE S-PADS
+        DECDPA;                         "TO RESTORE DPA
+        MOVR N1,16                      "VECTOR LENGTH FOR ECVMOV
+        LDTMA; DB=!TWO                  "ADDRESS INCREMENT FOR ECVMOV
+        DECDPA
+        DPY(1)<TM                       "DESTINATION VECTOR INCREMENT
+        DPY<TM                          "SOURCE VECTOR INCREMENT
+        DPX<DPX(XX)                     "SOURCE VECTOR ADDRESS FOR ECVMOV
+        DPX(1)<DPX(CC);                 "DESTINATION VECTOR ADDRESS FOR ECVMOV
+        JSR ECVMOV
+        BR UPDRP                         "GO UPDATE ROW ADDRESSES
+SAMEPG: LDMA; DB=DPX(CC);               "SET PAGE
+        LDSPI 0                         "SET VECTOR BASE ADDRESS
+        MOV N1,1;                       "TO DO A FFT OF LENGTH N1
+        INCDPA
+        MOV F,2;                        "SET FORWARD-INVERSE FLAG
+        INCDPA
+        JSR RFFT
+        JSR STSP                        "RESTORE S-PADS
+UPDR:   DECDPA
+        DECDPA
+UPDRP:  DEC J;                          "TEST FOR LAST ROW
+        FADD DPX(CC),DPY(FN)            "UPDATE ROW ADDRESS
+        BGT NXTROW;                     "BRANCH IF NOT DONE
+        FADD
+        RETURN                          "EXIT RLOOP
+NXTROW: DPX(CC)<FA; JMP RLOOP           "DO NEXT ROW
+CLOOP:  JSR SAVESP              "TO SAVE S-PADS FROM CFFT
+        $VAL 0,11,0,ADDR-.
+        DPX<DPX(CC)                     "SOURCE VECTOR ADDRESS FOR ECVMOV
+        DPX(1)<DPX(XX);                 "DESTINATION VECTOR ADDRESS FOR ECVMOV
+        MOV N2,16                       "VECTOR LENGTH FOR ECVMOV
+        MOV N2,1;                       "TO DO A FFT OF LENGTH N2
+        DPY<DPY(FN)                     "SOURCE VECTOR INCREMENT FOR ECVMOV
+        JSR ECVMOV;                     "MOVE COLUMN TO WORK VECTOR
+        DPY(1)<DPY(F2)                  "DESTINATION VECTOR INCREMENT FOR ECVMOV
+        LDMA; DB=DPX(XX);               "SET PAGE
+        LDSPI 0                         "SET WORK VECTOR ADDRESS
+        LDSPI 3; DB=2                   "SE ELEMENT SPACING FOR RTOC
+        MOV F,2;                        "SET FORWARD-INVERSE FFT FLAG
+        INCDPA                          "TO SAVE DATA PADS FROM CFFT
+        INCDPA;
+        BGT DOCFFT                      "BRANCH IF FORWARD FFT
+        SUB# J,TN1                      "TO SEE IF FIRST COLUMN
+        MOV F,15;                       "TO SAVE FORWARD-INVERSE FLAG
+        BNE DOCFFT                      "BRANCH IF NOT FIRST COLUMN
+        JSR RTOC                        "DO REAL TO COMPLEX SCRAMBLE
+        MOV 15,2                        "RESTORE FORWARD-INVERSE FLAG
+DOCFFT: JSR CFFT
+        JSR STSP                        "RESTORE S-PADS
+        DECDPA;                         "TO RESTORE DPA
+        MOV F,F                         "TO TEST FORWARD-INVERSE FLAG
+        BLT SKPCTR;                     "BRANCH IF INVERSE FFT
+        DECDPA
+        SUB# TN1,J                      "TO TEST FOR FIRST COLUMN
+        BNE SKPCTR                      "BRANCH IF NOT FIRST COLUMN
+        LDSPI 0; DB=DPX(XX);            "SET BASE ADDRESS
+        LDMA;                           "AND PAGE
+        INCDPA                          "BECAUSE CTOR CLOBBERS DPX
+        MOV N2,1;                       "SET REAL ELEMENT COUNT
+        INCDPA
+        LDSPI 3; DB=2                   "SET MEMORY SPACING FOR CTOR
+        JSR CTOR                        "DO COMPLEX TO REAL UNSCRAMBLE
+        JSR STSP                        "RESTORE S-PADS
+        DECDPA                          "RESTORE DPA
+        DECDPA                          "AGAIN
+SKPCTR: MOV N2,16;                      "VECTOR LENGTH FOR ECVMOV
+        DPY<DPY(F2)                     "SOURCE VECTOR INCREMENT FOR ECVMOV
+        DPY(1)<DPY(FN)                  "DESTINATION VECTOR INCREMENT FOR ECVMOV
+        DPX<DPX(XX)                     "SOURCE VECTOR ADDRESS FOR ECVMOV
+        DPX(1)<DPX(CC);                 "DESTINATION VECTOR ADDRESS FOR ECVMOV
+        JSR ECVMOV                      "RESTORE COLUMN TO PLACE IN ARRAY
+        DEC J;                          "TEST FOR LAST COLUMN
+        FADD DPX(CC),DPY(F2)            "UPDATE COLUMN ADDRESS
+        FADD;
+        BGT NXTCOL                      "BRANCH IF NOT DONE ALL COLUMNS
+        RETURN                          "EXIT CLOOP
+NXTCOL: DPX(CC)<FA; JMP CLOOP           "DO NEXT COLUMN
+STSP:   JSR SETSP                       "GO TO LIBRARY ROUTINE
+        $VAL 0,11,L,ADDR-.
+        $VAL R,ADDR-.,L,ADDR+1-.
+        $VAL R,ADDR+1-.,L,ADDR+2-.
+        $VAL R,ADDR+2-.,L,ADDR+3-.
+        $VAL R,ADDR+3-.,L,ADDR+4-.
+        NOP                             "RETURN FROM SETSP
+        RETURN                          "RETURN FROM STSP
+ADDR:   $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $END
+"****** ECFFT2 = EXTENDED MEMORY COMPLEX 2D FFT / COMMON / = REL 1.0, APR 79 ***
+"
+        $TITLE ECFFT2
+        $RADIX 8
+        $ENTRY ECFFT2,7
+        $EXT SAVESP,SETSP,ECVMOV,CFFT
+        $EXT UNESPF,SPFLT
+"
+"       --- ABSTRACT ---
+"
+"       PERFORMS A COMPLEX 2D FFT ON AN ARRAY WHICH IS IN EXTENDED
+"       MEMORY.  A WORK VECTOR 'X' IS PROVIDED BY THE USER SO THAT
+"       CALCULATIONS NEED NOT BE DONE "IN SITU".
+"       EXTENDED ARRAYS AND EXTENDED VECTORS ARE DEFINED BY A
+"       20 BIT ADDRESS, THE HIGH 4 BITS IN ONE WORD, AND THE LOW
+"       16 BITS IN A SECOND.
+"
+"       THE ARRAY IS ASSUMED TO BE IN EXTENDED MEMORY AT ADDRES
+"       C = 65536*CH + CL.
+"       THE WORK VECTOR IS AT ADDRESS X = 65536*XH + XL.
+"       NAMES FOR S-PAD
+"
+        CH $EQU 0               "SOURCE ARRAY BASE ADDRESS (PAGE NUMBER)
+        CL $EQU 1               "SOURCE ARRAY BASE ADDRESS (WITHIN PAGE)
+        N1 $EQU 2               "LENGTH OF ROWS = # OF COLUMNS
+        N2 $EQU 3               "LENGTH OF COLUMNS = # OF ROWS
+        F $EQU  4               "FORWARD-INVERSE FFT FLAG
+        XH $EQU 5               "WORK VECTOR BASE ADDRESS (PAGE NUMBER)
+        XL $EQU 6               "WORK VECTOR BASE ADDRESS (WITHIN PAGE)
+"       NAMES FOR SAVESP AND SETSP
+        L $EQU  0               "LEFT HALF FLAG
+        R $EQU  2000            "RIGHT HALF FLAG
+"       THE FOLLOWING ARE SCRATCH NAMES FOR S-PAD
+        J $EQU 7                "COUNTS NUMBER OF ROWS OR COLUMNS
+        CN $EQU 10              "STORES BASE ADDRESS
+"       NAMES FOR DPX
+        CC $EQU -4              "FLOATED C ADDRESS
+        XX $EQU -3              "FLOATED WORK VECTOR ADDRSS
+"       NAMES FOR DPY
+        FNM1 $EQU -4            "FLOATED VECTOR LENGTH - 1
+        F2   $EQU -4            "FLOATED 2.0
+        FN   $EQU -3            "FLOATED VECTOR LENGTH = 2*N1 OR = 2*N2
+ECFFT2: MOV CH,16                       "FLOAT BASE ADDRESS C
+        MOV CL,17                       "AND UNNORMALIZE BY POSITIONING
+        JSR UNESPF                      "LEADING 0.110 IN MANTISSA
+        MOV XH,16;                      "FLOAT BASE ADDRESS X
+        DPX(CC)<DPX(1)                  "FLOATED ARRAY BASE ADDRESS
+        MOV XL,17                       "AND UNNORMALIZE BY POSITIONING
+        JSR UNESPF                      "LEADING 0.110 IN MANTISSA
+        MOVL N1,17;                     "TO FLOAT 2*N1 = LENGTH OF ROWS
+        DPX(XX)<DPX(1)                  "FLOATED WORK VECTOR ADDRESS
+        JSR SPFLT
+        DPY(FN)<DPX(1);                 "FLOATED ROW LENGTH
+        FSUBR TM,DPX(1)                 "TO GET 2*N1 - 1
+        MOV N2,J;                       "TO COUNT THE NUMBER OF ROWS
+        FADD
+        DPY(FNM1)<FA;
+        JSR RLOOP                       "GO DO THE ROWS
+        LDTMA; DB=!TWO;                 "FETCH 2.0
+        MOV CH,16                       "FLOAT BASE ADDRESS C
+        MOV CL,17                       "AND UNNORMALIZE BY POSITIONING
+        DPY(F2)<TM;                     "WORK VECTOR ADDRESS INCREMENT
+        JSR UNESPF                      "LEADING 0.110 IN MANTISSA
+        MOV N1,J;                       "TO COUNT NUMBER OF COLUMNS
+        DPX(CC)<DPX(1)                  "FLOATED ARRAY BASE ADDRESS
+        JSR CLOOP                       "GO DO THE COLUMNS
+        NOP
+        RETURN
+        "BECAUSE STORING DATA IN EXTENDED MEMORY DESTROYS THE
+        "SIMILARITY IN TREATMENT OF ROWS AND COLUMS, SPECIAL
+        "TREATMENT IS NEEDED FOR EACH
+        "WE HAVE ASSUMED THAT DATA IS STORED IN ROW ORDER.
+        "THUS EVERY COLUMN WILL EXTEND ACROSS PAGE BOUNDARIES.
+        "THUS IN CALCULATING ROW TRANSFORMS, ALMOST ALL CAN BE
+        "DONE IN PLACE.  A TEST IS MADE TO DETERMINE WHEN A ROW
+        "CROSSES PAGES, AND THESE FEW ROWS ARE MOVED TO THE WORK
+        "VECTOR 'X' WHERE THEY ARE TRANSFORMED, AND THEN RETURNED.
+        "ROW ADDRESSES ARE UPDATED BY DPX(CC) + DPY(FN)
+        "WHERE FN = FLOATED 2*N1
+        "TO DETERMINE WHEN A ROW CROSSES PAGE BOUNDARIES, A TEST
+        "IS MADE:
+        "       IF DPX(CC) + DPY(FNM1)  IS IN A DIFFERENT PAGE
+        "       THEN THE ROW CAN NOT BE DONE IN PLACE.
+        "PAGES CAN BE TESTED AS FOLLOWS:
+        "       LDSPI 16; (DB=DPX(CC))/2
+        "       LDSPI 17; (DB=DPX(CC) + FNM1)/2
+        "THEN IF (17) IS NOT GREATER THAN OR EQUAL TO (16) THE ROW EXTENDS
+        "ACROSS PAGES.
+RLOOP:  JSR SAVESP                      "TO SAVE S-PADS FROM CFFT
+        $VAL 0,11,0,ADDR-.
+        LDSPI 16; DB=DPX(CC);           "GET ADDRESS OF ROW START
+        FADD DPX(CC),DPY(FNM1)          "CALCULATE END OF ROW
+        FADD;MOVR 16,16                 "SHIFT ADDRESS RIGHT TO RID NEGAIVE
+        DPX<FA
+        LDSPI 17; DB=DPX                "GET ADDRESS OF ROW END
+        MOVR 17,17                      "SAME AS ABOVE
+        SUB 17,16;                      "SEE IF ROW CROSSES PAGE BOUNDARY
+        DPX<DPX(CC)                     "SOURCE VECTOR ADDRESS FOR ECVMOV
+        BGE.+2;                        "BRANCH IF NOT SAME PAGE
+        DPX(1)<DPX(XX);                 "DESTINATION VECTOR ADDRESS FOR ECVMOV
+        MOV N1,16                       "VECTOR LENGTH FOR ECVMOV
+        JMP SAMEPG                      "ELSE IN SAME PAGE
+        LDTMA; DB=!TWO                  "ADDRESS INCRMENT FOR ECVMOV
+        MOV N1,1                       "GET N1 FOR FFT
+        DPY(1)<TM                       "DESTINATION VECTOR ADDRESS INCREMENT
+        DPY<TM;                         "SOURCE VECTOR ADDRESS INCRMENT
+        JSR ECVMOV                      "LOAD CROSS PAGE ROW INTO WORK VECTOR
+        LDMA; DB=DPX(XX);               "SET PAGE
+        LDSPI 0                         "SET VECTOR ADDRESS
+        JSR FLOOP                       "GO DO TRANSF ETC.
+        LDTMA; DB=!TWO                  "FETCH ADDRESS INCREMENT FOR ECVMOV
+        DECDPA;MOV N1,16                "GET N1 FOR ECVMOV
+        DPY(1)<DPY(FN)                  "DESTINATION VECTOR INCREMENT FOR ECVMOV
+        DPY(1)<TM                       "DESTINATION VECTOR INCREMENT
+        DPY<TM                          "SOURCE VECTOR INCREMET
+        DPX<DPX(XX)                     "SOURCE VECTOR ADDRESS FOR ECVMOV
+        DPX(1)<DPX(CC);                 "DESTINATION VECTOR ADDRESS FOR ECVMOV
+        JSR ECVMOV
+        BR UPDRP                         "GO UPDATE ROW ADDRESSES
+SAMEPG: LDMA; DB=DPX(CC);               "SET PAGE
+        LDSPI 0                         "SET VECTOR BASE ADDRESS
+        MOV N1,1                       "GO DO TRANSF OF SIZE N1
+        JSR FLOOP
+UPDR:   DECDPA
+UPDRP:  DEC J;                          "TEST FOR LAST ROW
+        FADD DPX(CC),DPY(FN)            "UPDATE ROW ADDRESS
+        BGT NXTROW;                     "BRANCH IF NOT DONE
+        FADD
+        RETURN                          "EXIT RLOOP
+NXTROW: DPX(CC)<FA; JMP RLOOP           "DO NEXT ROW
+CLOOP:  JSR SAVESP              "TO SAVE S-PADS FROM CFFT
+        $VAL 0,11,0,ADDR-.
+        DPX<DPX(CC)                     "SOURCE VECTOR ADDRESS FOR ECVMOV
+        DPX(1)<DPX(XX);                 "DESTINATION VECTOR ADDRESS FOR ECVMOV
+        MOV N2,16                       "VECTOR LENGTH FOR ECVMOV
+        DPY<DPY(FN)                     "SOURCE VECTOR INCREMENT FOR ECVMOV
+        JSR ECVMOV;                     "MOVE COLUMN TO WORK VECTOR
+        DPY(1)<DPY(F2)                  "DESTINATION VECTOR INCREMENT FOR ECVMOV
+        LDMA; DB=DPX(XX);               "SET PAGE
+        LDSPI 0                         "SET WORK VECTOR ADDRESS
+        MOV N2,1
+        JSR FLOOP
+        DECDPA;                         "TO RESTORE DPA
+        MOV N2,16;                      "VECTOR LENGTH FOR ECVMOV
+        DPY<DPY(-4)                     "DESTINATION VECTOR INCREMENT FOR ECVMOV
+        DPY<DPY(F2)                     "SOURCE VECTOR INCREMENT FOR ECVMOV
+        DPX<DPX(XX)                     "SOURCE VECTOR ADDRESS FOR ECVMOV
+        DPX(1)<DPX(CC);                 "DESTINATION VECTOR ADDRESS FOR ECVMOV
+        JSR ECVMOV                      "RESTORE COLUMN TO PLACE IN ARRAY
+        DEC J;                          "TEST FOR LAST COLUMN
+        FADD DPX(CC),DPY(F2)            "UPDATE COLUMN ADDRESS
+        FADD;
+        BGT NXTCOL                      "BRANCH IF NOT DONE ALL COLUMNS
+        RETURN                          "EXIT CLOOP
+FLOOP:  INCDPA                          "MOVE DATA PAD AD FOR FFT
+        MOV F,2;
+         INCDPA                         "FOWARD INVERSE FLAG
+        JSR CFFT
+        JSR SETSP                       "RESTORE S-PADS
+        $VAL 0,11,L,ADDR-.
+        $VAL R,ADDR-.,L,ADDR+1-.
+        $VAL R,ADDR+1-.,L,ADDR+2-.
+        $VAL R,ADDR+2-.,L,ADDR+3-.
+        $VAL R,ADDR+3-.,L,ADDR+4-.
+        DECDPA;
+         MOV N1,16
+        RETURN
+NXTCOL: DPX(CC)<FA; JMP CLOOP           "DO NEXT COLUMN
+ADDR:   $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $VAL 0,0,0,0
+        $END
+"****** ECVMOV = EXTENDED COMPLEX VECTOR MOVE /FAST/ = REL 1.0, APR 79 ***
+        $TITLE ECVMOV
+        $RADIX 8
+        $ENTRY ECVMOV
+        "
+        "       ---ABSTRACT---
+        "PERFORMS VECTOR MOVE ON COMPLEX VECTORS WHICH MAY CROSS PAGE BOUNDARIES
+        "EXTENDED VECTORS ARE DEFINED BY A 20-BIT ADDRESS, THE HIGH 4 BITS IN
+        "ONE WORD, THE LOW 16-BITS IN A SECOND.  THE ELEMENT COUNT USES TWO
+        "WORDS TO DEFINE COUNTS > 65536.
+        "
+        "
+        "FORMULA:       C(MK) = A(MI)
+        "               WHERE A = AH*65536 + AL
+        "                     C = CH*65536 + CL
+        "THIS IS AN APAL CALLABLE UTILITY ROUTINE.
+        "ADDRESSES ARE IN DATA PAD X, ADDRESS INCREMENTS ARE
+        "IN DATA PAD Y:
+        "DPX(0) = SOURCE VECTOR BASE ADDRESS
+        "DPY(0) = SOURCE VECTOR ADDRESS INCREMENT
+        "DPX(1) = DESTINATION VECTOR BASE ADDRESS
+        "DPY(1) = DESTINATION VECTOR ADDRESS INCREMENT
+        "
+        "IT IS ASSUMED THAT THE VECTORS ARE COMPLEX.
+        "BOTH THE SOURCE AND DESTINATION VECTOR BASE
+        "ADDRESSES MUST BE EVEN.
+        "REAL AND IMAGINARY PARTS OF A COMPLEX PAIR
+        "ARE ASSUMED TO BE IN ADJACENT MEMORY LOCATIONS.
+        "THUS REAL ELEMENT ADDRESSES ARE ALWAYS EVEN,
+        "IMAGINARY ELEMENT ADDRESSES ARE ALWAYS ODD.
+        "       ---STATISTICS---
+        "LANGUAGE:      APAL
+        "EQUIPMENT:     AP-120B WITH FAST MEMORY
+        "SIZE:          8 PS WORDS
+        "EXECUTION      BEST    TYPICAL WORST   SETUP(US)
+        "TIME/LOOP:     0.67    0.67    0.67     .67    167 NS MEMORY
+        "
+        "
+        "       ---HISTORY---
+        "ORIGINAL:      OCT  78 J. THROOP
+        "
+        "
+        "       ---USAGE---
+        "APAL:          JSR EVMOV
+        "S-PAD PARAMETERS
+        "       NAME    NUMBER
+        TN $EQU 16              "DUMMY ELEMENT COUNT
+        "SCRATCH:       SP(16), DPX(0), DPY(0).
+        "NAMES FOR DATA PAD
+        AA $EQU 0
+        II $EQU 0
+        CC $EQU 1
+        KK $EQU 1
+        "
+        "SCRATCH:       SP: 14; DPX: 0; DPY(0), TM,FA,FM
+        "
+ECVMOV: LDTMA; DB=!ONE                          "FETCH 1.0 FOR TEMP STORE
+        LDMA; DB=DPX(AA)                        "FETCH AR(0)
+        INCMA;                                  "FETCH AI(0)
+        FADD DPX(AA),DPY(II)                    "UPDATE A ADDRESS
+        NOP                                     "WAIT ONE
+        FADD DPX(CC),ZERO;                      "DUMMY UPDATE FOR C ADDRESS
+        FMUL TM,MD                              "TEMP STORE FOR AR(0)
+LOOP:   LDMA; DB=DPX(AA);                       "FETCH AR(I)
+                FMUL TM,MD;                     "SAVE AI(I+1)
+                DPX(AA)<FA                      "SAVE UPDATED A ADDRESS
+        INCMA;                                  "FETCH AI(I)
+        FADD DPX(AA),DPY(II);                   "UPDATE A ADDRESS
+                FMUL
+                LDMA; DB=DPX(CC);MI<FM;         "SAVE CR(I+1)
+                DPX(CC)<FA;                     "SAVE UPDATED C ADDRESS
+                FMUL;
+                DEC TN                          "DEC COUNTER
+        FADD DPX(CC),DPY(KK);                   "UPDATE C ADDRESS
+        FMUL TM,MD;                             "SAVE AR(I)
+                INCMA; MI<FM;                   "STORE CI(I+1)
+                BGT LOOP                        "BRANCH IF NOT DONE
+        RETURN
+        $END
+"******* UNESPF = UNNORM EXTENDED S-PAD FLOAT /COMMON/ = REL 2.0  , JAN 78 ****
+"******* ESPFLT = EXTENDED S-PAD FLOAT /COMMON/ = REL 2.0  , JAN 78 ***********
+"******* USPFLT = UNSIGNED S-PAD FLOAT /COMMON/ = REL 2.0  , JAN 78 ***********
+        $TITLE EXUTIL
+        $RADIX 8
+        $ENTRY UNESPF
+        $ENTRY ESPFLT
+        $ENTRY USPFLT
+        $EXT SPFLT
+"
+"       ---ABSTRACT---
+"
+"UNESPF:  UNNORMALIZES AN INTEGER INTO THE LOWER 24 BITS OF THE MANTISSA
+"        IN SUCH A WAY (LEADING 0.110...) THAT WHEN A FLOATING NUMBER
+"        IS ADDED TO THE INTEGER, THE INTEGER RESULT REMAINS IN THE LOWER
+"        24 BITS OF THE MANTISSA.  THIS ROUTINE IS USED TO SET A BASE
+"        ADDRESS INTO A 38-BIT FORMAT SUCH THAT A SINGLE FADD OPERATION
+"        CAN BE USED TO UPDATE THE ADDRESS.
+"
+"         THE INTEGER IS FORMED FROM A 32-BIT INTEGER, THE HIGH 16 BITS
+"        OF WHICH ARE IN SP(16) AND THE LOW 16 BITS IN SP(17).  SP(16)
+"        IS TREATED AS A 2'S COMPLEMENT INTEGER, WHILE SP(17) IS TREATED
+"        AS AN UNSIGNED (0 TO 65535) INTEGER.
+"
+"        FORMULA: DPX(1) = 100663296. + 65536*SP(16) + SP(17)
+"
+"        EXAMPLES: DPX(1) = 100663296.0 + 131067.0 IF SP(16)=1 AND
+"                                                     SP(17)=177773 (OCTAL)
+"                  DPX(1) = 100663296.0 +  32767.0 IF SP(16)=0 AND
+"                                                     SP(17)=077777 (OCTAL)
+"
+"         NOTE: 100663296.0  IN OCTAL 38-BIT FORMAT IS 001033 003000 000000
+"
+"ESPFLT:  FLOATS A 32-BIT INTEGER, THE HIGH 16 BITS OF WHICH ARE IN SP(16)
+"        AND THE LOW 16 BITS IN SP(17).  SP(16) IS TREATED AS A 2'S COMPLEMENT
+"        INTEGER, WHILE SP(17) IS TREATED AS AN UNSIGNED (0 TO 65535) INTEGER.
+"
+"        FORMULA:  DPX(1) = FLOAT ( 65536*SP(16) + SP(17) )
+"
+"        EXAMPLES: DPX(1) = 131067.0  IF SP(16)=1  AND SP(17)=177773 (OCTAL)
+"                  DPX(1) =  32767.0  IF SP(16)=0  AND SP(17)=077777 (OCTAL)
+"
+"USPFLT:  FLOATS THE 16-BIT UNSIGNED INTEGER IS SP(17) AND RETURNS THE FLOATED
+"         NUMBER (O TO 65535) IN DPX(1) AND FA.  ALSO SETS TM TO 1.0.
+"
+"         EXAMPLES:   177773 (OCTAL) FLOATS TO 65531.0
+"                     077777 (OCTAL) FLOATS TO 32767.0
+"
+"         FORMULA:  DPX(1) = FLOAT ( SP(17) )   WHERE SP(17) IS TREATED AS
+"                                                       16-BIT UNSIGNED INTEGER
+"
+"       ---STATISTICS---
+"LANGUAGE: APAL
+"EQUIPMENT: AP-120 WITH EITHER MEMORY
+"SIZE: 15 + SPFLT (5) = 20 LOCATIONS
+"
+"EXECUTION TIMES: UNESPF: 3.67 US IF SP(17)<32768
+"                         4.33 US IF SP(17)>32767
+"                 ESPFLT: 2.67 US IF SP(17)<32768
+"                         3.33 US IF SP(17)>32767
+"                USPFLT:  1.17 US   IF SP(17)<32768
+"                         1.83 US   IF SP(17)>32767
+"
+"
+"     --- HISTORY ---
+"ORIGINAL:  SEP 77  R.S. NORIN
+"
+"
+"       ---USAGE---
+"S-PAD PARAMETERS
+"
+"SCRATCH:  SP(14,15),DPX(0-2),FA,TM
+"
+UNESPF: JSR ESPFLT              "DO EXTENDED S-PAD FLOAT
+                                "OF SP(16) AND SP(17)
+        RPSF UNFAC; DPX(1)<DB;  "FETCH UNNORMALIZING FACTOR
+          BR COMM               "ADD FACTOR TO FLOATED INTEGER TO
+                                "GET INTEGER PART INTO LOW MANTISSA
+ESPFLT: MOV 16,16; DPX(2)<SPFN  "HIGH PART TO DPX(2)
+        JSR USPFLT              "FLOAT SP(17) AS 16-BIT UNSIGNED INTEGER
+        LDSPI 17; DB=43.        "SET EXPONENT
+        FADD ZERO,MDPX(2); MOV 17,17 "FORM 65536*SP(16)
+        FADD; BR COMM           "ADD SP(17) AFTER BRANCH
+USPFLT: JSR SPFLT               "FLOAT 2'S COMPLEMENT INTEGER
+                                "IN SP(17)
+                                "RESULT IN DPX(1) AND FA.
+                                "TM = 1.0
+        BFGE DONE               "WE'RE DONE IF NOT NEGATIVE
+        RPSF F64K; DPX(1)<DB    "IF NEGATIVE ADD 65536
+COMM:   FADD DPX(1),FA
+        FADD
+DONE:   DPX(1)<FA; RETURN       "STORE RESULT, EXIT.
+F64K:   $FP 65536.
+UNFAC:  $FP 100663296.          "FACTOR TO PRESERVE INTEGER
+                                "RESULT OF A FADD INTO LOW MANTISSA
+        $END
+$ENDLIB
+ 

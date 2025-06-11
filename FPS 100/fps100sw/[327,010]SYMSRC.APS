@@ -1,0 +1,267 @@
+$LIB
+"***** SYMSRC = 4.5K TABLE MEMORY ADDRESS SYMBOLS /COMMON/ = REL 3.0, DEC 78 ***
+        $TITLE !DIV
+        $GLOBAL !DIV
+        !DIV   $EQU 10000
+        $END
+        $TITLE !SQRT
+        $GLOBAL !SQRT
+        !SQRT  $EQU 10202
+        $END
+        $TITLE !SNCS
+        $GLOBAL !SNCS
+        !SNCS  $EQU 10306
+        $END
+        $TITLE !LOG
+        $GLOBAL !LOG
+        !LOG   $EQU 10333
+        $END
+        $TITLE !EXP
+        $GLOBAL !EXP
+        !EXP   $EQU 10317
+        $END
+        $TITLE !ATAN
+        $GLOBAL !ATAN
+        !ATAN  $EQU 10365
+        $END
+        $TITLE !ZERO
+        $GLOBAL !ZERO
+        !ZERO  $EQU 10371
+        $END
+        $TITLE !ONE
+        $GLOBAL !ONE
+        !ONE   $EQU 10001
+        $END
+        $TITLE !TWO
+        $GLOBAL !TWO
+        !TWO   $EQU 10002
+        $END
+        $TITLE !THREE
+        $GLOBAL !THREE
+        !THREE $EQU 10441
+        $END
+        $TITLE !FOUR
+        $GLOBAL !FOUR
+        !FOUR  $EQU 10442
+        $END
+        $TITLE !FIVE
+        $GLOBAL !FIVE
+        !FIVE  $EQU 10443
+        $END
+        $TITLE !SIX
+        $GLOBAL !SIX
+        !SIX   $EQU 10444
+        $END
+        $TITLE !SEVEN
+        $GLOBAL !SEVEN
+        !SEVEN $EQU 10445
+        $END
+        $TITLE !EIGHT
+        $GLOBAL !EIGHT
+        !EIGHT $EQU 10446
+        $END
+        $TITLE !NINE
+        $GLOBAL !NINE
+        !NINE  $EQU 10447
+        $END
+        $TITLE !TEN
+        $GLOBAL !TEN
+        !TEN   $EQU 10450
+        $END
+        $TITLE !SIXTN
+        $GLOBAL !SIXTN
+        !SIXTN $EQU 10451
+        $END
+        $TITLE !HALF
+        $GLOBAL !HALF
+        !HALF  $EQU 10427
+        $END
+        $TITLE !THIRD
+        $GLOBAL !THIRD
+        !THIRD $EQU 10430
+        $END
+        $TITLE !FORTH
+        $GLOBAL !FORTH
+        !FORTH $EQU 10431
+        $END
+        $TITLE !FIFTH
+        $GLOBAL !FIFTH
+        !FIFTH $EQU 10432
+        $END
+        $TITLE !SIXTH
+        $GLOBAL !SIXTH
+        !SIXTH $EQU 10433
+        $END
+        $TITLE !SVNTH
+        $GLOBAL !SVNTH
+        !SVNTH $EQU 10434
+        $END
+        $TITLE !EGHTH
+        $GLOBAL !EGHTH
+        !EGHTH $EQU 10435
+        $END
+        $TITLE !NINTH
+        $GLOBAL !NINTH
+        !NINTH $EQU 10436
+        $END
+        $TITLE !TENTH
+        $GLOBAL !TENTH
+        !TENTH $EQU 10437
+        $END
+        $TITLE !SXNTH
+        $GLOBAL !SXNTH
+        !SXNTH $EQU 10440
+        $END
+        $TITLE !SQRT2
+        $GLOBAL !SQRT2
+        !SQRT2 $EQU 10203
+        $END
+        $TITLE !SQRT3
+        $GLOBAL !SQRT3
+        !SQRT3 $EQU 10422
+        $END
+        $TITLE !SQRT5
+        $GLOBAL !SQRT5
+        !SQRT5 $EQU 10423
+        $END
+        $TITLE !SQT10
+        $GLOBAL !SQT10
+        !SQT10 $EQU 10424
+        $END
+        $TITLE !ISQT2
+        $GLOBAL !ISQT2
+        !ISQT2 $EQU 10206
+        $END
+        $TITLE !ISQT3
+        $GLOBAL !ISQT3
+        !ISQT3 $EQU 10452
+        $END
+        $TITLE !ISQT5
+        $GLOBAL !ISQT5
+        !ISQT5 $EQU 10453
+        $END
+        $TITLE !ISQ10
+        $GLOBAL !ISQ10
+        !ISQ10 $EQU 10454
+        $END
+        $TITLE !CBT2
+        $GLOBAL !CBT2
+        !CBT2 $EQU 10417
+        $END
+        $TITLE !CBTT2
+        $GLOBAL !CBTT2
+        !CBTT2 $EQU 10417                 "SAME AS !CBT2, TYPO IN OLD APAL TABLE
+        $END
+        $TITLE !CBT3
+        $GLOBAL !CBT3
+        !CBT3 $EQU 10420
+        $END
+        $TITLE !CBRT3
+        $GLOBAL !CBRT3
+        !CBRT3 $EQU 10420                 "SAME AS !CBT3, !CBRT3 WAS OLD APAL NA
+        $END
+        $TITLE !QDRT2
+        $GLOBAL !QDRT2
+        !QDRT2 $EQU 10421
+        $END
+        $TITLE !LOG2E
+        $GLOBAL !LOG2E
+        !LOG2E $EQU 10317
+        $END
+        $TITLE !LOG2
+        $GLOBAL !LOG2
+        !LOG2  $EQU 10411
+        $END
+        $TITLE !LOGE
+        $GLOBAL !LOGE
+        !LOGE  $EQU 10337
+        $END
+        $TITLE !LN2
+        $GLOBAL !LN2
+        !LN2   $EQU 10336
+        $END
+        $TITLE !LN3
+        $GLOBAL !LN3
+        !LN3   $EQU 10407
+        $END
+        $TITLE !LNPI
+        $GLOBAL !LNPI
+        !LNPI  $EQU 10406
+        $END
+        $TITLE !LN10
+        $GLOBAL !LN10
+        !LN10  $EQU 10410
+        $END
+        $TITLE !E
+        $GLOBAL !E
+        !E     $EQU 10403
+        $END
+        $TITLE !INVE
+        $GLOBAL !INVE
+        !INVE  $EQU 10404
+        $END
+        $TITLE !ESQ
+        $GLOBAL !ESQ
+        !ESQ   $EQU 10405
+        $END
+        $TITLE !PI
+        $GLOBAL !PI
+        !PI    $EQU 10402
+        $END
+        $TITLE !TWOPI
+        $GLOBAL !TWOPI
+        !TWOPI $EQU 10415
+        $END
+        $TITLE !INVPI
+        $GLOBAL !INVPI
+        !INVPI $EQU 10412
+        $END
+        $TITLE !PI2
+        $GLOBAL !PI2
+        !PI2   $EQU 10312
+        $END
+        $TITLE !PI4
+        $GLOBAL !PI4
+        !PI4   $EQU 10373
+        $END
+        $TITLE !PI180
+        $GLOBAL !PI180
+        !PI180 $EQU 10413
+        $END
+        $TITLE !PISQ
+        $GLOBAL !PISQ
+        !PISQ  $EQU 10414
+        $END
+        $TITLE !SQTPI
+        $GLOBAL !SQTPI
+        !SQTPI $EQU 10416
+        $END
+        $TITLE !GAMMA
+        $GLOBAL !GAMMA
+        !GAMMA $EQU 10425
+        $END
+        $TITLE !PHI
+        $GLOBAL !PHI
+        !PHI   $EQU 10426
+        $END
+        $TITLE !FFTSZ
+        $GLOBAL !FFTSZ
+        !FFTSZ $EQU 10000
+        $END
+        $TITLE !FFTX2
+        $GLOBAL !FFTX2
+        !FFTX2 $EQU 20000     "!FFTSZ*2
+        $END
+        $TITLE !FFTX4
+        $GLOBAL !FFTX4
+        !FFTX4 $EQU 40000     "!FFTSZ*4
+        $END
+        $TITLE !FFTX8
+        $GLOBAL !FFTX8
+        !FFTX8 $EQU 100000     "!FFTSZ*8
+        $END
+        $TITLE !DIVD2
+        $GLOBAL !DIVD2
+        !DIVD2 $EQU 4000      "!DIV/2
+        $END
+$ENDLIB

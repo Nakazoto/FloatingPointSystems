@@ -1,0 +1,128 @@
+C****** RUN2X = MTS100 SUPV TEST STEP 2.2 = FPS-100 , MAY 79 ***
+C
+C      RUN2X         TEST MTS100 SUPERVISOR
+C
+       INTEGER*2 IST,JFN,JWR,JRD,JWW
+       INTEGER*2 HOST
+        INTEGER*2 TINP,TOUT
+        COMMON /LUNITS/ TINP,TOUT
+       COMMON /WW/ JWR,JRD, JWW,HOST(16)
+C              JWR = 6 FOR PRINTER
+C              JWR = 5 FOR TERMINAL
+       DATA JRD /5/
+        TOUT = 5
+        TINP = 5
+        WRITE (TOUT,942)
+942     FORMAT (' OUTPUT DEVICE?    5 = TERMINAL '/
+     1          '                   6 = PRINTER  ')
+        READ (TINP,943) JWW
+943     FORMAT (I2)
+        JWR = JWW
+        IF(JWR.EQ.6)CALL ASSIGN(6,'LP0:',4)
+        CALL TESTR1
+       CALL APRLSE
+       CALL EXIT
+       END
+C****** TESTR1 = TEST CONTROL SUBROUTINE = FPS-100 , MAY 79 **
+        SUBROUTINE TESTR1
+       INTEGER*2 IST,JFN,JWR,JRD,JWW
+       INTEGER*2 HOST
+        INTEGER CODE
+        COMMON /CODE1/ CODE (200)
+       COMMON /WW/ JWR,JRD, JWW,HOST(16)
+        WRITE (JWR,9406)
+9406    FORMAT (1H   /'    TESTR1 ')
+        CALL APINIT (0,0,JFN)
+        CALL APLLI ('TEST22.LM',9,8,1,1,HOST,0)
+        CALL LOOKT (22)
+        CALL MTS1(4096)
+        CALL LOOKT (33)
+        DO 211 J=1,16
+        HOST(J) = J+J+299
+211     CONTINUE
+        DO 288 KK=1,4
+        JJ = KK
+        CALL LOOKT (24)
+        CALL TSTV
+        CALL TSTV
+        CALL TSTV
+        CALL TSTV
+        DO 223 J=2,7
+        K =9-J
+        L = KK+KK+KK+J
+        CALL XHPUT (K,L)
+223     CONTINUE
+        CALL TSTV
+        CALL XHPUT (1,JJ)
+288     CONTINUE
+        CALL LOOKT (25)
+        DO 313 J=1,7
+        CALL TSTV
+313     CONTINUE
+        CALL APRSET
+        RETURN
+        END
+C****** XHPUT = HPUT CALLING ROUTINE = FPS-100 , MAY 79 ****
+C..
+        SUBROUTINE XHPUT (DEST,DATUM)
+        INTEGER*2 DEST,DATUM
+       INTEGER*2 IST,JFN,JWR,JRD,JWW
+       INTEGER*2 HOST
+       COMMON /WW/ JWR,JRD, JWW,HOST(16)
+        WRITE (JWR,9362) DEST,DATUM
+9362    FORMAT (' HPUT.  DEST =',I3,'    DATUM = ',I6)
+        CALL HPUT (DEST,DATUM)
+        RETURN
+        END
+C****** GETV = HGET CALLING ROUTINE = FPS-100 , MAY 79  ****
+C..
+        SUBROUTINE GETV (SORS)
+        INTEGER*2 SORS
+       INTEGER*2 HOST,JWW
+       COMMON /WW/ JWR,JRD, JWW,HOST(16)
+        JA = SORS
+        CALL HGET (JA,JF,JD)
+        WRITE (JWW,9233) JA,JF,JD,SORS
+9233    FORMAT (1X,'HGET ',4I10)
+        RETURN
+        END
+C****** TSTV = HTST CALLING ROUTINE = FPS-100 , MAY 79  ****
+C..
+        SUBROUTINE TSTV
+       INTEGER*2 HOST,JWW
+       COMMON /WW/ JWR,JRD, JWW,HOST(16)
+        JA =0
+        JF =0
+        JD =0
+        JL =0
+        CALL HTST (JA,JF,JD)
+        CALL APIN (JL,3)
+        WRITE (JWW,9234) JA,JF,JD,JL
+9234    FORMAT (1X,'HTST ',3I10,'    LITES= ',I10)
+        RETURN
+        END
+C****** LOOKT =
+C..
+       SUBROUTINE LOOKT (N)
+       INTEGER*2 JWW,HOST
+       INTEGER*2 KK1,KK2,KK3,KK4,KK5,N
+       COMMON /WW/ JWR,JRD, JWW,HOST(16)
+       CALL LOOKY (KK1,KK2,KK3,KK4,KK5)
+       WRITE (JWW,9090) N,KK1,KK2,KK3,KK4,KK5
+9090   FORMAT (1H  /1X,'#',I4,'   SWR',I7,'  RUNFG',I7,
+     1   '   FN',I7,' CTRL',I7,'  LITES',I7)
+        CALL LVIRP(N)
+       RETURN
+       END
+C****** LVIRP =
+C..
+        SUBROUTINE LVIRP (N)
+       INTEGER*2 JWW,HOST
+       INTEGER*2 KK1,KK2,KK3,KK4,KK5,N
+       COMMON /WW/ JWR,JRD, JWW,HOST(16)
+       CALL VIRP (KK1,KK2,KK3,KK4,KK5)
+       WRITE (JWW,9190) N,KK1
+9190   FORMAT (     1X,'#',I4,' SUPVR',I7,'    SUM',I7,
+     1   ' HALT',I7,'  DMA',I7,'    CB5',I7)
+       RETURN
+       END

@@ -1,0 +1,275 @@
+"****** RTC = REAL TIME CLOCK MODULES = REV 0.0, AUG 79
+"
+"****** RESTAR = RESTART RTC = REV 0.0, AUG 79
+"
+        $TITLE RESTAR
+        $ENTRY RESTAR
+        $EXT EMPTY,RTCINT,RMVCLK
+"
+"    --- ABSTRACT ---
+"  STARTS THE REAL-TIME-CLOCK COUNTING DOWN THE TIME THAT THE FIRST
+"  TASK ON THE CLOCK QUEUE WISHES TO WAIT.  IF THE CLOCK QUEUE IS
+"  EMPTY, IT WILL STOP THE CLOCK.
+"
+"  THIS ROUTINE IS CALLED WITH NO PARAMETERS
+"
+$INSERT SYSDEF
+$LIST
+"       INSERT COMSYS
+$NOLIST
+$INSERT COMSYS
+$LIST
+"
+"  LOCAL VARIABLES
+"
+        HALT   $EQU 000000      "HALT INSTRUCTION FOR RTC
+        MASK   $EQU 000036      "RATE MASK
+        RUN    $EQU 000441      "(441)RUN INSTRUCTION FOR RTC
+        MINUS  $EQU 177777      "-1
+"
+RESTAR: DPX(X2)<CLKQUE          "GET HEAD OF RTC QUEUE
+        JSR EMPTY               "GET FIRST ELEMENT
+        MOV R0,R0;LDDA;DB=RTCCTL  "SETUP DEVICE ADDR
+        BNE NEXT;OUT;DB=HALT    "QUEUE IS EMPTY?, STOP CLOCK
+"
+        LDDA;DB=RTCCST          "SETUP DEVICE ADDR
+        OUT;DB=ZERO             "CLEAR RTC COUNT
+        RETURN                  "ALL DONE, CLEAR INT
+"
+NEXT:   LDSPI R0;DB=DPX(X3)     "GET ADDR OF FIRST ELEMENT
+        LDSPI R1;DB=ICLOCK-RCLOCK "GET DELTA OFFSET
+        ADD R1,R0;SETMA         "GET DELTA
+        LDMA;DB=CRATE           "FETCH THE CLOCK RATE
+        LDSPI R0;DB=RUN;        "R0 = RUN INSTRUCTION
+        STATMA                  "
+        LDSPI R1;DB=MD          "R1 = DELTA COUNT
+        LDSPI R2;DB=MASK;       "R2 = RATE MASK
+        STATMA                  "
+        LDSPI R3;DB=MD          "R3 = CLOCK RATE
+        AND R2,R3;              "GET RATE
+        LDDA;DB=RTCCTR          "SETUP DEVICE ADDR
+"
+        LDSPI R2;IN;DB=INBS     "R2 = RTC COUNT
+        LDDA;DB=RTCCST          "SETUP DEVICE ADDR
+        ADD R2,R1;OUT;DB=SPFN   "WRITE OUT NEW RTC COUNT
+        LDDA;DB=RTCCTL          "SETUP DEVICE ADDR
+        OR R0,R3;OUT;DB=SPFN    "EXECUTE THE START COMMAND
+        LDDA;DB=RTCCST          "SETUP DEVICE ADDR
+        MOV R1,R1;OUT;DB=MINUS  "TEST RTC COUNT, CLEAR INT
+        BGT DONE                "RTCCTR+DELTA <= 0 ?
+"
+        JSR RTCINT              "TAKE CARE OF NEXT ELEMENT
+        JMP RMVCLK              "AND REMOVE IT FROM THE QUEUE
+"
+DONE:   RETURN                  "ALL DONE
+"
+"
+        $END
+"
+"****** ADDCLK = ADD ELEMENT TO RTC QUEUE = REV 0.0, AUG 79
+"
+        $TITLE ADDCLK
+        $ENTRY ADDCLK
+        $EXT EMPTY,INSERT,RESTAR
+"
+"    --- ABSTRACT ---
+"  PLACES A NEW TASK ON THE CLOCK QUEUE.  IN DOING SO, IT COMPUTES THE
+"  CORRECT DELTA TIME FACTOR FOR THE TASK AN INSERTS IT IN A TIME
+"  PRIORITY POSITION IN THE QUEUE.  IF IT IS INSERTED INTO THE HEAD OF THE
+"  QUEUE, IT CALLS RESTAR TO RESTART THE RTC WITH THE NEW TIMEOUT VALUE.
+"
+"  THE PARAMETERS FOR CALLING ADDCLK ARE:
+"       DPX(0) = THE REQUESTED TIME TO WAIT
+"       DPX(1) = THE NEW TASK'S TCB
+"
+$NOLIST
+$INSERT SYSDEF
+$LIST
+"       INSERT COMSYS
+$NOLIST
+$INSERT COMSYS
+$LIST
+"
+"
+"
+"  LOCAL VARIABLES
+"
+        FIXUP  $EQU 000441      "(441)RESTART INSTRUCTION FOR RTC
+        MASK   $EQU 000036      "RATE MASK
+        MINUS  $EQU 177777      "-1
+"
+"
+ADDCLK: LDSPI R2;DB=DPX(X0)     "R2 = TIME TO WAIT
+        LDSPI R3;DB=DPX(X1)     "R3 = TCB ADDR
+        MOV R4,R4;DPX(X1)<SPFN  "SAVE R4 IN DPX(1)
+"
+        DPX(X2)<CLKQUE          "CHECK CLOCK QUEUE
+        JSR EMPTY               "
+        BNE CONT;LDSPI R1;DB=ICLOCK "IS QUEUE EMPTY?
+"
+        JMP END                 "QUEUE IS EMPTY!
+"
+CONT:   LDDA;DB=RTCCTR;CLR R4   "SET DEVICE ADDR, AND FLAG
+        LDSPI R0;DB=DPX(3);LDMA "SETUP SMA WITH FIRST TASK ADDR
+        INCMA                   "
+        LDSPI R0;IN;DB=INBS;INCMA  "R0 = CLOCK COUNT
+"
+LOOP:   SUB R0,R2;              "TEST TIME
+        BEQ OUT                 "IF LESS, INSERT HERE
+        BLT OUT                 "
+"
+        DPX(X2)<DPX(X3)         "SHIFT NEXT ELEMENT TO DPX(2)
+        JSR EMPTY               "CLEAR FLAG
+        LDSPI R4;DB=CLKQUE      " R4 = QUEUE HEADER
+        LDSPI R0;DB=DPX(X3)     "R0 = NEXT ELEMENT
+        SUB# R0,R4              "TEST FOR HEADER NEXT
+        BEQ LAST                "IS NEXT ELEMENT HEADER?
+"
+        LDSPI R1;DB=ICLOCK-RCLOCK "R1 = DELTA OFFSET
+        ADD# R1,R0;SETMA        "FETCH DELTA
+        STATMA                  "AND WAIT FOR IT
+        STATMA                  "
+        LDSPI R0;DB=MD;         "R0 = DELTA
+        BR  LOOP                "GO AND DO IT AGAIN
+"
+"
+OUT:    ADD R0,R2               "RESET R2
+        SUB R2,R0;STATMA;MI<DB; "MODIFY R0,
+        DB=SPFN                 "AND REPLACE NEW DELTA VALUE
+        LDSPI R0;DB=DPX(X3)     "R0 = NEXT ELEMENT
+"
+LAST:   DPX(X2)<SPFN;MOV R0,R0  "DPX(2) = NEXT ELEMENT
+        LDSPI R0;DB=RCLOCK      "R0 = LINK OFFSET
+        ADD R3,R0;DPX(X3)<SPFN  "DPX(3) = NEW ELEMENT
+"
+        LDSPI R0;DB=STATUS      "R0 = STATUS OFFSET
+        ADD R3,R0;SETMA         "FETCH STATUS OF TASK
+        DPX(X0)<SPFN;MOV R2,R2; "DPX(0) = NEW DELTA
+        STATMA                  "
+        LDSPI R2;DB=CLKBIT;     "R2 = SET CLOCK QUEUE STATUS BIT
+        STATMA                  "
+        LDSPI R0;DB=MD          "R0 = TASK'S STATUS
+        LDSPI R1;DB=ICLOCK      "R1 = DELTA OFFSET
+        OR R2,R0;STATMA;MI<DB;  "RESTORE TASK'S STATUS
+        DB=SPFN                 "
+        ADD# R1,R3;SETMA;MI<DB; "PLACE NEW DELTA IN TCB
+        DB= DPX(X0)             "
+"
+        LDDA;DB=RTCCST;MOV R4,R4 "SETUP DEVICE ADDR
+        BNE DONE                "TEST FLAG FOR RTC UPDATE
+"
+        LDMA;DB=CRATE           "FETCH RTC RATE
+        OUT;DB=DPX(X0)          "UPDATE RTC COUNT
+        LDSPI R0;DB=MASK;       "R0 = RATE MASK
+        STATMA                  "PUSH THE MEMORY
+        LDDA;DB=RTCCTL          "SETUP DEVICE ADDR
+        LDSPI R2;DB=FIXUP;      "R2 = RESTART INSTRUCTION
+        STATMA                  "PUSH THE MEMORY
+        LDSPI R1;DB=MD          "R1 = RTC RATE
+        AND R0,R1               "R1 = RATE
+        OR R1,R2;OUT;DB=SPFN    "FIX RTC COUNT
+        LDDA;DB=RTCCST          "SETUP DEVICE ADDR
+        OUT;DB=MINUS            "CLEAR INTERRUPT
+"
+DONE:   JSR INSERT              "INSERT NEW ELEMENT
+        LDSPI R4;DB=DPX(X1)     "RESTORE R4
+        RETURN                  "
+"
+END:    LDSPI R0;DB=RCLOCK      "R0 = LINK OFFSET
+        LDSPI R4;DB=STATUS      "R4 = STATUS OFFSET
+        ADD R3,R4;SETMA         "FETCH STATUS OF TASK
+        ADD R3,R0;DPX(X3)<SPFN  "DPX(3) = NEW ELEMENT
+        DPX(X0)<SPFN;MOV R2,R2; "DPX(0) = NEW DELTA
+        STATMA                  "
+        LDSPI R2;DB=CLKBIT;     "R2 = SET CLOCK QUEUE STATUS BIT
+        STATMA                  "
+        LDSPI R0;DB=MD          "R0 = TASK'S STATUS
+        OR R2,R0;STATMA;MI<DB;  "RESTORE TASK'S STATUS
+        DB=SPFN                 "
+        ADD# R1,R3;SETMA;MI<DB; "PLACE NEW DELTA IN TCB
+        DB= DPX(X0)             "
+"
+        JSR INSERT              "INSERT NEW ELEMENT
+        LDSPI R4;DB=DPX(X1)     "RESTORE R4
+        JMP RESTAR              "START UP RTC
+"
+        $END
+"
+"****** RMVCLK = REMOVE ELEMENT FROM RTC QUEUE = REV 0.0, AUG 79
+"
+        $TITLE RMVCLK
+        $ENTRY RMVCLK
+        $EXT EMPTY,DELETE,RESTAR
+"
+"     --- ABSTRACT ---
+"  REMOVES A TASK FROM THE CLOCK QUEUE.  THE QUEUE'S DELTA FACTORS ARE
+"  FIXED UP AND IF THE TASK WAS AT THE HEAD OF THE QUEUE, RESTAR IS
+"  CALLED TO RESTART THE RTC WITH THE NEXT TASK IN THE QUEUE.
+"
+"  THE PARAMETER FOR CALLING RMVCLK IS:
+"       DPX(1) = THE TASK'S TCB ADDRESS
+"
+$NOLIST
+$INSERT SYSDEF
+$LIST
+"       INSERT COMSYS
+$NOLIST
+$INSERT COMSYS
+$LIST
+"
+"
+"
+" LOCAL VARIABLES
+"
+"
+RMVCLK: LDSPI R2;DB=DPX(X1)     "R2 = TCB ADDR
+        LDSPI R4;DB=STATUS      "R4 = STATUS OFFSET
+        ADD R2,R4;SETMA         "FETCH STATUS WORD
+        STATMA                  "
+        LDSPI R0;DB=CLKBIT;     "R0 = CLOCK QUEUE STATUS
+        STATMA                  "
+        LDSPI R3;DB=MD          "R3 = TCB STATUS
+        AND# R0,R3              "TEST QUEUE STATUS
+        BNE GOOD                "IF BIT IS A 1 GO AHEAD
+"
+        RETURN                  "TCB NOT IN CLOCK QUEUE
+"
+GOOD:   COM R0                  "COMPLEMENT R0
+        AND R0,R3;DB=SPFN;      "CLEAR CLOCK QUEUE BIT
+        STATMA;MI<DB            "RESTORE STATUS
+"
+        DPX(X2)<CLKQUE          "DPX(2) = RTC HEADER
+        JSR EMPTY               "GET FIRST ELEMENT
+        LDSPI R4;DB=DPX(X3)     "R4 = FIRST ELEMENT ADDR
+        LDSPI R1;DB=RCLOCK      "R1 = LINK OFFSET
+        ADD R1,R2;DPX(X2)<SPFN  "R2 = RLINK ADDR OF TCB
+        JSR EMPTY               "GET NEXT ELEMENT
+        LDSPI R1;DB=DPX(X3)     "R1 = NEXT ELEMENT
+        MOV R1,R1;DPX(X2)<SPFN  "DPX(2) = NEXT ELEMENT
+        MOV R2,R2;DPX(X3)<SPFN  "DPX(3) = TCB ADDR
+"
+        SUB# R2,R4              "TEST TCB FOR FIRST ENTRY
+        BNE REMOVE              "IF NOT JUST REMOVE IT
+"
+        JSR DELETE              "REMOVE TCB FROM QUEUE
+        JMP RESTAR              "NOW RESTART CLOCK
+"
+REMOVE: MOV R0,R0               "GET NEXT ELEMENT
+        BEQ LAST                "IF LAST THEN SKIP THE UPDATE
+"
+        LDSPI R0;DB=ICLOCK      "R0 = DELTA OFFSET
+        LDSPI R1;DB=DPX(X3)     "R1 = NEXT ELEMENT
+        ADD R2,R0;SETMA         "FETCH THIS DELTA
+        ADD R0,R1;SETMA         "FETCH NEXT DELTA
+        STATMA                  "WAIT FOR DELTA
+        LDSPI R4;DB=MD;         "R4 = THIS DELTA
+        STATMA                  "
+        LDSPI R0;DB=MD          "R0 = NEXT DELTA
+        ADD R0,R4;DB=SPFN;      "
+        STATMA;MI<DB            "RESTORE NEXT DELTA
+        DB=DPX(X0)              "
+"
+LAST:   JSR DELETE              "REMOVE THIS TCB
+        RETURN
+"
+        $END

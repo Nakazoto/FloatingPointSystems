@@ -1,0 +1,22 @@
+"****** SEQV1 = ASM100 TEST ROUTINE FOR GLOBAL TEST = REL 0.0, AUG 79
+"
+        $TITLE SEQV1
+        $ENTRY SEQV1,0
+"
+"  --- ABSTRACT ---
+"
+"  THIS ROUTINE DEFINES TWO FLOATING POINT CONSTANTS AND BUILDS AN
+"  INTEGER VECTOR OUT OF SEQUENTIAL NUMBERS.
+"
+$INSERT SEQV1.DAT
+        LDMA;DB=SARRAY+31.      "MA = LAST ELEMENT+1 OF SARRAY
+"
+LOOP:   MOV R0,R0;DECMA;MI<DB;  "WRITE R0 VALUE INTO SARRAY
+        DB=SPFN                 "
+        DEC R0                  "R0 = R0-1
+        DEC# R0                 "TO END LOOP WHEN R0 = 1
+        BNE LOOP                "IF NOT 0, CONTINUE LOOPING
+"
+        RETURN                  "DONE
+"
+        $END

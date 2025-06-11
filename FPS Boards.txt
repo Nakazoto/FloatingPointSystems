@@ -1,0 +1,128 @@
+Part No. Breakdown
+N### = FPS identification number?
+     * N612 is used on board stiffener
+     * N412 is used on silkscreen
+4### = Board series number
+     * All boards are either 42##, 43##, 44##, or 48##
+###L = Revision number
+     * Some boards have just a number, some have the extra letter
+
+For clarity, only the Board Series Number will be listed below
+
+
+Usagi FPS-100
+Series    Qty.      Name           Function
+4401      1         FA             Floating Adder
+4402      2         DATA PAD       Data Pad
+4421      1         PDP 11 I/F     PDP 11 Interface
+4424      1         MD             Main Data Memory (Data in from and to Host)
+4425      1         TM             Table Memory
+4426      1         FM             Floating Multiplier
+4429      1         FMT            Formatter
+
+Usagi FPS-3000
+Series    Qty.      Name           Function
+4808      1         VBUS SBC       VersaBus controller?
+4803      1         VBUS XLTR      VersaBus translator?
+4804      1         UNIV FMT       Universal Formatter?
+4448      1         AP I/F         Array Processor Interface
+4805      1         XP32 EXEC      XP32 Processor
+4806      1         XP32 ARITH     XP32 Processor
+4498      1         MEM CTL        Memory Control
+4456      1         MD             Main Data / Memory
+
+JM Trading Haul 
+(Two boxes, each with equal number of boards)
+Series    Qty.      Name           Function
+4200      1         DATA PAD       Data Pad Left and Right
+4201      1         S PAD          Scratch Pad
+4203      1         FADD 1         Floating Adder 1
+4204      1         FADD 2         Floating Adder 2
+4205      1         FADD 3         Floating Adder 3
+4206      1         FMUL A         Floating Multiplier A
+4207      1         FMUL B         Floating Multiplier B
+4212      1         ADDR           Address
+4213      1         MIREG          Memory Input Register
+4219      2         GP+NOVA I/F    General Purpose Interface
+4226      1         FMT M          Format Mantissa
+4227      1         FMT E          Format Exponent
+4236      1         PS RAM 2K      Program Source RAM
+4238      1         TM RAM         Table Memory RAM
+4244      2         MAIN DATA      Data in from Host and to Host
+----
+4402      2         DATA PAD       Data Pad
+4408      1         P3             Processor 3
+4422      1         P1 (4K)        Processor 1
+4423      1         P2 (4K)        Processor 2
+4425      1         TM             Table Memory
+4426      1         FM             Floating Multiplier
+4446      1         CUSTOM FMT     Custom Formatter
+4447      1         CIO
+4448      1         AP I/F
+4477      1         BIRP I/F
+4481      1         MD PORT
+
+JM Trading Haul 
+(These are boards in which we only have one copy of)
+Series    Qty.      Name           Function
+4217      1         TM ROM
+4275      1         IRP 1
+4276      1         IRP 2
+4324      1         CPROC CTRLR
+4329      1         FIFO/FPROC/CTRL
+4330      1         FIFO
+4401      1         FA             Floating Adder
+4424      1         MD+5 ONLY
+4482      1         PIXEL MEM
+
+JM Trading Haul 
+(These are boards that we have extra copies of)
+Series    Qty.      Name           Function
+4426      3         FM             Floating Multiplier (Missing TRW chips)
+
+================================================================================
+================================================================================
+These are believed to be complete systems that we do not have in our possesion
+================================================================================
+
+Sark's FPS-100
+Series    Qty.      Name           Function
+4401      1         FA             Floating Adder
+4402      2         DATA PAD       Data Pad
+4426      1         FM             Floating Multiplier
+4424      2         MD             Main Data Memory
+4425      1         TM             Table Memory
+4423      1         P2 (4K)        Processor 2
+4422      1         P1 (4K)        Processor 1
+4408      1         P3             Processor 3
+4456      2         MD             Main Data / Memory
+4274      1         ??             ??
+4446      1         CUSTOM FMT     Custom Formatter
+4448      1         AP I/F         Array Processor Interface
+
+BD4SUP's AP-120B
+Series    Qty.      Name           Function
+4208      1         FMUL C         Floating Multiplier C
+4207      1         FMUL B         Floating Multiplier B
+4206      1         FMUL A         Floating Multiplier A
+4205      1         FADD 3         Floating Adder 3
+4204      1         FADD 2         Floating Adder 2
+4203      1         FADD 1         Floating Adder 1
+4200      2         DATA PAD       Data Pad Left and Right
+4213      1         MIREG          Memory Input Register
+4209      1         TMREG          Table Memory Register
+4217      1         TM ROM         Table Memory ROM
+4202      1         MDREG          Main Data Register
+4211      1         CB2            Control Buffer 2
+4210      1         CB1            Control Buffer 1
+4214      1         EXPAN          Expansion of CB1
+4212      1         ADDR           Address
+4201      1         S PAD          Scratch Pad
+4236      1         PS RAM 2K      Program Source RAM
+4244      1         MAIN DATA      Data in from Host and to Host
+4276      1         IRP 2          Image Reconstruction Processor 2
+4275      1         IRP 1          Image Reconstruction Processor 1
+4238      2         TM RAM         Table Memory RAM
+4226      1         FMT M          Format Mantissa
+4227      1         FMT E          Format Exponent
+4219      1         GP+NOVA I/F    General Purpose Interface

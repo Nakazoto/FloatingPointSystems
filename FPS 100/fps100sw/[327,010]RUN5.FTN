@@ -1,0 +1,189 @@
+C****** RUN5 = TEST5 (RTC) HOST MAINLINE = REL 1.0  , NOV 79 ******************
+C
+C      RTCTST         TEST RTS100 SUPERVISOR
+C
+C            RTS100 INTEGRATION TESTING PLAN
+C              THIS ROUTINE IS USED IN        STEP 5
+C
+C            -    N.O.T.E.   -
+C       DEBUG ROUTINES MUST NOT READ LITES & SWR BECAUSE
+C       THAT MESSES UP COMMUNICATION PROTOCOL.
+C
+C
+C
+C      VARIABLES:
+C        JWR   =  WRITE UNIT      JRD   =  READ UNIT
+C        JEXAM =  EXAM BIT        JDEP  =  DEPOSIT BIT
+C        INCF  =  FOR INC FIELD
+C        JSEL  =  FOR SELECT FIELD
+C        JWRD  =  FOR WORD FIELD
+C
+       INTEGER*2 IST,JFN,JWR,JRD,JWW
+       INTEGER*2 JEXAM,JDEP,INCF,JSEL,JWRD
+       INTEGER*2 HOST,IAFT
+       REAL*4 RVAL,RAFT
+        INTEGER*2 TINP,TOUT
+        COMMON /LUNITS/ TINP,TOUT
+       COMMON /WW/ JWR,JRD, JWW, JVA,HOST(16),RVAL(16)
+       COMMON /VVWW/IAFT(16),RAFT(16)
+       DATA JEXAM /1024/
+       DATA JDEP  /512/
+       DATA INCF  /64/
+       DATA JWRD  /16/
+       DATA JSEL  /1/
+C              JWR = 6 FOR PRINTER
+C              JWR = 5 FOR TERMINAL
+       DATA JRD /5/
+C
+        TOUT = 5
+        TINP = 5
+C
+        WRITE (TOUT,942)
+942     FORMAT (' OUTPUT DEVICE?    5 = TERMINAL '/
+     1          '                   6 = PRINTER  ')
+C
+        READ (TINP,943) JWW
+943     FORMAT (I2)
+        IF(JWW.EQ.6)CALL ASSIGN(6,'LP0:',4)
+C
+        JWR = JWW
+C
+        CALL TESTR1
+C
+        CALL APRLSE
+C
+       CALL EXIT
+       END
+C
+C****** TESTR1 = TEST CONTROL SUBROUTINE = REL 1.0  , NOV 79 ******************
+        SUBROUTINE TESTR1
+C
+C
+       INTEGER*2 IST,JFN,JWR,JRD,JWW,JVA
+       INTEGER*2 JEXAM,JDEP,INCF,JSEL,JWRD
+       INTEGER*2 HOST,IAFT
+       REAL*4 RVAL,RAFT
+       COMMON /WW/ JWR,JRD, JWW, JVA,HOST(16),RVAL(16)
+       COMMON /VVWW/IAFT(16),RAFT(16)
+C
+        WRITE (JWR,9406)
+9406    FORMAT (1H   /'    TESTR1 ')
+C
+        CALL APINIT (0,0,JFN)
+        CALL APLLI ('TEST5.LM',8,8,1,1,HOST,0)
+        CALL RTSGO(1024,1)
+        CALL TASK1
+C
+C   START TASK RUNNING
+C
+        CALL XHPUT(1,1)
+C
+        IST = 0
+C
+        DO 313 J=1,33
+        DO 311 KX=1,3
+        JVA = KX
+        CALL TSTV (JVA,IST)
+        IF (IST .GT. 0) CALL EXIT
+311     CONTINUE
+313     CONTINUE
+C
+        CALL APRSET
+C
+C           CLEAN OUT THE DATUM LIST
+C
+        CALL LOOKT (76)
+        CALL APSUPV (1)
+        CALL TSTV (0,IST)
+        CALL TSTV (0,IST)
+        CALL TSTV (0,IST)
+        CALL TSTV (0,IST)
+C
+        RETURN
+        END
+C
+C****** XHPUT = HPUT CALLING ROUTINE = REL 1.0  , NOV 79 **********************
+C..
+        SUBROUTINE XHPUT (DEST,DATUM)
+C
+        INTEGER*2 DEST,DATUM
+       INTEGER*2 IST,JFN,JWR,JRD,JWW
+       INTEGER*2 JEXAM,JDEP,INCF,JSEL,JWRD
+       INTEGER*2 HOST,IAFT
+       REAL*4 RVAL,RAFT
+       COMMON /WW/ JWR,JRD, JWW, JVA,HOST(16),RVAL(16)
+       COMMON /VVWW/IAFT(16),RAFT(16)
+C
+C
+        WRITE (JWR,9362) DEST,DATUM
+9362    FORMAT (' HPUT.  DEST =',I3,'    DATUM = ',I6)
+C
+        CALL HPUT (DEST,DATUM)
+        RETURN
+        END
+C
+C****** GETV = HGET CALLING ROUTINE = REL 1.0  , NOV 79 ***********************
+C..
+        SUBROUTINE GETV (SORS)
+C
+C
+       REAL*4 RVAL,RAFT
+        INTEGER*2 SORS
+       INTEGER*2 HOST,IAFT,JWW,JVA
+       COMMON /WW/ JWR,JRD, JWW, JVA,HOST(16),RVAL(16)
+        JA = SORS
+        CALL HGET (JA,JF,JD)
+        WRITE (JWW,9233) JA,JF,JD,SORS
+9233    FORMAT (1X,'HGET ',4I10)
+        RETURN
+        END
+C
+C****** TSTV = HTST CALLING ROUTINE = REL 1.0  , NOV 79 ***********************
+C..
+        SUBROUTINE TSTV (JVQ,JFF)
+        INTEGER JVQ, JFF
+C
+       REAL*4 RVAL,RAFT
+       INTEGER*2 HOST,IAFT,JWW,JVA
+       COMMON /WW/ JWR,JRD, JWW, JVA,HOST(16),RVAL(16)
+        JF =0
+        JD =0
+        JVA = JVQ
+        CALL HTST (JVA,JF,JD)
+        WRITE (JWW,9234) JVA,JF,JD
+9234    FORMAT (1X,'HTST ',3I10)
+        JFF = JF
+        RETURN
+        END
+C
+C****** LOOKT =                                             = REL 1.0  , NOV 79
+C..
+       SUBROUTINE LOOKT (N)
+C
+C
+       INTEGER*2 JWW,HOST
+       INTEGER*2 KK1,KK2,KK3,KK4,KK5,N
+       REAL*4 RVAL,RAFT
+       COMMON /WW/ JWR,JRD, JWW, JVA,HOST(16),RVAL(16)
+       CALL LOOKY (KK1,KK2,KK3,KK4,KK5)
+       WRITE (JWW,9090) N,KK1,KK2,KK3,KK4,KK5
+9090   FORMAT (1H  /1X,'CALL #',I4,'    SWR =',I7,'  RUNFG =',I7,
+     1   '    FN =',I7,'  CTRL =',I7,'  LITES =',I7)
+        CALL LVIRP(N)
+       RETURN
+       END
+C
+C****** LVIRP =                                             = REL 1.0  , NOV 79
+C..
+        SUBROUTINE LVIRP (N)
+C
+       INTEGER*2 JWW,HOST
+       INTEGER*2 KK1,KK2,KK3,KK4,KK5,N
+       REAL*4 RVAL,RAFT
+       COMMON /WW/ JWR,JRD, JWW, JVA,HOST(16),RVAL(16)
+       CALL VIRP (KK1,KK2,KK3,KK4,KK5)
+       WRITE (JWW,9190) N,KK1
+9190   FORMAT (     1X,'CALL #',I4,'  SUPVR =',I7,'    SUM =',I7,
+     1   '  HALT =',I7,'   DMA =',I7,'    CB5 =',I7)
+       RETURN
+       END
