@@ -9,14 +9,13 @@ Orphaned Nets
 
 4429_Formatter
     A007: RPDP          B005: HD08A
-    A013: CTCLK         B006: HD09A
-    A027: HD00A         B007: HD10A
-    A029: HD01A         B008: HD11A
-    A030: HD02A         B009: HD12A
-    A051: HD03A         B010: HD13A
-    A052: HD04B         B023: HD14A
-    A053: HD05B         B024: HD15A
-    A054: HD06B
+    A027: HD00A         B006: HD09A
+    A029: HD01A         B007: HD10A
+    A030: HD02A         B008: HD11A
+    A051: HD03A         B009: HD12A
+    A052: HD04B         B010: HD13A
+    A053: HD05B         B023: HD14A
+    A054: HD06B         B024: HD15A
     A055: HD07B
     A056: HD08B
     A067: HD04A
@@ -40,7 +39,7 @@ Orphaned Nets
 
 4422_Processor_1
     A090: LD0MA*        B038: DPALD*A
-    A094: CPUIN*        B044: TST
+    A094: CPUIN*        B044: TST0
                         B046: TST1
                         B048: TST2
                         B050: TST3

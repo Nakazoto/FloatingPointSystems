@@ -48416,7 +48416,7 @@
 			)
 		)
 	)
-	(global_label "CTCLK"
+	(global_label "CTLCLK"
 		(shape input)
 		(at 908.05 77.47 180)
 		(fields_autoplaced yes)
@@ -48428,7 +48428,7 @@
 		)
 		(uuid "ba0f9ef3-1ed3-4586-b9a3-818977676e96")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 899.2591 77.47 0)
+			(at 898.231 77.47 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -52420,7 +52420,7 @@
 			)
 		)
 	)
-	(global_label "TST"
+	(global_label "TST0"
 		(shape input)
 		(at 643.89 275.59 0)
 		(fields_autoplaced yes)
@@ -52432,7 +52432,7 @@
 		)
 		(uuid "cf2deabe-1234-4f7e-97a1-a586762bf512")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 650.0199 275.59 0)
+			(at 651.2294 275.59 0)
 			(effects
 				(font
 					(size 1.27 1.27)
