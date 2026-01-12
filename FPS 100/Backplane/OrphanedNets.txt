@@ -139,3 +139,7 @@ Orphaned Nets
 
 4401_Floating Adder
                         B100: FRCINH*
+
+Not orphaned, but weird, so check
+
+PDP11IF: B013 <-> B068
