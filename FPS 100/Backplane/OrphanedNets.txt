@@ -38,8 +38,8 @@ Orphaned Nets
     A101: PNL2DRL*
 
 4422_Processor_1
-    A090: LD0MA*        B038: DPALD*A
-    A094: CPUIN*        B044: TST0
+    A094: CPUIN*        B038: DPALD*A
+                        B044: TST0
                         B046: TST1
                         B048: TST2
                         B050: TST3

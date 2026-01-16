@@ -1,0 +1,105 @@
+********************************************************************************
+*                                AP-120B STUFF                                 *
+********************************************************************************
+Dave McGuire's AP-120B                                 Previous JM Trading Haul
+4208    FMUL C         Floating Multiplier C           !MISSING!
+4207    FMUL B         Floating Multiplier B           4207    FMUL B      QTY.2
+4206    FMUL A         Floating Multiplier A           4206    FMUL A      QTY.2
+4205    FADD 3         Floating Adder 3                4205    FADD 3      QTY.2
+4204    FADD 2         Floating Adder 2                4204    FADD 2      QTY.2
+4203    FADD 1         Floating Adder 1                4203    FADD 1      QTY.2
+4200    DATA PAD       Data Pad Left and Right         4200    DATA PAD    QTY.1
+4200    DATA PAD       Data Pad Left and Right         4200    DATA PAD    QTY.1
+4213    MIREG          Memory Input Register           4213    MIREG       QTY.2
+4209    TMREG          Table Memory Register           !MISSING!
+4217    TM ROM         Table Memory ROM                4217    TM ROM      QTY.1
+4202    MDREG          Main Data Register              !MISSING!
+4211    CB2            Control Buffer 2                !MISSING!
+4210    CB1            Control Buffer 1                !MISSING!
+4214    EXPAN          Expansion of CB1                !MISSING!
+4212    ADDR           Address                         4212    ADDR        QTY.2
+4201    S PAD          Scratch Pad                     4201    S PAD       QTY.2
+4236    PS RAM 2K      Program Source RAM              4236    PS RAM 2K   QTY.2
+4215    MD MEM         Main Data Memory                !MISSING!
+4215    MD MEM         Main Data Memory                !MISSING!
+4226    FMT M          Format Mantissa                 4226    FMT M       QTY.2
+4227    FMT E          Format Exponent                 4227    FMT E       QTY.2
+4218    PDP-11 I/F     PDP-11 Interface                !MISSING!
+                                                       4219    GP+NOVA I/F QTY.4
+                                                       4275    IRP 1       QTY.1
+                                                       4276    IRP 2       QTY.1
+                                                       4324    CPROC       QTY.1
+                                                       4329    FIFO/FPROC  QTY.1
+                                                       4330    FIFO        QTY.1
+
+********************************************************************************
+*                              FPS-100 STUFF                                   *
+********************************************************************************
+Cully's FPS-100                                        Previous JM Trading Haul
+4401    FA             Floating Adder                  4401    FA          QTY.1
+4402    DATA PAD       Data Pad Left                   4402    DATA PAD    QTY.2
+4402    DATA PAD       Data Pad Right                  4402    DATA PAD    QTY.2
+4426    FM             Floating Multiplier             4426    FM          QTY.2
+4424    MD             Main Data Memory                4424    MD          QTY.1
+4425    TM             TM 2.5K ROM 8K RAM              4425    TM          QTY.2
+4423    P2 (4K)        Processor 2 4K 2.5K TM ROM      4423    P2 (4K)     QTY.2
+4422    P1 (4K)        Processor 1 4K                  4422    P1 (4K)     QTY.2
+4408    P3             Processor 3                     4408    P3          QTY.2
+4424    MD             Main Data Memory                !MISSING! (Not necessary)
+4456    MD             Main Data Memory                !MISSING! (Not necessary)
+4456    MD             Main Data Memory                !MISSING! (Not necessary)
+4274    PASPAR         Page Select?                    !MISSING! (Not necessary)
+4446    CUSTOM FMT     Formatter CF RDCP               4446    CUSTOM FMT  QTY.2
+4448    AP I/F         Array Processor Interface       4448    AP I/F      QTY.2
+                                                       4482    PIXEL MEM   QTY.1
+
+********************************************************************************
+*                              FPS-100 STUFF                                   *
+********************************************************************************
+New Stock List from Mary
+
+***********
+* AP-120B *
+***********
+    612 4200 002 - DATA PAD             > quantity two
+    612 4201 004 - S-PAD 16k RAM        > quantity three
+!*! 612 4202 005 - MD REG STD           > quantity one
+    612 4203 002 - FADD-1               > quantity one
+    612 4206 001 - FMUL-A               > quantity two
+    612 4207 002 - FMUL-B               > quantity one
+!*! 612 4208 001 - FMUL-C               > quantity one
+!*! 612 4209 002 - TM REG               > quantity five
+!*! 612 4209 003 - TM REG FAST !TMCLK   > quantity one
+!*! 612 4210 304 - CB1 16K RFSH STD     > quantity one
+    612 4212 010 - ADDR LGC INSTR       > quantity one
+    612 4213 001 - MI REG               > quantity one
+    612 4219 016 - GPIFJ                > quantity three
+!*! 612 4226 011 - FMTM                 > quantity two
+!*! 612 4226 024 - FMTM PDP-11          > quantity one
+!*! 612 4226 025 - FMTM MODCOMP         > quantity one
+    236 1/2      - PS RAM 2K/1K?        > quantity three
+    612 4238 005 - TM RAM 4K            > quantity one
+    612 4238 007 - TM RAM 2K            > quantity four
+!*! 612 4244 210 - MDM MEM 32K STD      > quantity one
+    612 4275 001 - IRP1                 > quantity one
+    276/511      - IRP2?                > quantity two
+
+***********
+* FPS-100 *
+***********
+    612 4408 005 - P3                   > quantity one
+    612 4422 002 - P1 4K                > quantity two
+    612 4423 003 - P2 4K 2.5K TM ROM    > quantity seventeen
+    612 4425 020 - TM 2.5K ROM 8K RAM   > quantity one
+    612 4425 026 - TM 2.5K ROM 8K RAM   > quantity five
+    612 4426 003 - FM                   > quantity ten (four chips per board)
+    612 4429 002 - FMT PDP11/VAX        > quantity one
+!*! 612 4446 005 - FORMATTER CF RDCP    > quantity six
+    612 4447 003 - CIO RDCP             > quantity one
+    612 4448 014 - APIF FPS100          > quantity four
+!*! 612 4456 114 - MAIN DATA 256k       > quantity one
+    612 4477 002 - BIRP I/F RDCP        > quantity four
+!*! 612 4479 002 - VIEW MEM RDCP        > quantity two (two chips per board)
+!*! 612 4480 002 - VIEW SUM             > quantity one (four chips)
+
+

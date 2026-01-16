@@ -1,0 +1,37 @@
+612 4200 002 - DATA PAD             > quantity two
+612 4201 004 - S-PAD 16k RAM        > quantity three
+612 4202 005 - MD REG STD           > quantity one
+612 4203 002 - FADD-1               > quantity one
+612 4206 001 - FMUL-A               > quantity two
+612 4207 002 - FMUL-B               > quantity one
+612 4208 001 - FMUL-C               > quantity one
+612 4209 002 - TM REG               > quantity five
+612 4209 003 - TM REG FAST !TMCLK   > quantity one
+612 4210 304 - CB1 16K RFSH STD     > quantity one
+612 4212 010 - ADDR LGC INSTR       > quantity one
+612 4213 001 - MI REG               > quantity one
+612 4219 016 - GPIFJ                > quantity three
+612 4226 011 - FMTM                 > quantity two
+612 4226 024 - FMTM PDP-11          > quantity one
+612 4226 025 - FMTM MODCOMP         > quantity one
+236 1/2      - PS RAM 2K/1K?        > quantity three
+612 4238 005 - TM RAM 4K            > quantity one
+612 4238 007 - TM RAM 2K            > quantity four
+612 4244 210 - MDM MEM 32K STD      > quantity one
+612 4275 001 - IRP1                 > quantity one
+276/511      - IRP2?                > quantity two
+
+612 4408 005 - P3                   > quantity one
+612 4422 002 - P1 4K                > quantity two
+612 4423 003 - P2 4K 2.5K TM ROM    > quantity seventeen
+612 4425 020 - TM 2.5K ROM 8K RAM   > quantity one
+612 4425 026 - TM 2.5K ROM 8K RAM   > quantity five
+612 4426 003 - FM                   > quantity ten (four chips per board)
+612 4429 002 - FMT PDP11/VAX        > quantity one
+612 4446 005 - FORMATTER CF RDCP    > quantity six
+612 4447 003 - CIO RDCP             > quantity one
+612 4448 014 - APIF FPS100          > quantity four
+612 4456 114 - MAIN DATA 256k       > quantity one
+612 4477 002 - BIRP I/F RDCP        > quantity four
+612 4479 002 - VIEW MEM RDCP        > quantity two (two chips per board)
+612 4480 002 - VIEW SUM             > quantity one (four chips)

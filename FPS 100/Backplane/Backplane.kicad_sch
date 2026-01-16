@@ -20036,7 +20036,7 @@
 			)
 		)
 	)
-	(global_label "LD0MA*"
+	(global_label "LDOMA*"
 		(shape input)
 		(at 643.89 173.99 0)
 		(fields_autoplaced yes)
@@ -20048,7 +20048,7 @@
 		)
 		(uuid "38d75377-5891-4129-ac8d-0e4f298d747f")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 653.8904 173.99 0)
+			(at 654.0114 173.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
