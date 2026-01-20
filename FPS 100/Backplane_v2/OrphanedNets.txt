@@ -1,0 +1,145 @@
+Orphaned Nets
+--------------------------------------------------------------------------------
+4421_PDP11_IF
+    A044: INTPIN        B018: DMAIND
+    A049: HINTIND       B020: RUNIND
+    A050: CRLCLK        B066: PWFAIL*
+    A092: INTPOUT       B076: INT06*
+                        B078: INT07*
+
+4429_Formatter
+    A007: RPDP          B005: HD08A
+    A027: HD00A         B006: HD09A
+    A029: HD01A         B007: HD10A
+    A030: HD02A         B008: HD11A
+    A051: HD03A         B009: HD12A
+    A052: HD04B         B010: HD13A
+    A053: HD05B         B023: HD14A
+    A054: HD06B         B024: HD15A
+    A055: HD07B
+    A056: HD08B
+    A067: HD04A
+    A068: HD05A
+    A069: HD06A
+    A070: HD07A
+
+4408_Processor_3
+    A020: !IOCLK        B100: EXTNT
+    A029: PHALT*        B115: EXTCLK{408}
+    A031: TRIGQ*
+    A035: INTIND
+    A041: INTA
+    A073: SNSB
+    A075: IN
+    A076: SNSA
+    A078: IONTA
+    A079: DP2IO*
+    A080: IORST*
+    A101: PNL2DRL*
+
+4422_Processor_1
+    A094: CPUIN*        B038: DPALD*A
+                        B044: TST0
+                        B046: TST1
+                        B048: TST2
+                        B050: TST3
+                        B079: EXINT
+                        B081: PN2DBL*
+                        B115: IOINTR*
+                        B116: RBUEQ*
+
+4423_Processor_2
+    A021: DPALD*        B048: BMD2M2
+    A023: RBUFQ         B081: NEWINS1
+                        B082: NEWINS2
+                        B083: NEWINS3
+                        B093: PS62*
+
+4425_Table_Memory
+    A014: BTMA00        B005: TM08*
+    A016: BTMA01        B006: TM09*
+    A018: BTMA02        B007: TM10*
+    A020: BTMA03        B008: TM11*
+    A024: BTMA04        B009: TM12*
+    A026: BTMA05        B010: TM13*
+    A028: BTMA06        B011: TM14*
+    A030: BTMA07        B012: TM15*
+    A034: BTMA08        B039: TM16*
+    A036: BTMA09        B040: TM17*
+    A038: BTMA10        B041: TM18*
+    A040: BTMA11        B042: TM19*
+    A044: BTMA12        B043: TM20*
+    A046: BTMA13        B044: TM21*
+    A048: BTMA14        B045: TM22*
+    A050: BTMA15        B046: TM23*
+    A087: TM02*         B075: TM24*
+    A088: TM03*         B076: TM25*
+    A089: TM04*         B077: TM26*
+    A090: TM05*         B078: TM27*
+    A091: TM06*         B079: TM28*
+    A092: TM07*         B080: TM29*
+                        B081: TM30*
+                        B082: TM31*
+                        B109: TM32*
+                        B110: TM33*
+                        B111: TM34*
+                        B112: TM35*
+                        B113: TM36*
+                        B114: TM37*
+                        B115: TM38*
+                        B116: TM39*
+
+4424_Main_Data
+    A010: MDEXP
+    A012: MDHMAN
+    A014: MDLMAN
+    A017: MDCR2*
+    A019: MDCA0
+    A022: DMAESA
+    A023: MDCA2
+    A024: MAESA
+    A025: MDINA*
+    A028: DCH002*
+    A053: MA00*
+    A055: MA01*
+    A057: MA02*
+    A059: MA03*
+    A073: MA04*
+    A075: MA05*
+    A077: MA06*
+    A079: MA07*
+    A085: MA08*
+    A087: MA09*
+    A090: MA10*
+    A091: MA11*
+    A105: MA12*
+    A107: MA13*
+    A109: MA14*
+    A111: MA15*
+    A113: MA(-4)*
+    A114: MA(-3)*
+    A115: MA(-2)*
+    A116: MA(-1)*
+
+4426_Floating_Multiplier
+    None
+
+4402_Data_Pad_Right
+    None
+
+4402_Data_Pad_Left
+    A021: FAE00*
+    A022: FME00*
+    A023: FAE01*
+    A024: FME01*
+    A055: DPEBS00*
+    A056: DPEBS01*
+    A081: MDI00
+    A082: MDI01
+
+4401_Floating Adder
+                        B100: FRCINH*
+
+Not orphaned, but weird, so check
+
+PDP11IF: B013 <-> B068

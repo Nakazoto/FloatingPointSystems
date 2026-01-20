@@ -1,0 +1,19 @@
+!SPCLK      P3.A.005 <->  P1.A.006
+!WRT*       P3.A.006 <->  P1.A.005 <-> P2.A.006
+!CBCLK2     P3.A.007 <->  P2.A.005
+!CBCLK1     P3.A.008 <->  P1.A.007
+!WRTR*      P3.A.009 <-> DPR.A.006
+!TMCLK      P3.A.010 <->  TM.A.005
+!T75        P3.A.011 <->  MD.A.006
+!MICLK      P3.A.012 <->  FM.A.005
+!FMCLK      P3.A.013 <->  FM.A.006
+!A2CLK      P3.A.014 <->  FA.A.010 <-> FM.A.010
+!A1CLK      P3.A.015 <->  FA.A.008 <-> FM.A.008
+!DPLCLK     P3.A.016 <-> DPL.A.005
+!DPRCLK     P3.A.017 <-> DPR.A.005
+!WRTL*      P3.A.018 <-> DPL.A.006
+!FACLK      P3.A.019 <->  FA.A.006
+!IOCLK      P3.A.020 <-> ????
+!MCLK       P3.A.021 <->  MD.A.005
+!HRSET*     P3.A.025 <->  IF.B.052
+
