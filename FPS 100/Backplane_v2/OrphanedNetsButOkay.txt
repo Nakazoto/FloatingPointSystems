@@ -1,0 +1,37 @@
+Orphaned Nets But That's Okay!
+--------------------------------------------------------------------------------
+4421_PDP11_IF
+    A049: HINTIND       ; Host interrupt enabled indicator
+    B018: DMAIND        ; Direct memory access indicator
+    B020: RUNIND        ; Run indicator
+
+4429_Formatter
+
+
+4408_Processor_3
+    B115: EXTCLK{408}   ; External clock to bypass internal 16 MHz clock
+    A035: INTIND        ; AP interrupt enabled indicator
+
+4422_Processor_1
+
+
+4423_Processor_2
+
+
+4425_Table_Memory
+
+
+4424_Main_Data
+
+
+4426_Floating_Multiplier
+    None
+
+4402_Data_Pad_Right
+    None
+
+4402_Data_Pad_Left
+
+
+4401_Floating Adder
+

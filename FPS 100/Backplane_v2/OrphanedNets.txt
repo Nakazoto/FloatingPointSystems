@@ -1,52 +1,60 @@
 Orphaned Nets
 --------------------------------------------------------------------------------
 4421_PDP11_IF
-    A044: INTPIN        B018: DMAIND
-    A049: HINTIND       B020: RUNIND
-    A050: CRLCLK        B066: PWFAIL*
-    A092: INTPOUT       B076: INT06*
-                        B078: INT07*
+    A044: INTPIN        ; Pg.07 - Gating for INTR*
+    A092: INTPOUT       ; Pg.06 - Jumper for FPS/AP, output of gated INTPIN
+    B066: PWFAIL*       ; Pg.02 - Gating for BUSINIT* (from power board?)
+    B076: INT06*        ; Pg.06 - Jumper, output of CTL010 FF
+    B078: INT07*        ; Pg.06 - Jumper, output of CTL010 FF
 
 4429_Formatter
-    A007: RPDP          B005: HD08A
-    A027: HD00A         B006: HD09A
-    A029: HD01A         B007: HD10A
-    A030: HD02A         B008: HD11A
-    A051: HD03A         B009: HD12A
-    A052: HD04B         B010: HD13A
-    A053: HD05B         B023: HD14A
-    A054: HD06B         B024: HD15A
-    A055: HD07B
-    A056: HD08B
-    A067: HD04A
-    A068: HD05A
-    A069: HD06A
-    A070: HD07A
+    A007: RPDP          ; Pg.01 - Jumper, output of E2, address select logic?
+    A027: HD00A         ; Pg.02 - Multiplexed bus output?
+    A029: HD01A         ; Pg.02 - Multiplexed bus output?
+    A030: HD02A         ; Pg.02 - Multiplexed bus output?
+    A051: HD03A         ; Pg.02 - Multiplexed bus output?
+    A052: HD04B         ; Pg.02 - Multiplexed bus output?
+    A053: HD05B         ; Pg.02 - Multiplexed bus output?
+    A054: HD06B         ; Pg.02 - Multiplexed bus output?
+    A055: HD07B         ; Pg.02 - Multiplexed bus output?
+    A056: HD08B         ; Pg.02 - Multiplexed bus output?
+    A067: HD04A         ; Pg.05 - Multiplexed bus output?
+    A068: HD05A         ; Pg.05 - Multiplexed bus output?
+    A069: HD06A         ; Pg.05 - Multiplexed bus output?
+    A070: HD07A         ; Pg.05 - Multiplexed bus output?
+    B005: HD08A         ; Pg.05 - Multiplexed bus output?
+    B006: HD09A         ; Pg.05 - Multiplexed bus output?
+    B007: HD10A         ; Pg.05 - Multiplexed bus output?
+    B008: HD11A         ; Pg.05 - Multiplexed bus output?
+    B009: HD12A         ; Pg.05 - Multiplexed bus output?
+    B010: HD13A         ; Pg.05 - Multiplexed bus output?
+    B023: HD14A         ; Pg.06 - Multiplexed bus output?
+    B024: HD15A         ; Pg.06 - Multiplexed bus output?
 
 4408_Processor_3
-    A020: !IOCLK        B100: EXTNT
-    A029: PHALT*        B115: EXTCLK{408}
-    A031: TRIGQ*
-    A035: INTIND
-    A041: INTA
-    A073: SNSB
-    A075: IN
-    A076: SNSA
-    A078: IONTA
-    A079: DP2IO*
-    A080: IORST*
-    A101: PNL2DRL*
+    A029: PHALT*        ;
+    A031: TRIGQ*        ;
+    A041: INTA          ;
+    A073: SNSB          ;
+    A075: IN            ;
+    A076: SNSA          ;
+    A078: IONTA         ;
+    A079: DP2IO*        ;
+    A080: IORST*        ;
+    A101: PNL2DRL*      ;
+    B100: EXTNT         ;
 
 4422_Processor_1
-    A094: CPUIN*        B038: DPALD*A
-                        B044: TST0
-                        B046: TST1
-                        B048: TST2
-                        B050: TST3
-                        B079: EXINT
-                        B081: PN2DBL*
-                        B115: IOINTR*
-                        B116: RBUEQ*
+    A094: CPUIN*
+    B038: DPALD*A
+    B044: TST0
+    B046: TST1
+    B048: TST2
+    B050: TST3
+    B079: EXINT
+    B081: PN2DBL*
+    B115: IOINTR*
+    B116: RBUEQ*
 
 4423_Processor_2
     A021: DPALD*        B048: BMD2M2
@@ -138,7 +146,7 @@ Orphaned Nets
     A082: MDI01
 
 4401_Floating Adder
-                        B100: FRCINH*
+    B100: FRCINH*
 
 Not orphaned, but weird, so check
 

@@ -13,7 +13,8 @@
 !DPRCLK     P3.A.017 <-> DPR.A.005
 !WRTL*      P3.A.018 <-> DPL.A.006
 !FACLK      P3.A.019 <->  FA.A.006
-!IOCLK      P3.A.020 <-> ????
+!IOCLK      P3.A.020 <->  IF.A.006
 !MCLK       P3.A.021 <->  MD.A.005
 !HRSET*     P3.A.025 <->  IF.B.052
+EXTCLK{408} P3.B.115 <-> External Clock (if jumpered)
 
