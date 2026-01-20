@@ -32,17 +32,17 @@ Orphaned Nets
     B024: HD15A         ; Pg.06 - Multiplexed bus output?
 
 4408_Processor_3
-    A029: PHALT*        ;
-    A031: TRIGQ*        ;
-    A041: INTA          ;
-    A073: SNSB          ;
-    A075: IN            ;
-    A076: SNSA          ;
-    A078: IONTA         ;
-    A079: DP2IO*        ;
-    A080: IORST*        ;
-    A101: PNL2DRL*      ;
-    B100: EXTNT         ;
+    A029: PHALT*        ; Pg.05 - Part of REQHALT, has pullup
+    A031: TRIGQ*        ; Pg.04 - FF output based on BPHALT, SWR=PNL*, etc.
+    A041: INTA          ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A073: SNSB          ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A075: IN            ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A076: SNSA          ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A078: IONTA         ; Pg.07 - Gated by SPIN and CB20*Q ~ CB22*Q
+    A079: DP2IO*        ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A080: IORST*        ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A101: PNL2DRL*      ; Pg.01 - Gates the PNL bus
+    B100: EXTNT         ; Pg.09 - MUX select (seems important)
 
 4422_Processor_1
     A094: CPUIN*
@@ -57,45 +57,69 @@ Orphaned Nets
     B116: RBUEQ*
 
 4423_Processor_2
-    A021: DPALD*        B048: BMD2M2
-    A023: RBUFQ         B081: NEWINS1
-                        B082: NEWINS2
-                        B083: NEWINS3
-                        B093: PS62*
+    A021: DPALD*
+    A023: RBUFQ
+    B048: BMD2M2
+    B081: NEWINS1
+    B082: NEWINS2
+    B083: NEWINS3
+    B093: PS62*
 
 4425_Table_Memory
-    A014: BTMA00        B005: TM08*
-    A016: BTMA01        B006: TM09*
-    A018: BTMA02        B007: TM10*
-    A020: BTMA03        B008: TM11*
-    A024: BTMA04        B009: TM12*
-    A026: BTMA05        B010: TM13*
-    A028: BTMA06        B011: TM14*
-    A030: BTMA07        B012: TM15*
-    A034: BTMA08        B039: TM16*
-    A036: BTMA09        B040: TM17*
-    A038: BTMA10        B041: TM18*
-    A040: BTMA11        B042: TM19*
-    A044: BTMA12        B043: TM20*
-    A046: BTMA13        B044: TM21*
-    A048: BTMA14        B045: TM22*
-    A050: BTMA15        B046: TM23*
-    A087: TM02*         B075: TM24*
-    A088: TM03*         B076: TM25*
-    A089: TM04*         B077: TM26*
-    A090: TM05*         B078: TM27*
-    A091: TM06*         B079: TM28*
-    A092: TM07*         B080: TM29*
-                        B081: TM30*
-                        B082: TM31*
-                        B109: TM32*
-                        B110: TM33*
-                        B111: TM34*
-                        B112: TM35*
-                        B113: TM36*
-                        B114: TM37*
-                        B115: TM38*
-                        B116: TM39*
+    A014: BTMA00
+    A016: BTMA01
+    A018: BTMA02
+    A020: BTMA03
+    A024: BTMA04
+    A026: BTMA05
+    A028: BTMA06
+    A030: BTMA07
+    A034: BTMA08
+    A036: BTMA09
+    A038: BTMA10
+    A040: BTMA11
+    A044: BTMA12
+    A046: BTMA13
+    A048: BTMA14
+    A050: BTMA15
+    A087: TM02*
+    A088: TM03*
+    A089: TM04*
+    A090: TM05*
+    A091: TM06*
+    A092: TM07*
+    B005: TM08*
+    B006: TM09*
+    B007: TM10*
+    B008: TM11*
+    B009: TM12*
+    B010: TM13*
+    B011: TM14*
+    B012: TM15*
+    B039: TM16*
+    B040: TM17*
+    B041: TM18*
+    B042: TM19*
+    B043: TM20*
+    B044: TM21*
+    B045: TM22*
+    B046: TM23*
+    B075: TM24*
+    B076: TM25*
+    B077: TM26*
+    B078: TM27*
+    B079: TM28*
+    B080: TM29*
+    B081: TM30*
+    B082: TM31*
+    B109: TM32*
+    B110: TM33*
+    B111: TM34*
+    B112: TM35*
+    B113: TM36*
+    B114: TM37*
+    B115: TM38*
+    B116: TM39*
 
 4424_Main_Data
     A010: MDEXP
