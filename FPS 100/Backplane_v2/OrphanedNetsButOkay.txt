@@ -4,6 +4,8 @@ Orphaned Nets But That's Okay!
     A049: HINTIND       ; Host interrupt enabled indicator
     B018: DMAIND        ; Direct memory access indicator
     B020: RUNIND        ; Run indicator
+    B076: INT06*        ; Pg.06 - Jumper, output of CTL010 FF
+    B078: INT07*        ; Pg.06 - Jumper, output of CTL010 FF
 
 4429_Formatter
 

@@ -8622,9 +8622,9 @@
 		)
 		(uuid "a29b3323-b559-49f8-9ec5-71584f348b44")
 	)
-	(text "!SPCLK      P3.A.005 <->  P1.A.006\n!WRT*       P3.A.006 <->  P1.A.005 <-> P2.A.006\n!CBCLK2     P3.A.007 <->  P2.A.005\n!CBCLK1     P3.A.008 <->  P1.A.007\n!WRTR*      P3.A.009 <-> DPR.A.006\n!TMCLK      P3.A.010 <->  TM.A.005\n!T75        P3.A.011 <->  MD.A.006\n!MICLK      P3.A.012 <->  FM.A.005\n!FMCLK      P3.A.013 <->  FM.A.006\n!A2CLK      P3.A.014 <->  FA.A.010 <-> FM.A.010\n!A1CLK      P3.A.015 <->  FA.A.008 <-> FM.A.008\n!DPLCLK     P3.A.016 <-> DPL.A.005\n!DPRCLK     P3.A.017 <-> DPR.A.005\n!WRTL*      P3.A.018 <-> DPL.A.006\n!FACLK      P3.A.019 <->  FA.A.006\n!IOCLK      P3.A.020 <->  IF.A.006\n!MCLK       P3.A.021 <->  MD.A.005\n!HRSET*     P3.A.025 <->  IF.B.052\nEXTCLK{408} P3.B.115 <-> External Clock (if jumpered)"
+	(text "These are NOT etched\nUse external twisted pair wires\n\n!SPCLK      P3.A.005 <->  P1.A.006\n!WRT*       P3.A.006 <->  P1.A.005 <-> P2.A.006\n!CBCLK2     P3.A.007 <->  P2.A.005\n!CBCLK1     P3.A.008 <->  P1.A.007\n!WRTR*      P3.A.009 <-> DPR.A.006\n!TMCLK      P3.A.010 <->  TM.A.005\n!T75        P3.A.011 <->  MD.A.006\n!MICLK      P3.A.012 <->  FM.A.005\n!FMCLK      P3.A.013 <->  FM.A.006\n!A2CLK      P3.A.014 <->  FA.A.010 <-> FM.A.010\n!A1CLK      P3.A.015 <->  FA.A.008 <-> FM.A.008\n!DPLCLK     P3.A.016 <-> DPL.A.005\n!DPRCLK     P3.A.017 <-> DPR.A.005\n!WRTL*      P3.A.018 <-> DPL.A.006\n!FACLK      P3.A.019 <->  FA.A.006\n!IOCLK      P3.A.020 <->  IF.A.006\n!MCLK       P3.A.021 <->  MD.A.005\n!HRSET*     P3.A.025 <->  IF.B.052\nEXTCLK{408} P3.B.115 <-> External Clock (if jumpered)"
 		(exclude_from_sim no)
-		(at 708.914 444.246 0)
+		(at 707.898 460.502 0)
 		(effects
 			(font
 				(face "FreeMono")
@@ -9788,6 +9788,16 @@
 	)
 	(wire
 		(pts
+			(xy 664.21 367.03) (xy 643.89 367.03)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5fc726e9-246f-4f1e-8177-1e09bf407fdb")
+	)
+	(wire
+		(pts
 			(xy 963.93 455.93) (xy 963.93 458.47)
 		)
 		(stroke
@@ -9945,6 +9955,16 @@
 			(type default)
 		)
 		(uuid "7923ed29-b35d-4c0d-8216-74cc945f95d4")
+	)
+	(wire
+		(pts
+			(xy 523.24 90.17) (xy 549.91 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7a1f1528-5a28-4ba7-ab31-3b983a68f197")
 	)
 	(wire
 		(pts
@@ -19988,7 +20008,7 @@
 	)
 	(global_label "RBUEQ*"
 		(shape input)
-		(at 643.89 367.03 0)
+		(at 664.21 367.03 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -19998,7 +20018,7 @@
 		)
 		(uuid "2c43f0fb-6a53-4646-9f22-aa918d92980c")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 654.1928 367.03 0)
+			(at 674.5128 367.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -30570,7 +30590,7 @@
 	)
 	(global_label "RBUFQ"
 		(shape input)
-		(at 549.91 90.17 180)
+		(at 523.24 90.17 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -30580,7 +30600,7 @@
 		)
 		(uuid "58bfe43e-3b6f-4734-b158-6e161d4c27dd")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 540.6352 90.17 0)
+			(at 513.9652 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
