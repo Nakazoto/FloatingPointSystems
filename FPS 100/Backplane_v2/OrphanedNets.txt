@@ -1,8 +1,8 @@
 Orphaned Nets
 --------------------------------------------------------------------------------
 4421_PDP11_IF
-    A044: INTPIN        ; Pg.07 - Gating for INTR*, has 470 pullup
-    A092: INTPOUT       ; Pg.06 - Jumper for FPS/AP, output of gated INTPIN
+    A044: INTPIN        ; Pg.07 - Interrupt Priority Input
+    A092: INTPOUT       ; Pg.06 - Interrupt Priority Output
     B066: PWFAIL*       ; Pg.02 - Gating for BUSINIT* (from power board?)
 
 4429_Formatter
@@ -32,10 +32,10 @@ Orphaned Nets
 4408_Processor_3
     A029: PHALT*        ; Pg.05 - Part of REQHALT, has pullup
     A031: TRIGQ*        ; Pg.04 - FF output based on BPHALT, SWR=PNL*, etc.
-    A041: INTA          ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
-    A073: SNSB          ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A041: INTA          ; Pg.01 - Interrupt Acknowledge
+    A073: SNSB          ; Pg.01 - Sense B (Sense output for external devices?)
     A075: IN            ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
-    A076: SNSA          ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A076: SNSA          ; Pg.01 - Sense A (Sense output for external devices?)
     A078: IONTA         ; Pg.07 - Gated by SPIN and CB20*Q ~ CB22*Q
     A079: DP2IO*        ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
     A080: IORST*        ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
@@ -51,17 +51,12 @@ Orphaned Nets
     B050: TST3          ; Pg.10 - Input into MUX to control PSAAD
     B079: EXINT         ; Pg.11 - Buffered output of EXINT* internal signal
     B081: PN2DBL*       ; Pg.11 - Demux output of CB11*, CB12* and CB13*
-    B115: IOINTR*       ; Pg.11 - Controls lots of stuff...
-    B116: RBUEQ*        ; Pg.11 - Coulf be RBUFQ*? Maybe connect to P2.A023?
+    B115: IOINTR*       ; Pg.11 - I/O Interrupt Request
+    B116: RBUEQ*        ; Pg.11 - Connect to P2.A023? (Has wire on Cully 100)
 
 4423_Processor_2
     A021: DPALD*        ; Pg.10 - Controls select of two LS157s with DAPLDA*
     A023: RBUFQ         ; Pg.10 - Maybe connect to P1.B116?
-    B048: BMD2M2        ; Pg.11 - Mux controlled output of PS55* internal signal
-    B081: NEWINS1       ; Pg.11 - Demux output of CB56* and CB57* internal
-    B082: NEWINS2       ; Pg.11 - Demux output of CB56* and CB57* internal
-    B083: NEWINS3       ; Pg.11 - Demux output of CB56* and CB57* internal
-    B093: PS62*         ; Pg.05 - Mux output of PSA internal bus
 
 4425_Table_Memory
     A014: BTMA00        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
@@ -80,76 +75,16 @@ Orphaned Nets
     A046: BTMA13        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
     A048: BTMA14        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
     A050: BTMA15        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A087: TM02*         ; Pg.03 - Bus for output from TM SRAM
-    A088: TM03*         ; Pg.03 - Bus for output from TM SRAM
-    A089: TM04*         ; Pg.03 - Bus for output from TM SRAM
-    A090: TM05*         ; Pg.03 - Bus for output from TM SRAM
-    A091: TM06*         ; Pg.03 - Bus for output from TM SRAM
-    A092: TM07*         ; Pg.03 - Bus for output from TM SRAM
-    B005: TM08*         ; Pg.04 - Bus for output from TM SRAM
-    B006: TM09*         ; Pg.04 - Bus for output from TM SRAM
-    B007: TM10*         ; Pg.04 - Bus for output from TM SRAM
-    B008: TM11*         ; Pg.04 - Bus for output from TM SRAM
-    B009: TM12*         ; Pg.04 - Bus for output from TM SRAM
-    B010: TM13*         ; Pg.04 - Bus for output from TM SRAM
-    B011: TM14*         ; Pg.04 - Bus for output from TM SRAM
-    B012: TM15*         ; Pg.04 - Bus for output from TM SRAM
-    B039: TM16*         ; Pg.05 - Bus for output from TM SRAM
-    B040: TM17*         ; Pg.05 - Bus for output from TM SRAM
-    B041: TM18*         ; Pg.05 - Bus for output from TM SRAM
-    B042: TM19*         ; Pg.05 - Bus for output from TM SRAM
-    B043: TM20*         ; Pg.05 - Bus for output from TM SRAM
-    B044: TM21*         ; Pg.05 - Bus for output from TM SRAM
-    B045: TM22*         ; Pg.05 - Bus for output from TM SRAM
-    B046: TM23*         ; Pg.05 - Bus for output from TM SRAM
-    B075: TM24*         ; Pg.06 - Bus for output from TM SRAM
-    B076: TM25*         ; Pg.06 - Bus for output from TM SRAM
-    B077: TM26*         ; Pg.06 - Bus for output from TM SRAM
-    B078: TM27*         ; Pg.06 - Bus for output from TM SRAM
-    B079: TM28*         ; Pg.06 - Bus for output from TM SRAM
-    B080: TM29*         ; Pg.06 - Bus for output from TM SRAM
-    B081: TM30*         ; Pg.06 - Bus for output from TM SRAM
-    B082: TM31*         ; Pg.06 - Bus for output from TM SRAM
-    B109: TM32*         ; Pg.07 - Bus for output from TM SRAM
-    B110: TM33*         ; Pg.07 - Bus for output from TM SRAM
-    B111: TM34*         ; Pg.07 - Bus for output from TM SRAM
-    B112: TM35*         ; Pg.07 - Bus for output from TM SRAM
-    B113: TM36*         ; Pg.07 - Bus for output from TM SRAM
-    B114: TM37*         ; Pg.07 - Bus for output from TM SRAM
-    B115: TM38*         ; Pg.07 - Bus for output from TM SRAM
-    B116: TM39*         ; Pg.07 - Bus for output from TM SRAM
 
 4424_Main_Data
     A010: MDEXP         ; Pg.01 - Seems related to WRTEXP?
     A012: MDHMAN        ; Pg.01 - Seems related to WRTHM?
     A014: MDLMAN        ; Pg.01 - Seems related to WRTLM?
-    A017: MDCR2*        ; Pg.01 - Related to CA2D*/CA3D*, has a pullup
+    A017: MDCR2*        ; Pg.01 - Main Data Cycle Request level 2
     A019: MDCA0         ; Pg.01 - Controlled by CA0D*
-    A022: DMAESA        ; Pg.01 - Helps gate INIAQ*, has a pullup
-    A023: MDCA2         ; Pg.01 - Gated output of CA2D* after MUX
-    A024: MAESA         ; Pg.01 - Helps gate INIAQ*, has a pullup
+    A023: MDCA2         ; Pg.01 - Main Data Cycle Acknowledge level 2
     A025: MDINA*        ; Pg.01 - INIAQ* pre-inverted output
-    A028: DCH002*       ; Pg.01 - FF output controlled by MUX CA2D*
-    A053: MA00*         ; Pg.03 - External output of Memory Address MUX bus
-    A055: MA01*         ; Pg.03 - External output of Memory Address MUX bus
-    A057: MA02*         ; Pg.03 - External output of Memory Address MUX bus
-    A059: MA03*         ; Pg.03 - External output of Memory Address MUX bus
-    A073: MA04*         ; Pg.03 - External output of Memory Address MUX bus
-    A075: MA05*         ; Pg.03 - External output of Memory Address MUX bus
-    A077: MA06*         ; Pg.03 - External output of Memory Address MUX bus
-    A079: MA07*         ; Pg.03 - External output of Memory Address MUX bus
-    A085: MA08*         ; Pg.03 - External output of Memory Address MUX bus
-    A087: MA09*         ; Pg.03 - External output of Memory Address MUX bus
-    A090: MA10*         ; Pg.03 - External output of Memory Address MUX bus
-    A091: MA11*         ; Pg.03 - External output of Memory Address MUX bus
-    A105: MA12*         ; Pg.03 - External output of Memory Address MUX bus
-    A107: MA13*         ; Pg.03 - External output of Memory Address MUX bus
-    A109: MA14*         ; Pg.03 - External output of Memory Address MUX bus
-    A111: MA15*         ; Pg.03 - External output of Memory Address MUX bus
-    A113: MA(-4)*       ; Pg.04 - Additional MA logic to FF chain? Has pullup
-    A114: MA(-3)*       ; Pg.04 - Additional MA logic to FF chain? Has pullup
-    A115: MA(-2)*       ; Pg.04 - Additional MA logic to FF chain? Has pullup
-    A116: MA(-1)*       ; Pg.04 - Additional MA logic to FF chain? Has pullup
+    A028: DCH002*       ; Pg.01 - Data Channel out lvl 2 (valid output from MD)
 
 4426_Floating_Multiplier
     None
@@ -158,17 +93,10 @@ Orphaned Nets
     None
 
 4402_Data_Pad_Left
-    A021: FAE00*        ; Pg.01 - Has 1k pullups only for these, so okay?
-    A022: FME00*        ; Pg.01 - Has 1k pullups only for these, so okay?
-    A023: FAE01*        ; Pg.01 - Has 1k pullups only for these, so okay?
-    A024: FME01*        ; Pg.01 - Has 1k pullups only for these, so okay?
-    A055: DPEBS00*      ; Pg.01 - Has 1k pullups, but so does rest of DPEBS
-    A056: DPEBS01*      ; Pg.01 - Has 1k pullups, but so does rest of DPEBS
-    A081: MDI00         ; Pg.01 - Has 1k pullups, but so does rest of MDI
-    A082: MDI01         ; Pg.01 - Has 1k pullups, but so does rest of MDI
+    Some, but they're all okay
 
 4401_Floating Adder
-    B100: FRCINH*       ; Gates FRCFAM*, has 2k pullup
+    One, but it's okay
 
 Not orphaned, but weird, so check
 

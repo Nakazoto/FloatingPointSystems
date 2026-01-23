@@ -18,22 +18,91 @@ Orphaned Nets But That's Okay!
 
 
 4423_Processor_2
-
+    B048: BMD2M2        ; Pg.11 - Mux out of PS55* (N/C on Cully 100)
+    B081: NEWINS1       ; Pg.11 - Demux of CB56* and CB57* (N/C on Cully 100)
+    B082: NEWINS2       ; Pg.11 - Demux of CB56* and CB57* (N/C on Cully 100)
+    B083: NEWINS3       ; Pg.11 - Demux of CB56* and CB57* (N/C on Cully 100)
+    B093: PS62*         ; Pg.05 - Mux out of PSA bus (N/C on Cully 100)
 
 4425_Table_Memory
-
+    A087: TM02*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
+    A088: TM03*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
+    A089: TM04*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
+    A090: TM05*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
+    A091: TM06*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
+    A092: TM07*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
+    B005: TM08*         ; Pg.04 - Bus for output from TM SRAM (N/C on Cully 100)
+    B006: TM09*         ; Pg.04 - Bus for output from TM SRAM (N/C on Cully 100)
+    B007: TM10*         ; Pg.04 - Bus for output from TM SRAM (N/C on Cully 100)
+    B008: TM11*         ; Pg.04 - Bus for output from TM SRAM (N/C on Cully 100)
+    B009: TM12*         ; Pg.04 - Bus for output from TM SRAM (N/C on Cully 100)
+    B010: TM13*         ; Pg.04 - Bus for output from TM SRAM (N/C on Cully 100)
+    B011: TM14*         ; Pg.04 - Bus for output from TM SRAM (N/C on Cully 100)
+    B012: TM15*         ; Pg.04 - Bus for output from TM SRAM (N/C on Cully 100)
+    B039: TM16*         ; Pg.05 - Bus for output from TM SRAM (N/C on Cully 100)
+    B040: TM17*         ; Pg.05 - Bus for output from TM SRAM (N/C on Cully 100)
+    B041: TM18*         ; Pg.05 - Bus for output from TM SRAM (N/C on Cully 100)
+    B042: TM19*         ; Pg.05 - Bus for output from TM SRAM (N/C on Cully 100)
+    B043: TM20*         ; Pg.05 - Bus for output from TM SRAM (N/C on Cully 100)
+    B044: TM21*         ; Pg.05 - Bus for output from TM SRAM (N/C on Cully 100)
+    B045: TM22*         ; Pg.05 - Bus for output from TM SRAM (N/C on Cully 100)
+    B046: TM23*         ; Pg.05 - Bus for output from TM SRAM (N/C on Cully 100)
+    B075: TM24*         ; Pg.06 - Bus for output from TM SRAM (N/C on Cully 100)
+    B076: TM25*         ; Pg.06 - Bus for output from TM SRAM (N/C on Cully 100)
+    B077: TM26*         ; Pg.06 - Bus for output from TM SRAM (N/C on Cully 100)
+    B078: TM27*         ; Pg.06 - Bus for output from TM SRAM (N/C on Cully 100)
+    B079: TM28*         ; Pg.06 - Bus for output from TM SRAM (N/C on Cully 100)
+    B080: TM29*         ; Pg.06 - Bus for output from TM SRAM (N/C on Cully 100)
+    B081: TM30*         ; Pg.06 - Bus for output from TM SRAM (N/C on Cully 100)
+    B082: TM31*         ; Pg.06 - Bus for output from TM SRAM (N/C on Cully 100)
+    B109: TM32*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
+    B110: TM33*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
+    B111: TM34*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
+    B112: TM35*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
+    B113: TM36*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
+    B114: TM37*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
+    B115: TM38*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
+    B116: TM39*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
 
 4424_Main_Data
-
+    A022: DMAESA        ; Pg.01 - Helps gate INIAQ*, has a pullup
+    A024: MAESA         ; Pg.01 - Helps gate INIAQ*, has a pullup
+    A053: MA00*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A055: MA01*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A057: MA02*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A059: MA03*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A073: MA04*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A075: MA05*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A077: MA06*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A079: MA07*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A085: MA08*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A087: MA09*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A090: MA10*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A091: MA11*         ; Pg.03 - MA driven during MDCA2 (likely N/C)
+    A105: MA12*         ; Pg.03 - MA driven during MDCA2 (N/C on Cully 100)
+    A107: MA13*         ; Pg.03 - MA driven during MDCA2 (N/C on Cully 100)
+    A109: MA14*         ; Pg.03 - MA driven during MDCA2 (N/C on Cully 100)
+    A111: MA15*         ; Pg.03 - MA driven during MDCA2 (N/C on Cully 100)
+    A113: MA(-4)*       ; Pg.04 - For extended memory? (Not needed on my build)
+    A114: MA(-3)*       ; Pg.04 - For extended memory? (Not needed on my build)
+    A115: MA(-2)*       ; Pg.04 - For extended memory? (Not needed on my build)
+    A116: MA(-1)*       ; Pg.04 - For extended memory? (Not needed on my build)
 
 4426_Floating_Multiplier
     None
 
 4402_Data_Pad_Right
-    None
+    A021: FAE00*        ; Pg.01 - High order bits not used on exponent
+    A022: FME00*        ; Pg.01 - High order bits not used on exponent
+    A023: FAE01*        ; Pg.01 - High order bits not used on exponent
+    A024: FME01*        ; Pg.01 - High order bits not used on exponent
+    A055: DPEBS00*      ; Pg.01 - High order bits not used on exponent
+    A056: DPEBS01*      ; Pg.01 - High order bits not used on exponent
+    A081: MDI00         ; Pg.01 - High order bits not used on exponent
+    A082: MDI01         ; Pg.01 - High order bits not used on exponent
 
 4402_Data_Pad_Left
 
 
 4401_Floating Adder
-
+    B100: FRCINH*       ; Pg. ?? - N/C on Cully FPS-100
