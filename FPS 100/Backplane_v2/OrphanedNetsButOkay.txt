@@ -11,11 +11,23 @@ Orphaned Nets But That's Okay!
 
 
 4408_Processor_3
+    A029: PHALT*        ; Pg.05 - Part of REQHALT, has pullup
+    A031: TRIGQ*        ; Pg.04 - FF output based on BPHALT, SWR=PNL*, etc.
+    A073: SNSB          ; Pg.01 - Sense B (Sense output for external devices?)
+    A076: SNSA          ; Pg.01 - Sense A (Sense output for external devices?)
+    A078: IONTA         ; Pg.07 - Gated by SPIN and CB20*Q ~ CB22*Q
+    A079: DP2IO*        ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
+    A080: IORST*        ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
     B115: EXTCLK{408}   ; External clock to bypass internal 16 MHz clock
     A035: INTIND        ; AP interrupt enabled indicator
 
 4422_Processor_1
-
+    A094: CPUIN*        ; Pg.08 - NAND out of DA, DA13*, IN100 (N/C on Cully)
+    B044: TST0          ; Pg.10 - Input MUX to control PSAAD (N/C on Cully 100)
+    B046: TST1          ; Pg.10 - Input MUX to control PSAAD (N/C on Cully 100)
+    B048: TST2          ; Pg.10 - Input MUX to control PSAAD (N/C on Cully 100)
+    B050: TST3          ; Pg.10 - Input MUX to control PSAAD (N/C on Cully 100)
+    B115: IOINTR*       ; Pg.11 - I/O Interrupt Request (N/C on Cully 100)
 
 4423_Processor_2
     B048: BMD2M2        ; Pg.11 - Mux out of PS55* (N/C on Cully 100)
@@ -25,6 +37,22 @@ Orphaned Nets But That's Okay!
     B093: PS62*         ; Pg.05 - Mux out of PSA bus (N/C on Cully 100)
 
 4425_Table_Memory
+    A014: BTMA00        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A016: BTMA01        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A018: BTMA02        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A020: BTMA03        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A024: BTMA04        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A026: BTMA05        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A028: BTMA06        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A030: BTMA07        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A034: BTMA08        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A036: BTMA09        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A038: BTMA10        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A040: BTMA11        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A044: BTMA12        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A046: BTMA13        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A048: BTMA14        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
+    A050: BTMA15        ; Pg.01 - Mux'd with TMA## bus (N/C on Cully 100)
     A087: TM02*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
     A088: TM03*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
     A089: TM04*         ; Pg.03 - Bus for output from TM SRAM (likely N/C)
@@ -65,6 +93,9 @@ Orphaned Nets But That's Okay!
     B116: TM39*         ; Pg.07 - Bus for output from TM SRAM (N/C on Cully 100)
 
 4424_Main_Data
+    A010: MDEXP         ; Pg.01 - Seems related to WRTEXP? (goes to PGSEL)
+    A012: MDHMAN        ; Pg.01 - Seems related to WRTHM? (goes to PGSEL)
+    A014: MDLMAN        ; Pg.01 - Seems related to WRTLM? (goes to PGSEL)
     A022: DMAESA        ; Pg.01 - Helps gate INIAQ*, has a pullup
     A024: MAESA         ; Pg.01 - Helps gate INIAQ*, has a pullup
     A053: MA00*         ; Pg.03 - MA driven during MDCA2 (likely N/C)

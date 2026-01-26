@@ -6,7 +6,7 @@ Orphaned Nets
     B066: PWFAIL*       ; Pg.02 - Gating for BUSINIT* (from power board?)
 
 4429_Formatter
-    A007: RPDP          ; Pg.01 - Jumper, output of E2, address select logic?
+    A007: RPDP          ; Pg.01 - Jumper, output of E2, (goes to APIF)
     A027: HD00A         ; Pg.02 - Multiplexed bus output?
     A029: HD01A         ; Pg.02 - Multiplexed bus output?
     A030: HD02A         ; Pg.02 - Multiplexed bus output?
@@ -29,62 +29,25 @@ Orphaned Nets
     B023: HD14A         ; Pg.06 - Multiplexed bus output?
     B024: HD15A         ; Pg.06 - Multiplexed bus output?
 
-4408_Processor_3
-    A029: PHALT*        ; Pg.05 - Part of REQHALT, has pullup
-    A031: TRIGQ*        ; Pg.04 - FF output based on BPHALT, SWR=PNL*, etc.
+4408_Processor_3 (J9)
     A041: INTA          ; Pg.01 - Interrupt Acknowledge
-    A073: SNSB          ; Pg.01 - Sense B (Sense output for external devices?)
     A075: IN            ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
-    A076: SNSA          ; Pg.01 - Sense A (Sense output for external devices?)
-    A078: IONTA         ; Pg.07 - Gated by SPIN and CB20*Q ~ CB22*Q
-    A079: DP2IO*        ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
-    A080: IORST*        ; Pg.01 - Multiplexed based on PS21*, PS22* and CBLK
-    A101: PNL2DRL*      ; Pg.01 - Gates the PNL bus
-    B100: EXTNT         ; Pg.09 - MUX select (seems important)
 
-4422_Processor_1
-    A094: CPUIN*        ; Pg.08 - NAND output of DA bus, DA13*, and IN100
-    B038: DPALD*A       ; Pg.09 - Demux of PS20*, PS21* and PS22*
-    B044: TST0          ; Pg.10 - Input into MUX to control PSAAD
-    B046: TST1          ; Pg.10 - Input into MUX to control PSAAD
-    B048: TST2          ; Pg.10 - Input into MUX to control PSAAD
-    B050: TST3          ; Pg.10 - Input into MUX to control PSAAD
-    B079: EXINT         ; Pg.11 - Buffered output of EXINT* internal signal
-    B081: PN2DBL*       ; Pg.11 - Demux output of CB11*, CB12* and CB13*
-    B115: IOINTR*       ; Pg.11 - I/O Interrupt Request
-    B116: RBUEQ*        ; Pg.11 - Connect to P2.A023? (Has wire on Cully 100)
+4422_Processor_1 (J8)
+    Some, but they're all okay
 
-4423_Processor_2
-    A021: DPALD*        ; Pg.10 - Controls select of two LS157s with DAPLDA*
-    A023: RBUFQ         ; Pg.10 - Maybe connect to P1.B116?
+4423_Processor_2 (J7)
+    Some, but they're all okay
 
 4425_Table_Memory
-    A014: BTMA00        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A016: BTMA01        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A018: BTMA02        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A020: BTMA03        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A024: BTMA04        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A026: BTMA05        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A028: BTMA06        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A030: BTMA07        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A034: BTMA08        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A036: BTMA09        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A038: BTMA10        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A040: BTMA11        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A044: BTMA12        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A046: BTMA13        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A048: BTMA14        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
-    A050: BTMA15        ; Pg.01 - Mux'd with TMA## bus, controlled by BPPENB*
+    Lots, but they're all okay
 
-4424_Main_Data
-    A010: MDEXP         ; Pg.01 - Seems related to WRTEXP?
-    A012: MDHMAN        ; Pg.01 - Seems related to WRTHM?
-    A014: MDLMAN        ; Pg.01 - Seems related to WRTLM?
-    A017: MDCR2*        ; Pg.01 - Main Data Cycle Request level 2
-    A019: MDCA0         ; Pg.01 - Controlled by CA0D*
-    A023: MDCA2         ; Pg.01 - Main Data Cycle Acknowledge level 2
-    A025: MDINA*        ; Pg.01 - INIAQ* pre-inverted output
-    A028: DCH002*       ; Pg.01 - Data Channel out lvl 2 (valid output from MD)
+4424_Main_Data (J5)
+    A017: MDCR2*        ; Pg.01 - Main Data Cycle Request lvl2 (wired on Cully)
+    A019: MDCA0         ; Pg.01 - Controlled by CA0D* (wired on Cully FPS)
+    A023: MDCA2         ; Pg.01 - Main Data Cycle Ack lvl 2 (wired on Cully)
+    A025: MDINA*        ; Pg.01 - INIAQ* pre-inverted output (wired on Cully)
+    A028: DCH002*       ; Pg.01 - Data Channel out lvl 2 (wired on Cully)
 
 4426_Floating_Multiplier
     None

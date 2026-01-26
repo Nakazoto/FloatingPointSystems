@@ -9788,16 +9788,6 @@
 	)
 	(wire
 		(pts
-			(xy 664.21 367.03) (xy 643.89 367.03)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5fc726e9-246f-4f1e-8177-1e09bf407fdb")
-	)
-	(wire
-		(pts
 			(xy 963.93 455.93) (xy 963.93 458.47)
 		)
 		(stroke
@@ -9955,16 +9945,6 @@
 			(type default)
 		)
 		(uuid "7923ed29-b35d-4c0d-8216-74cc945f95d4")
-	)
-	(wire
-		(pts
-			(xy 523.24 90.17) (xy 549.91 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7a1f1528-5a28-4ba7-ab31-3b983a68f197")
 	)
 	(wire
 		(pts
@@ -20008,7 +19988,7 @@
 	)
 	(global_label "RBUEQ*"
 		(shape input)
-		(at 664.21 367.03 0)
+		(at 643.89 367.03 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -20018,7 +19998,7 @@
 		)
 		(uuid "2c43f0fb-6a53-4646-9f22-aa918d92980c")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 674.5128 367.03 0)
+			(at 654.1928 367.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -28102,7 +28082,7 @@
 			)
 		)
 	)
-	(global_label "PN2DBL*"
+	(global_label "PNL2DBL*"
 		(shape input)
 		(at 631.19 323.85 180)
 		(fields_autoplaced yes)
@@ -28114,7 +28094,7 @@
 		)
 		(uuid "4f2964db-9968-4c85-8327-bdd195f3691c")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 619.8591 323.85 0)
+			(at 618.831 323.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -30588,9 +30568,9 @@
 			)
 		)
 	)
-	(global_label "RBUFQ"
+	(global_label "RBUEQ*"
 		(shape input)
-		(at 523.24 90.17 180)
+		(at 549.91 90.17 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -30600,7 +30580,7 @@
 		)
 		(uuid "58bfe43e-3b6f-4734-b158-6e161d4c27dd")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 513.9652 90.17 0)
+			(at 539.6072 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -48672,7 +48652,7 @@
 			)
 		)
 	)
-	(global_label "DPALD*A"
+	(global_label "DPALD*"
 		(shape input)
 		(at 643.89 267.97 0)
 		(fields_autoplaced yes)
@@ -48684,7 +48664,7 @@
 		)
 		(uuid "af037aa8-9c03-465e-8e6b-8b4ac8052502")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 654.8581 267.97 0)
+			(at 653.7695 267.97 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -63940,7 +63920,7 @@
 			)
 		)
 	)
-	(global_label "EXTNT"
+	(global_label "EXINT"
 		(shape input)
 		(at 720.09 346.71 0)
 		(fields_autoplaced yes)
@@ -63952,7 +63932,7 @@
 		)
 		(uuid "fcee8452-2206-4c96-af5b-e3020feacacc")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 728.6994 346.71 0)
+			(at 728.3366 346.71 0)
 			(effects
 				(font
 					(size 1.27 1.27)
