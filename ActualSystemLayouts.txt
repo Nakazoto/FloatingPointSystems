@@ -1,0 +1,72 @@
+Usagi's FPS-3000
+612-4808-001-A  V-BUS SBC       VM02 SGL BD CMPTR
+612-4803-400-G  V-BUS XLTR      V-BUS XLTR 3 BIMS
+612-4804-003-E  UNIV FMT        UNIV FMT 32 BIT IEEE FPS3000
+612-4448-401-F  AP I/F          APIF
+612-4805-002-R  XP32 EXEC       805 XP32 EXECUTIVE
+612-4806-002-F  XP32 ARITH      806 XP32 ARITHMETIC
+612-4498-401-A  MEM CTRL        MEM CTRL MP32
+612-4456-403-C  MAIN DATA       MAIN DATA 1 MEG 32 BIT TERM
+
+Usagi's DIY FPS-100
+612-4401-001-C  FA              401-B FA (Floating Adder)
+612-4402-003-B  DATA PAD        402-B DP (Data Pad Left)
+612-4402-003-B  DATA PAD        402-B DP (Data Pad Right)
+612-4426-002-D  FM              426-B FM (Floating Multiplier)
+612-4424-019-G  MD              424-C MD 32K (Main Data Memory)
+612-4425-024-C  TM              425-A TM 2.5K ROM 0K RAM (Table Memory)
+612-4423-003-A  P2 (4K)         423-A P2 4K 2.5K TM ROM
+612-4422-005-F  P1 (4k)         422-B P1 4K
+612-4408-005-F  P3              408-A P3
+1 x 120-pin Spare
+1 x 100-pin Spare
+612-4429-000-D  FMT             429-0 FMT PDP11
+612-4421-005-N  PDP-11 I/F      421-E GP I/F PDP11
+
+Cully's FPS-100
+612-4401-002-E  FA              401-B FA (Floating Adder)
+612-4402-003-D  DATA PAD        402-B DP (Data Pad Left)
+612-4402-003-D  DATA PAD        402-B DP (Data Pad Right)
+612-4426-003-D  FM              426-B FM (Floating Multiplier)
+612-4424-032-B  MD              424 MD MEM (???k Memory)
+612-4425-026-F  TM              425-A TM 2.5K ROM 8K RAM (Table Memory)
+612-4423-003-C  P2 (4K)         423-A P2 4K 2.5K TM ROM
+612-4422-002-E  P1 (4K)         422-B P1 4K
+612-4408-005-G  P3              408-A P3
+612-4424-031-B  MD              424 MD MEM (???k Memory)
+612-4456-000-B  MD              456 MD MEM +5V ONLY 256K TERM
+612-4456-001-B  MD              456 MD MEM +5V ONLY 256K UNTERM
+612-4274-002-E  PASPAR          PG SEL
+612-4446-005-?  CUSTOM FMT      446 FORMATTER CF RDCP
+612-4448-014-A  AP I/F          4448 APIF FPS100
+612-4360-010-B  ADPTR           360 DG ADAPTOR RDCP (Plugs into DG)
+
+JamunRaja's FPS-5100
+612-4401-002-E  FA              401-B FA (Floating Adder)
+612-4402-003-E  DATA PAD        402-B DP (Data Pad Left)
+612-4402-003-E  DATA PAD        402-B DP (Data Pad Right)
+612-4426-003-F  FM              426-B FM (Floating Multiplier)
+612-4496-001-A  MAIN DATA       496-A 256K MAIN DATA 240 PIN
+612-4425-029-F  TM              425-A TM 4.5K ROM 8K RAM (Table Memory)
+612-4800-001-A  P2              800 P2 16K PS 2.5K TM
+612-4801-000-A  P1              801 P1 16K PS
+612-4408-005-H  P3              408-A P3
+612-4497-000-E  MPL             497 MPL #1
+612-4456-100-2  MAIN DATA       456 MAIN DATA 256K 4MHZ UNTERM
+612-4429-005-B  FMT             429-A FMT VAX
+612-4421-014-E  I/F             421-E UB I/F FPS51/5400
+
+CW'S FPS-100
+612-4401-002-D  FA              401-B FA (Floating Adder)
+612-4402-003-C  DATA PAD        402-B DP (Data Pad Left)
+612-4402-003-C  DATA PAD        402-B DP (Data Pad Right)
+612-4426-003-D  FM              426-B FM (Floating Multiplier)
+612-4424-019-F  MAIN DATA       424-C MD 32K
+612-4425-024-E  TM              425-A TM 4.5K ROM 0K RAM (Table Memory)
+612-4423-003-B  P2 (4K)         423-A P2 4K 2.5K TM ROM
+612-4422-002-D  P1 (4K)         422-B P1 4K
+612-4408-005-F  P3              408-A P3
+612-4258-004-A                  258-A DB-38
+612-4437-002-F                  437-0 IOP CONTROL-1
+612-4429-003-4                  429-A FMT PDP11
+612-4421-003-N  PDP-11 I/F      421-E GP I/F PDP11

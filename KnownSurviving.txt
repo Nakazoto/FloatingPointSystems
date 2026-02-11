@@ -2,11 +2,12 @@ Known Surviving Systems
 (A system must include a full card set and backplane)
 
 System    Owner      Location       Status
-FPS-3000  Usagi      Texas          Complete, but has not been powered up
+FPS-3000  Usagi      Texas          Complete, seems healthy, host system unknown
 AP-120B   LSSM       Pittsburgh     Complete, but has not been powered up
 AP-180V   LSSM       Pittsburgh     Complete, but has not been powered up
 AP-180V   LandSat    China          Status unknown, but looks complete
-FPS-100   Cully      Massachusetts  Complete, in process of restoration
+FPS-100   Cully      Massachusetts  Complete, powers up, no comms yet
 FPS-5100  JamunRaja  Europe         Status unknown, but looks complete
 AP-120B   eBay       Texas          Seller is currently asking $8,000 (hah!)
 AP-120B   bd4sup     China          Complete, but has not been powered up
+FPS-100   cw         Undisclosed    Complete, but has not been powered up

@@ -74,12 +74,12 @@ $APTBL::
 APPWF:                          ; Label for Power Fail / Device Timeout (next)
 APTIMO: CLRB    @#PS            ; Clear Byte at Destination (@#PS?)
 ;
-        MOVB    U.UNIT(R5),R3   ; Move byte at U.UNIT(R5) into R3
+        MOVB    U.UNIT(R5),R3   ; Physical unit serviced by UCB R5 into R3
         ASL     R3              ; Shift R3 left once
         MOV     R5,CNTBL(R3)    ; Move R5 word into CNTBL(R3)
 ;
-        MOV     S.CSR(R4),R3    ;
-	MOV	#100000,FN(R3)	        ;HALT AP BUT LET DMA COMPLETE
+        MOV     S.CSR(R4),R3    ; SCB address in R4 into R3
+        MOV     #100000,FN(R3)  ;HALT AP BUT LET DMA COMPLETE
 ;
         RETURN
 ;
@@ -275,7 +275,7 @@ CT5100:
         CALL    PUTWRD                  ;;;TRANSFER IT TO USER
         BR      CB5X                    ;;;FINISH IT UP
 CB5A:
-        MOV      #8.,R0           ;;;SET TIMEOUT COUNT
+        MOV      #8.,R0                 ;;;SET TIMEOUT COUNT
 CB5T:   BIT     FN(R3),#20000           ;;;TEST LITES ACKNOWLEGE
         BNE     CB5F
         SOB     R0,CB5T                 ;;;LOOP
@@ -314,8 +314,8 @@ CB5X:
 UCBLEN: .WORD 0
 ;
 PUTWRD:
-        MOVB @#PS,-(SP)      ;DISABLE INTERRUPTS
-        MOVB #7*40,@#PS
+        MOVB    @#PS,-(SP)              ;DISABLE INTERRUPTS
+        MOVB    #7*40,@#PS
         MOV     R5,R0                   ;;;COPY DMA UCB ADDR
         ADD     UCBLEN,R0               ;;;CTL5 UCB ADDR
         ADD     U.BUF+2(R0),R1          ;;;REAL ADDR
@@ -328,7 +328,7 @@ PUTWRD:
         MOV     @R0,KISAR6              ;;;MAP TO USER
         MOV     R2,@R1                  ;;;VALUE TO USER
         MOV     (SP)+,KISAR6            ;;;RESTORE MAPPING
-        MOVB  (SP)+,@#PS     ;INTERRUPTS ON
+        MOVB    (SP)+,@#PS              ;INTERRUPTS ON
         RETURN
 .ENDC
         .END
