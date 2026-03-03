@@ -70,3 +70,111 @@ CW'S FPS-100
 612-4437-002-F                  437-0 IOP CONTROL-1
 612-4429-003-4                  429-A FMT PDP11
 612-4421-003-N  PDP-11 I/F      421-E GP I/F PDP11
+
+Dave McGuire's AP-120B
+612-4208-???-0  FMUL C         Floating Multiplier C
+612-4207-???-A  FMUL B         Floating Multiplier B
+612-4206-???-A  FMUL A         Floating Multiplier A
+612-4205-???-B  FADD 3         Floating Adder 3
+612-4204-???-B  FADD 2         Floating Adder 2
+612-4203-???-B  FADD 1         Floating Adder 1
+612-4200-???-A  DATA PAD       Data Pad Left and Right
+612-4200-???-A  DATA PAD       Data Pad Left and Right
+612-4213-???-A  MIREG          Memory Input Register
+612-4209-???-B  TMREG          Table Memory Register
+612-4217-???-A  TM ROM         Table Memory ROM
+612-4202-???-C  MDREG          Main Data Register
+612-4211-???-B  CB2            Control Buffer 2
+612-4210-???-B  CB1            Control Buffer 1
+612-4214-???-B  EXPAN          Expansion of CB1
+612-4212-???-B  ADDR           Address LGC INSTR
+612-4201-???-C  S PAD          Scratch Pad
+612-4236-???-0  PS RAM 2K      Program Source RAM
+612-4215-???-C  MD MEM         Main Data Memory
+612-4215-???-C  MD MEM         Main Data Memory
+612-4226-???-?  FMT M          Format Mantissa
+612-4227-???-?  FMT E          Format Exponent
+612-4218-???-?  PDP-11 I/F     PDP-11 Interface
+
+BD4SUP's AP-120B
+612-4208-001-D  FMUL C         Floating Multiplier C
+612-4207-002-A  FMUL B         Floating Multiplier B
+612-4206-001-B  FMUL A         Floating Multiplier A
+612-4205-???-B  FADD 3         Floating Adder 3
+612-4204-???-B  FADD 2         Floating Adder 2
+612-4203-???-B  FADD 1         Floating Adder 1
+612-4200-002-A  DATA PAD       Data Pad Left and Right
+612-4200-002-A  DATA PAD       Data Pad Left and Right
+612-4213-001-A  MIREG          Memory Input Register
+612-4209-002-A  TMREG          Table Memory Register
+612-4217-007-B  TM ROM         Table Memory ROM
+612-4202-005-A  MDREG          Main Data Register
+612-4211-003-B  CB2            Control Buffer 2
+612-4210-304-C  CB1            Control Buffer 1
+612-4214-005-E  EXPAN          Expansion of CB1
+612-4212-010-B  ADDR           Address
+612-4201-004-B  S PAD          Scratch Pad
+612-4236-003-A  PS RAM 2K      Program Source RAM
+612-4244-133-B  MAIN DATA      Data in from Host and to Host
+612-4276-002-C  IRP 2          Image Reconstruction Processor 2
+612-4275-001-1  IRP 1          Image Reconstruction Processor 1
+612-4238-007-A  TM RAM         Table Memory RAM
+612-4238-005-A  TM RAM         Table Memory RAM
+612-4226-011-A  FMT M          Format Mantissa
+612-4227-020-A  FMT E          Format Exponent W/O XCVR PDP-11
+612-4219-???-?  GPIF           General Purpose Interface
+
+Landsat China AP-180V
+612-4208-004-D  FMUL C         Floating Multiplier C
+612-4207-003-A  FMUL B         Floating Multiplier B
+612-4206-002-A  FMUL A         Floating Multiplier A
+612-4205-???-?  FADD 3         Floating Adder 3
+612-4204-002-A  FADD 2         Floating Adder 2
+612-4203-003-B  FADD 1         Floating Adder 1
+612-4200-002-A  DATA PAD       Data Pad Left and Right
+612-4200-002-D  DATA PAD       Data Pad Left and Right
+612-4213-002-B  MIREG          Memory Input Register
+612-4209-003-D  TMREG          Table Memory Register
+612-4202-006-A  MDREG          Main Data Register
+612-4353-000-C  CB2            CB-2 UCODE & TMG
+612-4210-006-E  CB1            Control Buffer 1
+612-4214-007-H  EXPAN          Expansion of CB1
+612-4377-000-D  ADDR           Address Clock Control
+612-4201-004-C  S PAD          Scratch Pad
+612-4375-000-B  PS SRAM        Program Source SRAM 8K TERM
+2268            MD             RAM?
+612-4274-002-F  PG SEL         Program Select?
+2266            TM             ROM & RAM
+612-4226-031-D  FMT M          Format Mantissa Extended
+612-4227-031-C  FMT E          Format Exponent W/O XCVR FMTEP
+2221            AP/VAX I/F     Vax 11-780 Interface
+
+eBay AP-120B
+612-4208-001-?  FMUL C         Floating Multiplier C
+612-4207-002-A  FMUL B         Floating Multiplier B
+612-4206-001-A  FMUL A         Floating Multiplier A
+612-4205-001-A  FADD 3         Floating Adder 3
+612-4204-003-A  FADD 2         Floating Adder 2
+612-4203-002-B  FADD 1         Floating Adder 1
+612-4200-002-A  DATA PAD       Data Pad Left and Right
+612-4200-002-A  DATA PAD       Data Pad Left and Right
+612-4213-001-A  MIREG          Memory Input Register
+612-4209-002-A  TMREG          Table Memory Register
+612-4217-004-A  TM ROM         Table Memory ROM
+612-4202-006-A  MDREG          Main Data Register
+612-4353-000-A  CB2            CB-2 UCODE & TMG
+612-4210-005-A  CB1            Control Buffer 1
+612-4214-007-A  EXPAN          Expansion of CB1
+612-4354-004-B  ADDR           Address 2.5k TM ROM
+612-4201-004-A  S PAD          Scratch Pad
+612-4236-001-A  PS RAM 2K      Program Source RAM
+612-4236-004-A  PS RAM 2K      Program Source RAM
+612-4244-216-B  MAIN DATA      Data in from Host and to Host
+612-4330-002-2  FPROC          ???
+612-4329-003-5  FIFO/FPROC/CTRL
+612-4324-009-3  CPROC CTRLR    CPROC Controller
+612-4238-008-A  TM RAM         Table Memory RAM
+612-4226-021-A  FMT M          Format Mantissa
+612-4227-015-A  FMT E          Format Exponent
+612-4219-024-A  GP+NOVA I/F    General Purpose Interface
+612-4246-001-A  HSD SEL 32     ???
