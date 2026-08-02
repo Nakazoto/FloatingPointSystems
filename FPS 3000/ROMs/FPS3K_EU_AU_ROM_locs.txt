@@ -1,0 +1,75 @@
+Executive Unit
+
+C1      225-0071-005    ????            Soldered
+
+F2      225-0071-004    ????            Soldered
+G2      ????            AM27S45ADC      Socketed
+H2      225-0080-032    AM27S45ADC      Socketed
+J2      225-0080-025    AM27S45ADC      Socketed
+K2      225-0080-024    AM27S45ADC      Socketed
+L2      225-0080-027    AM27S45ADC      Socketed
+M2      225-0080-026    AM27S45ADC      Socketed
+N2      225-0080-029    AM27S45ADC      Socketed
+P2      225-0080-028    AM27S45ADC      Socketed
+S2      225-0080-022    AM27S45ADC      Socketed
+T2      225-0080-023    AM27S45ADC      Socketed
+
+B5      225-0071-017    AM27S45ADC?     Soldered
+C5      225-0071-003    ????            Soldered
+D5      225-0071-003    ????            Soldered
+
+K6      225-0071-002    ????            Soldered
+L6      225-0071-000    ????            Soldered
+M6      225-0071-000    ????            Soldered
+N6      225-0071-000    ????            Soldered
+P6      225-0071-001    ????            Soldered
+
+N9      225-0071-020    ????            Soldered
+
+H12     225-0071-016    ????            Soldered
+J12     225-0071-019    ????            Soldered
+K12     225-0071-008    ????            Soldered
+L12     225-0071-006    ????            Soldered
+
+
+Arithmetic Unit
+
+J1      225-0071-015    ????            Soldered
+
+E4      225-0071-012    ????            Soldered
+F4      225-0071-012    ????            Soldered
+G4      225-0071-012    ????            Soldered
+H4      225-0071-012    ????            Soldered
+J4      225-0071-012    ????            Soldered
+
+T5      225-0071-013    ????            Soldered
+
+T9      225-0071-010    ????            Soldered
+U9      225-0071-010    ????            Soldered
+V9      225-0071-010    ????            Soldered
+W9      225-0071-010    ????            Soldered
+
+T10     225-0071-010    ????            Soldered
+U10     225-0071-010    ????            Soldered
+V10     225-0071-010    ????            Soldered
+W10     225-0071-010    ????            Soldered
+
+N10     225-0071-025    ????            Soldered
+P10     225-0071-025    ????            Soldered
+R10     225-0071-025    ????            Soldered
+S10     225-0071-025    ????            Soldered
+
+N11     225-0071-025    ????            Soldered
+P11     225-0071-025    ????            Soldered
+R11     225-0071-025    ????            Soldered
+S11     225-0071-025    ????            Soldered
+
+T12     225-0071-009    ????            Soldered
+U12     225-0071-009    ????            Soldered
+V12     225-0071-009    ????            Soldered
+W12     225-0071-009    ????            Soldered
+
+T13     225-0071-009    ????            Soldered
+U13     225-0071-009    ????            Soldered
+V13     225-0071-009    ????            Soldered
+W13     225-0071-009    ????            Soldered

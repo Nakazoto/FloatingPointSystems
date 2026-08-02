@@ -1,0 +1,33 @@
+ADDRESS
+Nano A0  > pin  8 (A0)
+Nano A1  > pin  7 (A1)
+Nano A2  > pin  6 (A2)
+Nano A3  > pin  5 (A3)
+Nano A4  > pin  4 (A4)
+Nano A5  > pin  3 (A5)
+Nano D9  > pin  2 (A6)
+Nano D10 > pin  1 (A7)
+Nano D11 > pin 23 (A8)
+Nano D12 > pin 22 (A9)
+Nano D13 > pin 21 (A10)
+
+DATA
+Nano D2 > pin  9 (Q0)
+Nano D3 > pin 10 (Q1)
+Nano D4 > pin 11 (Q2)
+Nano D5 > pin 13 (Q3)
+Nano D6 > pin 14 (Q4)
+Nano D7 > pin 15 (Q5)
+Nano A6 > pin 16 (Q6)
+Nano A7 > pin 17 (Q7)
+
+CLOCK
+Nano D8 > pin 18 (K)
+
+CONTROL PINS
+pin 19(/G) > GND
+pin 20(/I) > 5V
+
+POWER
+pin 24 > 5V
+pin 12 > GND
