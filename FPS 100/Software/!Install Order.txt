@@ -1,0 +1,64 @@
+1. DRV100.CMD       ; installs AP Driver
+     A. no subfiles
+          > Reqs.: DRIVER.MAC, DEVTABLE.MAC
+
+2. HSR100.CMD       ; installs HSR library (Math Lib)
+     A. no subfiles
+          > Reqs.: AMLHSR.MAC, BAAHSR.MAC, BABHSR.MAC, DGNHSR.MAC, 
+                   IPRHSR.MAC, SIGHSR.MAC, UTLHSR.MAC
+
+3. LIB100.CMD
+     A. APX10.CMD   ;installs APX100 routines
+          > Reqs.: IAPEX.FTN, FDAPEX.FTN, DAPEX.MAC
+                   FPSMC.MAC (from DRV100.CMD?)
+     B. UTL10.CMD   ; installs Utility routines
+          > Reqs.: ADUTIL.MAC, IUTIL.FTN, !FDUTIL.FTN!
+                   PEEL.TSK (from HSR100.CMD?)
+
+4. PDS100.CMD
+     A. ASM10.CMD   ; installs ASM100
+          > Reqs.: ASM100.FTN
+     B. SIM10.CMD   ; installs SIM100
+          > Reqs.: SIM100.FTN
+     C. DBG10.CMD   ; installs DBG100
+          > Reqs.: DBG100.FTN, APSTOP.FTN
+     D. LNK10.CMD ; installs LNK100
+          > Reqs.: !LNK100.FTN!
+     E. LOD10.CMD ; installs LOD100
+          > Reqs.: !LOD100.FTN!
+     F. LED10.CMD   ; installs LED100
+          > Reqs.: LED100.FTN
+     G. VFC10.CMD   ; installs VFC100
+          > Reqs.: VFC100.FTN
+
+5. DGN100.CMD 
+     A. TST10.CMD   ; installs TST100
+          > Reqs.: TST100.FTN, DGCOM.OLB (built from DGN100.CMD)
+     B. PTH10.CMD   ; installs PTH100
+          > Reqs.: PTH100.FTN, DGCOM.OLB (built from DGN100.CMD)
+     C. ART10.CMD   ; installs ART100
+          > Reqs.: ART100.FTN, DGCOM.OLB (built from DGN100.CMD)
+     D. FFT10.CMD   ; installs FFT100
+          > Reqs.: FFT100.FTN, DGCOM.OLB (built from DGN100.CMD)
+     E. MEM10.CMD   ; installs MEM100
+          > Reqs.: MEM100.FTN, DGCOM.OLB (built from DGN100.CMD)
+     F. UFT10.CMD   ; installs UFT100
+          > Reqs.: UFT100.FTN, DGCOM.OLB (built from DGN100.CMD)
+
+6. APL100.CMD       ; installs APLIB (Math Lib)
+     A. no subfiles
+          > Reqs.: AMLLIB.APO, APFLIB.APO, BAALIB.APO, DGNLIB.APO, IPRLIB.APO,
+                   SIGLIB.APO, SYMLIB.APO, UTLLIB.APO, VADD.APO
+                   APEEL.TSK (from HSR100.CMD?)
+
+7. PDSTST.CMD       ; installs PDS Tests
+     A. no subfiles
+          > Reqs.: !UNKNOWN - TAPE RELATED!
+
+8. SUP100.CMD       ; installs Supervisors
+     A. no subfiles
+          > Reqs.: !UNKNOWN - TAPE RELATED!
+
+9. CLEAN.CMD        ; cleans up disk
+     A. no subfiles
+          > Reqs.: None

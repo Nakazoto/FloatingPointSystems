@@ -1,0 +1,402 @@
+;/***** DUTIL = HOST DEPENDENT UTILITIES FOR PDP-11 = REL B.1  , JAN 80 *******
+;C
+;         FOR PDP-11 DOS, RT-11, OR RSX-11 FORTRAN
+;
+;-----------------------------------------------------------------------------
+;
+;       C O N F I G U R A T I O N     S W I T C H E S
+;
+;       PDP-11 DEPENDENT
+;       ----------------
+;
+         TERMS = 177560      ;TERMINAL STATUS
+         SWREG = 177570      ;HOST SWITCH REGISTER
+;
+;
+; DOS IS EQUAL TO 1 ON A DOS SYSTEM AND EQUAL TO ZERO ON A RT- OR RSX-11
+; SYSTEM
+;
+         DOS = 0
+;
+;--------------------------------------------------------------------------
+;C
+         .TITLE   DUTIL
+         .GLOBL   IOR16,INOT16,IADD16,IRSH16,ILSH16,ILOC
+         .GLOBL   SREAD,TERM,INT16,IP16,IAND16,IGRN16
+;
+;
+;
+        .MCALL  GSSW$S                  ;GET SWITCHES DIRECTIVE
+         R0 = %0
+         R1 = %1
+         R2 = %2
+         R3 = %3
+         R4 = %4
+         R5 = %5
+         R6 = %6
+         R7 = %7
+         PC = %7
+         SP = %6
+;
+;
+         .MACRO RETURN
+         .IF EQ,<DOS-1>
+         .IFT
+         RTS R5
+         .IFF
+         RTS PC
+         .ENDC
+         .ENDM
+;
+;
+;
+;/***** IOR16 = 16-BIT LOGICAL OR = REL B.1  , JAN 80 *************************
+;C
+;        INTEGER FUNCTION IOR16(IA,IB)
+;        INTEGER IA,IB
+;C
+;C       RESULT IS THE LOGICAL OR OF THE LOWER 16-BITS OF 'IA' AND 'IB'.
+;C       ANY UPPER BITS OF THE RESULT ARE CLEARED.
+;C
+;C       ROUTINES USED: INT16
+;C
+;C-------NOTE: IF '.OR.' WILL NOT PRODUCE THE FULL WORD LOGICAL OR
+;C       OF TWO INTEGERS, THEN A FUNCTION MUST BE BUILT TO DO SO.
+;C
+IOR16:   MOV @4(R5),R0
+         BIS @2(R5),R0
+         RETURN
+;
+;
+;
+;        RETURN
+;        END
+;C
+;/***** INOT16 = 16-BIT LOGICAL NOT = REL B.1  , JAN 80 ***********************
+;C
+;        INTEGER FUNCTION INOT16(IA)
+;        INTEGER IA
+;C
+;C       RESULT IS THE LOGICAL NOT (COMPLEMENT) OF THE LOW 16-BITS OF 'IA'.
+;C       ANY UPPER BITS OF THE RESULT ARE CLEARED.
+;C
+;C       ROUTINES USED: INT16
+;C
+;C-------NOTE: IF '.NOT.' WILL NOT PRODUCE THE FULL WORD LOGICAL NOT OF
+;C       TWO INTEGER, THEN A FUNCTION MUST BE BUILT THAT WILL DO SO.
+;C
+;        INOT16=INT16(.NOT.IA)
+;
+;
+;
+INOT16:  MOV @2(R5),R0
+         COM R0
+         RETURN
+;
+;
+;
+;        RETURN
+;        END
+;C
+;/***** IADD16 = INTEGER 16-BIT ADD = REL B.1  , JAN 80 ***********************
+;C
+;        INTEGER FUNCTION IADD16(IA,IB)
+;        INTEGER IA,IB
+;C
+;C       RESULT IS THE LOW 16-BITS OF THE SUM OF THE LOW 16-BITS
+;C       OF 'IA' AND 'IB'.
+;C
+;C       ROUTINES USED: NONE
+;C
+;C-------NOTE: '+' MUST ALLOW ANY TWO 16-BIT NUMBERS TO BE ADDED TOGETHER
+;C       WITHOUT ANY OVERFLOW FORCING. I.E. TREATING THE LOW 16-BITS
+;C       OF 'IA' AND 'IB' AS UNSIGNED VARIABLES, ANY ADD MUST MUST BE LEGAL.
+;C       OTHERWISE A ROUTINE MUST BE BUILT TO DO SO.
+;C
+;        IADD16=INT16(IA+IB)
+;
+;
+;
+IADD16:  MOV @2(R5),R0
+         ADD @4(R5),R0
+         RETURN
+;
+;
+;
+;        RETURN
+;        END
+;C
+;/***** IRSH16 = 16-BIT RIGHT SHIFT = REL B.1  , JAN 80 ***********************
+;C
+;        INTEGER FUNCTION IRSH16(IA,N)
+;        INTEGER IA,N
+;C
+;C       RESULT IS THE LOW 16-BITS OF 'IA', RIGHT SHIFTED BY 'N' PLACES
+;C       WITH ZERO FILL. ANY UPPER BITS OF THE RESULT ARE CLEARED.
+;C
+;C       ROUTINES USED: INT16
+;C
+;C-------NOTE: IF A RIGHT SHIFT FUNCTION (I.E. 'RS') IS NOT AVAILABLE,
+;C       THEN ONE MUST BE BUILT TO RIGHT SHIFT WITH ZERO FILL.
+;C
+;
+;
+;
+IRSH16:  MOV @2(R5),R0  ;GET ARGUEMENT
+         MOV @4(R5),R1  ;GET COUNT
+         TST R1         ;SEE IF 0
+         BEQ RR
+LOOPR:   CLC
+         ROR R0
+         DEC R1
+         BNE LOOPR
+RR:      RETURN
+;
+;
+;
+;        IRSH16=INT16(RS(IA,N))
+;        RETURN
+;        END
+;C
+;/***** ILSH16 = 16-BIT LEFT SHIFT = REL B.1  , JAN 80 ************************
+;C
+;        INTEGER FUNCTION ILSH16(IA,N)
+;        INTEGER IA,N
+;C
+;C       RESULT IS THE LOW 16-BITS OF 'IA' SHIFTED LEFT BY 'N' PLACES
+;C       WITH ZERO FILL.  ANY UPPER BITS OF THE RESULT ARE CLEARED.
+;C
+;C       ROUTINES USED: INT16
+;C
+;C-------NOTE: IF A LEFT SHIFT FUNCTION (I.E. 'LS') IS NOT AVAILABLE,
+;C       THEN ONE MUST BE BUILT TO LEFT SHIFT WITH ZERO FILL.
+;C
+;
+;
+;
+ILSH16:  MOV @2(R5),R0
+         MOV @4(R5),R1
+         TST R1
+         BEQ RL
+LOOPL:   CLC
+         ROL R0
+         DEC R1
+         BNE LOOPL
+RL:      RETURN
+;
+;
+;
+;        ILSH16=INT16(LS(IA,N))
+;        RETURN
+;        END
+;C
+;/***** ILOC = GET LOCATION OF ARGUMENT = REL B.1  , JAN 80 *******************
+;C
+;        INTEGER FUNCTION ILOC(IA)
+;        INTEGER IA
+;C
+;C       RESULT IS THE USER ADDRESS IN THE HOST CPU OF 'IA'
+;C
+;C       ROUTINES USED: NONE
+;C
+;C-------NOTE: IF A FUNCTION TO GET THE USER ADDRESS OF A VARIABLE
+;C       (I.E. 'LOC') IS NOT AVAILABLE, THEN ONE MUST BE BUILT TO DO SO.
+;C
+;
+;
+;
+ILOC:     MOV 2(R5),R0
+         RETURN
+;
+;
+;
+;        ILOC=LOC(IA)
+;        RETURN
+;        END
+;C
+;/***** SREAD = READ THE CPU SWITCHES = REL B.1  , JAN 80 *********************
+;C
+;        SUBROUTINE SREAD(IA)
+;        INTEGER IA
+;C
+;C       READ THE LOW 16-BITS OF THE HOST CPU DATA SWITCHES INTO 'IA'
+;C
+;C       ROUTINES USED: NONE
+;C
+;C-------NOTE: CODE MUST BE PROVIDED TO READ THE LOW 16-BITS OF THE
+;C       HOST DATA SWITCHED INTO THE LOW 16-BITS OF 'IA'.
+;C       'INT16' CAN BE USED TO TRUNCATE TO 16-BITS.
+;C       INTO 'IA'.
+;C
+;
+;
+;
+SREAD:
+        CLR     @2(R5)                  ;CLEAR ARG IN CASE NO SWR
+        GSSW$S                          ;READ SWITCHES  INTO DSW
+        BCS     1$                      ;NO SWR
+        MOV     $DSW,@2(R5)             ;RETURN TO USER
+1$:      RETURN
+;
+;
+;
+;        IA=0
+;        RETURN
+;        END
+;C
+;/***** TERM = CHECK FOR A CHARACTER AT TERMINAL = REL B.1  , JAN 80 **********
+;C
+;        SUBROUTINE TERM(IA)
+;        INTEGER IA
+;C
+;C       SET 'IA' TO 1 IF THE USER WISHES TO INTERRPUT THE CURRENT
+;C       ACTION IN PROGRESS, ELSE SET 'IA' TO 0.
+;C
+;C
+;C       ROUTINES USED: NONE
+;C
+;C-------A ROUTINE MUST BE BUILT READ IN A OPTIONAL RESPONSE FROM THE USER.
+;C       TYPICALLY THIS MEANS A ROUTINE TO TEST THE USER TERMINAL TO
+;C       SEE WHETHER A KEY HAS BEEN HIT.  THIS IS NOT A 'READ' STATEMENT,
+;C       SINCE A READ WILL WAIT UNTIL A KEY IS HIT.  A 'READ' WOULD
+;C       BE APPROPRIATE AFTER 'TERM' HAS RETURNED A '1', SINCE IT THEN
+;C       WOULD BE KNOWN THAT INPUT IS READY.
+;C
+;
+;
+;
+TERM:    CLR    @2(R5)
+        GSSW$S
+        BCS 1$
+        TST     $DSW
+        BPL     1$
+         INC    @2(R5)
+1$:      RETURN
+;
+;
+;
+;        IA=0
+;        RETURN
+;        END
+;C
+;/***** INT16 = TRUNCATE TO 16-BITS = REL B.1  , JAN 80 ***********************
+;C
+;        INTEGER FUNCTION INT16(IA)
+;        INTEGER IA
+;C
+;C       RESULT IS 'IA' WITH ALL BUT THE LOW 16-BITS CLEARED.
+;C
+;C       ROUTINES USED: IAND, IP16
+;C
+;C-------NOTE: THIS ROUTINE IS NOT MACHINE DEPENDENT, BUT IS INCLUDED
+;C       HERE SO THE COMBINED UTILITY LIBRARY WILL LOAD PROPERLY
+;C
+;
+;
+;
+INT16:   MOV @2(R5),R0
+         RETURN
+;
+;
+;
+;        INT16=IAND(IA,IP16(-1))
+;        RETURN
+;        END
+;C
+;/***** IP16 = CONVERT TO POSITIVE 16-BIT INTEGER = REL B.1  , JAN 80 *********
+;C
+;        INTEGER FUNCTION IP16(IA)
+;        INTEGER IA
+;C
+;C       CONVERT FROM NEGATIVE 16-BIT 2'S COMPLEMENT INTEGER TO 16-BIT
+;C       UNSIGNED INTEGER.
+;C
+;C       ROUTINES USED: NONE
+;C
+;C-------NOTE: THE CODE VARIES DEPENDING UPON THE WORD LENGTH OF THE CPU:
+;C
+;C       1. 16-BIT 2'S COMPLEMENT MACHINE:   DO NOTHING
+;C       2. 16-BIT 1'S COMPLEMENT MACHINE:   DOESN'T WORK
+;C       3. >16-BIT MACHINE:                 ADD 65536 IF NEGATIVE
+;C
+;
+;
+;
+IP16:    MOV @2(R5),R0
+         RETURN
+;
+;
+;
+;        IP16=IA
+;C
+;C-------FOR >16-BIT MACHINES, REMOVE THE 'C' FROM THE NEXT LINE
+;C       IF (IP16.LT.0) IP16=IP16+65536
+;C
+;        RETURN
+;        END
+;C
+;/***** IAND = FULL WORD LOGICAL AND = REL B.1  , JAN 80 **********************
+;C
+;        INTEGER FUNCTION IAND16(IA,IB)
+;        INTEGER IA,IB
+;C
+;C       RESULT IS THE FULL WORD LOGICAL AND OF 'IA' AND 'IB
+;C
+;C       ROUTINES USED: INT16
+;C
+;C-------NOTE: IF '.AND.' WILL NOT PRODUCE THE FULL WORD LOGICAL AND OF
+;C       TWO INTEGERS, THEN A FUNCTION MUST BE BUILT TO DO SO.
+;C
+;
+;
+;
+IAND16:  MOV @4(R5),R0
+         MOV @2(R5),R1
+         COM R1
+         BIC R1,R0
+         RETURN
+;
+;
+;
+;        IAND16=INT16(IA.AND.IB)
+;        RETURN
+;        END
+;
+;/***** IGRN16 = 16-BIT RANDOM NUMBER GENERATOR = REL B.1  , JAN 80 ***********
+;C
+;      INTEGER FUNCTION IGRN16(IXN,IYN)
+;      INTEGER IXN,IYN
+;C
+;C       RESULT IS A 16-BIT RANDOM NUMBER IN 'IXN' AND AS FUNCTION VALUE.
+;C       'IYN' IS ALSO UPDATED.
+;C
+;C---------PARAMETERS:
+;C          IXN    1ST INPUT, ALSO RESULT
+;C          IYN    2ND INPUT, UPDATED TO CONTINUE RANDOM SEQUENCE
+;C
+;C       ROUTINES USED: IADD16,IADDC,ISWAP,IP16
+;C
+;C       LOCAL STORAGE : CARRY
+;        INTEGER CARRY
+;C
+;        IXN=IADD16(IXN,IYN)
+;        IYN=IADDC(IYN,IP16(-9181),CARRY)
+;        IF (CARRY.EQ.1) IXN=ISWAP(IADD16(IXN,1))
+;        IGRN16=IXN
+;        RETURN
+;        END
+;C
+;
+IGRN16: MOV @2(R5),R0
+        MOV @4(R5),R1
+        ADD R1,R0
+        ADD #156043,R1
+        BCC 1$
+        INC R0
+        SWAB R0
+1$:     MOV R1,@4(R5)
+        MOV R0,@2(R5)
+        RETURN
+;
+        .END
+ 

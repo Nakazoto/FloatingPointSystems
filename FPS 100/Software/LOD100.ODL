@@ -1,0 +1,36 @@
+;
+;  LOD100 overlay descriptor.
+;
+;  The task does not fit unaided: with every program unit carrying the
+;  loader common blocks, $DATAP overflows and TKB deletes the
+;  allocation.  The original had the same problem -- INSTAL.TXT 9.14
+;  reproduces LOD100's own descriptor, and LNK10.CMD, by contrast, has
+;  none.  This is a descriptor for the reconstruction's own module
+;  decomposition, not a copy of FPS's.
+;
+;  The root holds the driver, the command scanner and everything more
+;  than one branch calls: the symbol table, the number and name
+;  packers, and the load-module word emitter.  The four branches are
+;  mutually exclusive because DISPAT enters exactly one per command.
+;
+        .ROOT   ROOTS-LIBR-*(LOADB,OUTB,OVLB,FINB)
+ROOTS:  .FCTR   LOD100/LB:LOD100:INIT:DISPAT:COMAND:FLD2:NUMIN-RS2
+RS2:    .FCTR   LOD100/LB:SYMLU:PACK6:GETNUM:STARS:EMITW:EDUMP-RS3
+RS3:    .FCTR   LOD100/LB:EFLUSH:PUTHDR:PUT32:OVCLOS:OVVIS
+; LIB100 belongs in the root: LOAD calls INFILE, and the original ODL
+; (INSTAL.TXT 9.14) likewise ends its root factor with LIB100/LB.  Without
+; it TKB reports "1 UNDEFINED SYMBOLS SEGMENT LOAD" and the call lands on
+; address 0 -- an odd address trap the moment a file is opened.
+LIBR:   .FCTR   LB:[1,1]LIB100/LB-LB:[1,1]SYSLIB/LB
+; INFILE is named explicitly here, which is how FPS's own descriptors do
+; it -- ASM100's root lists LIB100/LB:DUTIL:ICMP16:... by name and DBG100
+; carries a whole factor "INFIL: .FCTR LB:LIB100/LB:INFILE".  Naming the
+; library alone in the root does not pull it in for a reference made from
+; an overlay segment: TKB still reports 1 UNDEFINED SYMBOL SEGMENT LOAD.
+LOADB:  .FCTR   LOD100/LB:LOAD:LODFIL:LOADMP-LB:[1,1]LIB100/LB:INFILE:DUTIL
+OUTB:   .FCTR   LOD100/LB:OUTPUT:SETLM:SETPS:SETMD:SETMMX:SETMOD:SETRAD
+OVLB:   .FCTR   LOD100/LB:TREE:OVADD:OVLY:TASKY:TSKOPS:APPRIO:CALLS:NUM2
+FINB:   .FCTR   LOD100/LB:FINISH:LINKUP:WRTLM:EMITCD:WRTBR:PUTTCB:QLINK:HASRQ
+        .END
+
+

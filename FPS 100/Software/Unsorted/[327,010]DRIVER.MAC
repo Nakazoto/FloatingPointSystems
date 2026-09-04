@@ -1,0 +1,333 @@
+;/****** DRIVER = DEVICE DRIVER, FPS100 = REL B.1 , JAN 80 ******************
+;FOR RSX11M V03.2
+;
+;
+        .TITLE APDRV - AP120B DEVICE DRIVER
+        .IDENT  /V2.2/
+       .LIST MEB
+;
+;
+;
+;
+; DEFINE THE DRIVER AS LOADABLE
+;
+        LD$AP=  0
+;
+;
+.IF DF FPS100
+.IFTF
+;
+;
+; MACRO LIBRARY CALL FOR OFFSETS, ETC
+;
+        .MCALL DEVDF$,HWDDF$,PKTDF$,TCBDF$
+        .GLOBL $FORK,$GTPKT,$INTXT,$IODON,$SETF
+        .MCALL CALL,RETURN,FILIO$,IOERR$,INTSV$
+        DEVDF$          ;DEFINE DCB OFFSETS
+        HWDDF$          ;DEFINE HARDWARE REGISTER SYMBOLS
+        PKTDF$          ;DEFINE I/O PACKETS OFFSETS
+        TCBDF$          ;DEFINE TCB OFFSETS
+        FILIO$          ;DEFINE STANDARD I/O FUNCTIONS
+        IOERR$          ;DEFINE STANDARD I/O ERROR CODES
+;
+; DEFINE AP INTERFACE REGISTER OFFSETS
+        WC=     100             ;WORD COUNT OFFSET
+        HMA=    102             ;HOST MEMORY ADDRESS REGISTER OFFSET
+        CTRL=   104             ;CONTROL REGISTER OFFSET
+        FN=     112             ;FUNCTION REGISTER
+        LITES=  114             ;AP LITES AND PAGE SELECT REGISTER
+        RSTAP=  116             ;AP RESET AND PAGE SELECT REGISTER
+;
+;CTRL REGISTER BITS
+        HDMAST= 1               ;HOST DMA START BIT
+        WRTHOST=40                      ;WRITE TO HOST BIT
+        ICTL05=2000                     ;CTL5 INTERRUPT ENABLE
+        IHWC=   4000            ;DMA INTERRUPT ENABLE
+        IHALT=  10000           ;AP ENTERRUPT ENABLE
+        APHALT= 100000          ;FN REG AP HALT MASK
+        FNCLR=  70000           ;FN CLR READ ONLY BITS MASK
+;
+;
+; EVENT FLAG SETTINGS
+;
+        RUNEVF = 22.
+        DMAEVF = 23.
+        CT5EVF = 24.
+;
+;
+;
+;
+        .MCALL  UCBDF$,SCBDF$
+        UCBDF$
+        SCBDF$
+;
+;
+; DRIVER DISPATCH TABLE
+$APTBL::
+        .WORD   APCHK           ;INITIATOR ENTRY
+        .WORD   APCAN           ;I/O CANCEL ENTRY
+        .WORD   APTIMO          ;DEVICE TIMEOUT ENTRY
+        .WORD   APPWF           ;POWER FAIL ENTRY
+;
+;
+APPWF:
+APTIMO: CLRB    @#PS
+;
+        MOVB    U.UNIT(R5),R3
+        ASL     R3
+        MOV     R5,CNTBL(R3)
+;
+        MOV     S.CSR(R4),R3
+	MOV	#100000,FN(R3)	;HALT AP BUT LET DMA COMPLETE
+;
+        RETURN
+;
+CNTBL:  .BLKW   A$$P11                  ;DMA UCB
+.IFT
+SUPVR:  .BLKW   A$$P11          ;SUPERVISIOR SWITCH
+SVUCB:  .BLKW   A$$P11          ;LUN1 UCB TEMP STORE
+TCON:   .WORD   0               ;TEMP STORE CONTROLLER INDEX
+.IFTF
+;
+;
+; I/O FUNCTION CODES
+;       1       IO.WLB  RUN DMA
+.IFT
+;       5       FPS100 SUPERVISIOR - CTL5 LINKAGE
+;       6       TERMINATE SUPERVISIOR
+.IFTF
+;CANCEL I/O ENTRY
+;
+; ONLY CALLED IF AN I/O IS OUTSTANDING ON THE LUN, FINISHES IT.
+;
+APCAN:
+        MOV R4,TCON
+        MOV R0,S.PKT(R4)    ;SET UP OUTSTANDING PACKET ADDR
+        MOV #IS.SUC,R0      ;RETURN SUCCESS
+        CLR R1              ;
+        CALL $IODON
+        MOV TCON,R4
+        MOVB S.CON(R4),R0
+        CMP R5,SVUCB(R0)    ;CHECK IF NOT A SUPERVISOR CANCEL
+        BNE APTIMO          ;MUST BE AN ACTIVE DMA IF NE
+        RETURN
+;
+;INITIATOR ENTRY
+;$GTPKT CALLED WITH R5=ADDR OF UCB
+;RETURNS        C=1 IF CONTROLLER BUSY OR NO REQUESTS
+;               C=0 IF SUCCESFULLY DEQUEUED
+;               R1=ADDRESS OF I/O PACKET
+;               R2=PHYSICAL UNIT NUMBER
+;               R3=CONTROLLER INDEX
+;               R4=ADDRESS OF SCB
+;               R5=ADDRESS OF UCB
+;
+APCHK:  CALL    $GTPKT                  ;GET AN I/O PACKET
+.IFF
+        BCS     RETURN                  ;RETURN IF NONE DEQUEUED
+.IFT
+        BCC     1$                      ;IF CC, WE HAVE SOMETHING
+        RETURN
+1$:
+.IFTF
+        MOV     (R5),R0                 ;DCB ADR
+        MOV     D.UCB(R0),CNTBL(R3)     ;ADR OF DMA UCB
+.IFT
+        MOV     S.CSR(R4),R3            ;CSR OF AP
+        MOVB    I.FCN+1(R1),R0          ;FUNCTION CODE
+        ASL     R0                      ;TABLE POINTER
+        JMP     @FNCTBL(R0)             ;GO TO IT
+FNCTBL: EXIT                            ;GET OUT
+        RUNDMA
+        EXIT
+        EXIT
+        EXIT
+        SUPER                           ;SUPERVISOR INIT
+        TERM                            ;TERMINATE SUPER
+;
+EXIT:   MOV     #IS.SUC,R0              ;FINISH THE
+        CLR     R1                      ;THE I/O OPERATION
+        CALL    $IODON                  ;I/O OPERATION
+        BR      APCHK
+.IFTF
+RUNDMA: MOV     S.CSR(R4),R3            ;AP CSR
+        .IF DF  M$$EXT&M$$MGE           ;IF 11/70 WITH EXTENDED ADDRESSING
+        CALL    $STMAP                  ;SET UP UMRS
+        CALL    $MPUBM                  ;AND LOAD THE UNIBUS MAP
+	.ENDC
+        MOV     U.BUF(R5),R0            ;POSITION HI 2 BITS OF ARRAY ADR
+        ASL     R0
+        ASL     R0
+        SWAB    R0
+        BIC     #37777,R0
+        MOV     RSTAP(R3),R1            ;SAVE PAGE REGS
+        BIC     #140000,R1
+        BIS     R0,R1                   ;SET HMA HIGH BITS
+        MOV     R1,LITES(R3)
+        MOV     U.BUF+2(R5),HMA(R3)     ;LOW 16 ADDRESS BITS TO HMA REG.
+        BIS     #HDMAST,CTRL(R3)        ;AWAY IT GOES !!!!!!!
+        BIS     #IHWC,CTRL(R3)          ;ENABLE THE DMA INTERRUPT
+RETURN: RETURN                          ;
+;
+;
+.IFT
+SUPER:  MOVB    S.CON(R4),R0            ;CONTROLLER INDEX
+        MOV     R5,SVUCB(R0)            ;SAVE SUPERVISOR UCB ADDR
+        MOV     I.PRM+6(R1),R2          ;SET SUPERVISOR MODE
+;
+        BEQ     S120M                   ;SET TO 120 MODE
+        MOV     R2,SUPVR(R0)            ;SET SUPERVISOR MODE
+        BR      APCHK                   ;LOCK IN TASK
+;
+S120M:
+        CLR     SUPVR(R0)               ;NON-SUPERVISOR MODE SET
+                                        ;IN CASE OF EXPLICIT QIO FN 0=0
+        BR      EXIT                    ;DONE
+;
+;
+TERM:
+        CLR     CTRL(R3)        ;DISABLE HALT AND CTL5 INTRPS
+        MOV     FN(R3),R2       ;FUNCTION REGISTER
+        BIC     #FNCLR,R2       ;MASK OFF READ ONLY BITS
+        BIS     #APHALT,R2      ;SET APHALT BIT
+        MOV     R2,FN(R3)       ;HALT AP
+;
+        MOV     #IS.SUC,R0      ;FINISH UP UCB
+        CLR     R1
+        CALL    $IODON
+        RETURN
+.IFTF
+;
+;
+;
+;&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+;INTERRUPT ENTRY POINT
+;&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+;
+;       R5 - UCB OF INTERRUPTING DEVICE
+;       R4 - CONTROLLER INDEX OF DEVICE
+;
+;       R4 & R5 ARE SAVED ON THE STACK BY INTSV$
+;
+$APINT::
+        INTSV$  AP,PR4,A$$P11          ;;;INTERRUPT SAVE MACRO CALL
+        MOV     U.DCB(R5),R4           ;;;DCB ADDRESS
+        MOV     D.UCBL(R4),UCBLEN      ;;SET UP UCB LENGTH FOR CNTL5 USE
+        MOV     U.SCB(R5),R4           ;;;SCB ADDRESS
+        MOVB    S.CON(R4),R4           ;;;CONTROLLER INDEX
+        MOV     R3,-(SP)                ;;;NEED R3
+        MOV     U.SCB(R5),R3            ;;;ADR OF SCB
+        MOV     S.CSR(R3),R3            ;;;BASE CSR OF DEVICE
+        BIT     #HDMAST,CTRL(R3)        ;;;DMA GOING ?
+        BNE     RUN                     ;;;IF NE, YES
+        BIT     #IHWC,CTRL(R3)          ;;;DMA ENABLE BIT SET ?
+        BEQ     RUN                     ;;;IF EQ, NO
+        BIC     #IHWC,CTRL(R3)          ;;;DISABLE DMA INTERRUPT
+        MOV     (SP)+,R3                ;;;RESTORE
+DONE:   CALL    $FORK                   ;;;
+        MOV     #IS.SUC,R0              ;SHOW SUCCESS
+        CALL    $IODON                  ;DECLARE SIGNIFICANT EVENT, ETC.
+        RETURN
+;
+;
+RUN:
+        MOV     R0,-(SP)                ;;;NEED R0
+        TST     FN(R3)                  ;;;AP RUNNING ?
+        BPL     CT5                     ;;;IF PL, YES
+        BIT     #IHALT,CTRL(R3)        ;;;RUN ENABLED ?
+        BEQ     CT5                     ;;;IF EQ, NO
+        BIC     #IHALT,CTRL(R3)        ;;;DISABLE RUN
+        MOV     #RUNEVF,R0              ;;;SET RUN EVF
+        BR      COMPLT                  ;;;FINISH IT
+CT5:    BIT     #ICTL05,CTRL(R3)        ;;;CTL5 ENABLED
+        BEQ     NOISE                   ;;;IF EQ, WE GOT NOISE
+.IFT
+        TST     SUPVR(R4)               ;;;SUPER-100 OR MINI-100 RUNNING?
+        BNE     CT5100                  ;;;IF NE, YES
+.IFTF
+        MOV     #CT5EVF,R0              ;;;SET CT5 EVF
+        CLR     FN(R3)                  ;;;CLR CTL5 FLIP-FLOP
+;
+COMPLT: MOV     U.ATT(R5),R5            ;;;TCB ADR
+        BEQ     NOISE                   ;;;IF EQ, TROUBLE !!!!!
+        MOV     R1,-(SP)
+        MOV     R2,-(SP)
+        CALL    $SETF                   ;;;SET THE EVF
+        MOV     (SP)+,R2
+        MOV     (SP)+,R1
+NOISE:  MOV     (SP)+,R0                ;;;RESTORE REGISTERS
+        MOV     (SP)+,R3
+        JMP     $INTXT                  ;;;BACK TO POINT OF INTERRUPT
+.IFT
+CT5100:
+        BIT     FN(R3),#20000           ;;;CHECK FOR NOISE
+        BEQ     NOISE
+        MOV     R1,-(SP)                ;;;SAVE R1
+        MOV     R2,-(SP)                ;;;SAVE R2
+        CLR     FN(R3)                  ;;;CLEAR CTL5 FLIP-FLOP
+        MOV     LITES(R3),R2
+        BEQ     CB5A                    ;;;IF EQ, APEX VALUE
+        MOV     R2,R1                   ;;;COPY OF LITES
+        BIC     #177770,R1              ;;;GET REG NO.
+        ASL     R1                      ;;;MAKE IT INDEX
+        ADD     #6,R1                   ;;;OFFSET INTO USER TABLE
+        CALL    PUTWRD                  ;;;TRANSFER IT TO USER
+        BR      CB5X                    ;;;FINISH IT UP
+CB5A:
+        MOV      #8.,R0           ;;;SET TIMEOUT COUNT
+CB5T:   BIT     FN(R3),#20000           ;;;TEST LITES ACKNOWLEGE
+        BNE     CB5F
+        SOB     R0,CB5T                 ;;;LOOP
+        BR      TIMEO
+CB5F:
+        MOV     LITES(R3),R2            ;;;FPLIT VALUE
+        MOV     #2,R1                   ;;;INDEX
+        CALL    PUTWRD                  ;;;TRANSFER TO USER
+CB5B:
+        BIT     FN(R3),#20000
+        BNE     CB5G
+        SOB     R0,CB5B
+TIMEO:
+        MOV     #-1,R2
+        MOV     #26,R1                  ;;;SET VPBAD OFFSET
+        CALL PUTWRD
+        BR      CB5X
+CB5G:
+        MOV     LITES(R3),R2            ;;;FPERF VALUE
+        MOV     #4,R1                   ;;;INDEX
+        CALL    PUTWRD                  ;;;TRANSFER TO USER
+        CLR     R2                      ;;;RUNFG VALUE
+        CLR     R1                      ;;;INDEX
+        CALL    PUTWRD                  ;;;TRANSFER IT
+CB5X:
+        MOV     (SP)+,R2                ;;;RESTORE
+        MOV     (SP)+,R1                ;;;
+        MOV     U.ATT(R5),R5        ;;;TCB ADDR
+        BR      NOISE                   ;;;FINISH IT
+;
+;  TRANSFER WORD TO USER SPACE
+;
+;       R1 - ARRAY INDEX
+;       R2 - VALUE
+;
+UCBLEN: .WORD 0
+;
+PUTWRD:
+        MOVB @#PS,-(SP)      ;DISABLE INTERRUPTS
+        MOVB #7*40,@#PS
+        MOV     R5,R0                   ;;;COPY DMA UCB ADDR
+        ADD     UCBLEN,R0               ;;;CTL5 UCB ADDR
+        ADD     U.BUF+2(R0),R1          ;;;REAL ADDR
+        ADD     #U.BUF,R0               ;;;RELOCATION BIAS
+        CMP     R1,#160000              ;;;BOUNDARY PROBLEMS ?
+        BLO     10$                     ;;;IF LO, NO
+        SUB     #20000,R1               ;;;REDUCE BY 4K
+        ADD     #200,@R0                ;;;ADJUST IT
+10$:    MOV     KISAR6,-(SP)            ;;;SAVE CURRENT MAPPING
+        MOV     @R0,KISAR6              ;;;MAP TO USER
+        MOV     R2,@R1                  ;;;VALUE TO USER
+        MOV     (SP)+,KISAR6            ;;;RESTORE MAPPING
+        MOVB  (SP)+,@#PS     ;INTERRUPTS ON
+        RETURN
+.ENDC
+        .END

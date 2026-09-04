@@ -1,0 +1,3703 @@
+
+
+1
+                   FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES
++                  _____________________________________________
+                                  Table of Contents
++                                 _________________
+       1  INTRODUCTION.......................................................1
+       2  DESCRIPTION OF DISTRIBUTION MATERIALS..............................3
+         2.1  The Tape.......................................................3
+         2.2  The Documentation..............................................3
+       3  SYSTEM INITIALIZATION..............................................4
+         3.1  System Setup...................................................4
+             3.1.1 Special System Configurations.............................4
+             3.1.2 Generating a Copy of the Customer's System Disk...........4
+             3.1.3 Stripping the System Disk to the Minimum..................5
+             3.1.4 Compress and Beautify the System Disk.....................7
+             3.1.5 Initialize the Work Disk..................................7
+             3.1.6 Verifying that there is Adequate Space....................8
+         3.2  Reading the Tape...............................................8
+       4  THE INSTALLATION PROCESS..........................................10
+         4.1 Introduction...................................................10
+             4.1.1  Command Files...........................................10
+             4.1.2 Structure of the Installation............................12
+             4.1.3 Error Recovery...........................................15
+             4.1.4 Site Dependencies........................................17
+         4.2  Patch Implementation..........................................18
+         4.3  Complete Installation.........................................19
+         4.4  Partial Installation..........................................20
+         4.5  Running APLIB Through the Library Editor......................21
+       5  FPS-100 SUPERVISORS...............................................23
+         5.1  Super-100 (MTS100) Configuring................................23
+         5.2  Mini-100  (RTS100) Configuring................................27
+       6  FINAL TESTING AND DEMONSTRATION...................................31
+         6.1 Diagnostics....................................................31
+         6.2  Global Testing................................................31
+             6.2.1  Program Development Software Tests......................31
+                   6.2.1.1  VFC100 > ASM100 > LOD100 > DBG100...............32
+                   6.2.1.2  ASM100 > LNK100 > SIM100........................35
+                   6.2.1.3  TEST DBG100 Y COMMAND...........................40
+             6.2.2  Super-100 (MTS100) tests................................41
+                   6.2.2.1  Host Interface Test  (MTS100)...................42
+                   6.2.2.2  Host Called Subroutines (HASI) test
++                                                               _
+                      (MTS100)..............................................44
+                   6.2.2.3  Real Time Clock Test  (MTS100)..................46
+             6.2.3  Mini-100 (RTS100) tests.................................48
+                   6.2.3.1  Basic Mechanism Test  (RTS100)..................49
+                   6.2.3.2  Host Communications Test  (RTS100)..............51
+                   6.2.3.3  HASI test  (RTS100).............................53
+1
+                   6.2.3.4 Real Time Clock Test  (RTS100)...................55
+         6.3  Clean Up The Disk.............................................57
+       7  MAGTAP............................................................58
+         7.1  INTRODUCTION..................................................58
+         7.2  COMMAND LINE MODE.............................................58
+         7.3  SEMI-AUTOMATIC MODE...........................................59
+         7.4  MANUAL MODE...................................................60
+       8  CUSTOMER USAGE....................................................62
+       9  COMMAND FILE LISTINGS.............................................63
+         9.1  First-Time Command File.......................................63
+         9.2  Master Command File...........................................67
+         9.3  Tape Read Command File........................................69
+         9.4  Driver Command File...........................................70
+         9.5  HSR Command File..............................................73
+         9.6  LIB100 Command File...........................................75
+         9.7  Apex Command File.............................................76
+         9.8  Utilities Command File........................................77
+         9.9  PDS Command File..............................................78
+         9.10  ASM100 Command File..........................................80
+         9.11  SIM100 Command File..........................................82
+         9.12  DBG100 Command File..........................................84
+         9.13  LNK100 Command File..........................................86
+         9.14  LOD100 Command File..........................................87
+         9.15  LED100 Command File..........................................89
+         9.16  VFC100 Command File..........................................90
+         9.17  Diagnostics Command File.....................................91
+         9.18  TST100 Command File..........................................93
+         9.19  PTH100 Command File..........................................94
+         9.20  ART100 Command File..........................................95
+         9.21  FFT100 Command File..........................................97
+         9.22  MEM100 Command File..........................................98
+         9.23  UFT100 Command File.........................................100
+         9.24  APLIB Command File..........................................102
+         9.25  PDS Tests Command File......................................104
+         9.26  Supervisors Command File....................................105
+         9.27  Cleanup Command File........................................106
+
+
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    1
+ 1  INTRODUCTION
++   ____________
+   This document describes the procedures for installation and testing of FPS100
+   software on a DEC PDP11 computer  running  under  RSX-11M  version  3.2  with
+   FORTRAN  version  2.2.   Instructions  are  included  for installation of all
+   software available under this FPS release.  Not all software  described  here
+   may  be  included  with  a  specific  customer package.  The software release
+   number corresponding  to  this  version  of  installation  instructions   and
+   software is 100B03DE043.2.
+                                     * * NOTE * *
+                      These instructions were produced  by  the
+                      RUNOFF  text processor.  Any changes   to
+                      this  document  should  be  made  to  the
+                      RUNOFF input file.
+      The RUNOFF input file is: FPS100>DE04>SUPPORT>INSTALL.RUNOFF
+      The RUNOFF output file is: FPS100>DE04>INSTALL>INSTALL
+      The command file to create the RUNOFF print file is:
+                                 FPS100>DE04>SUPPORT>INS.COM
+  Release B.3                       Page    1                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    2
+   LIST OF TARS THAT HAVE BEEN RESOLVED SINCE INITIAL RELEASE B.1
++  ______________________________________________________________
+   1846  (INSTALLATION INSTRUCTIONS) Add change to make a disk
+         private before initializing it.
+   1848  (FIRST.CMD) Change memory allocation for F4P compiler
+   1849  (FIRST.CMD) Change F4P compiler switch settings
+   1850  (DRV100.CMD) Change RSXMC.MAC UFD as per DEC change
+   1854  (FIRST.CMD) Change F4P compiler switch settings
+   2037  (FIRST.CMD) Correct F4P continuation line switch
+   2038  (FIRST.CMD) Remove F4P vectored array switch
+  Release B.3                       Page    2                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    3
+ 2  DESCRIPTION OF DISTRIBUTION MATERIALS
++   _____________________________________
+   2.1  The Tape.
++       _________
+     Software for the FPS100 is delivered on a 9-track tape, which contains  all
+     software  pertaining  to  it  that  is  supplied  by FPS.  The tape must be
+     written with Parity off (= 0) and the last  record  per  file  padded  with
+     blank lines.  Density may be either 800 or 1600 BPI.
+     The specific contents are listed in the  index  accompanying  the  magnetic
+     tape.   The  index  is shipped both on paper, and as files two and three on
+     the tape.  The "short" index lists the filenames as they appear in order on
+     the tape, and the "long" index gives  more  detailed  information  on  each
+     file.
+     The first file on the tape (file 0) is the MAGTAP utility program used  for
+     reading  the  tape.  This file is written with a blocking factor of one and
+     is read by the KEYTAP program which is entered, compiled,  task  built  and
+     run from the operator's console.  The remainder of the tape is written with
+     a  blocking factor that is specified on the tape label.  The second file is
+     the names files and contains the names of all the files  as  they  will  be
+     written  to  disk,  along  with  "pass numbers" to facilitate the automatic
+     installation.  This file is used by MAGTAP in reading the rest of the tape.
+   2.2  The Documentation.
++       __________________
+     The installation documentation package consists of:
+     a) These instructions.
+     b) The short index of the tape.
+     c) The long index of the tape.
+     d) A printout of the number of records and blocks for each file.
+  Release B.3                       Page    3                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    4
+ 3  SYSTEM INITIALIZATION
++   _____________________
+   3.1  System Setup.
++       _____________
+     The installer  must  be  able  to  use  a  privileged  terminal   for   the
+     installation.
+     3.1.1 Special System Configurations
+       Two RK05's - This installation procedure is  based  upon  the  assumption
+       that  the  equivalent  of  two RK05 disk drives are available.  One drive
+       should have the system disk with FORTRAN, System Libraries, Task Builder,
+       Librarian, Editor, and Utility routines.  The other drive  will  be  used
+       for the work disk.
+       Two RL01's -  Proceed  as  for  two  RK05's,  substitute  "DL"  for  "DK"
+       throughout.
+       Large Disks - Do "PIP /FR" to verify that there is indeed a large  amount
+       of  disk space available, then proceed to "Reading the Tape".  Use "DP0:"
+       or whatever for "DK0:"  and "DK1:"  throughout.
+       FORTRAN-IV-PLUS - Substitute "F4P" for "FOR" throughout these notes.
+     3.1.2 Generating a Copy of the Customer's System Disk
+       This is accomplished by mounting a system disk on drive 0 and  a  scratch
+       disk  which  will become the installation system disk on drive one.  Then
+       the following  procedure  will  copy  the  site  system   disk   to   the
+       installation system disk.
+            INS $BAD         ! May not be necessary.
+            SET /NOPUB=DK1:  ! May not be necessary.
+            ALL DK1:         ! May not be necessary.
+            BAD DK1:
+            BOO LB:[1,51]DSCS8
+            DK1:=DK0:
+            ** If that sequence gives error messages, try:
+            INS $BAD         ! May not be necessary.
+            SET /NOPUB=DK1:  ! May not be necessary.
+            ALL DK1:         ! May not be necessary.
+            BAD DK1:
+            ACS LB:/BLKS=0   ! May not be necessary.
+            INS $DSC         ! May not be necessary.
+  Release B.3                       Page    4                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    5
+            DMO LB:
+            DSC DK1:=LB:
+            ** If that did not succeed, get help from the customer.
+       **************************************************
+       * Remove the site system disk. Boot up the copy. *
+       **************************************************
+     3.1.3 Stripping the System Disk to the Minimum
+       Make yourself  completely  privileged,  unprotect  all  files,  and   get
+       everything down to one version apiece:
+            SET /UIC=[1,1]
+            INS $PIP         ! May not be necessary.
+            PIP [*,*]*.*;*/PR/SY:RWED
+            PIP [*,*]*.*/PU
+  Release B.3                       Page    5                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    6
+       Then type "PIP [*,*]*.*;*/SD".  The system will then ask, one-by-one  for
+       every  file  there is, whether that file should be deleted.  Type a Y for
+       any file that is not in the following list:
++                       ___
+       (xx means keep anything that looks like the rest of this name.)
+            [1,1] EXELIB.OLB
+            [1,1] EXEMC.MLB
+            [1,1] RSXMAC.SML
+            [1,1] SYSLIB.OLB
+            [1,2] QIOSYM.MSG
+            [1,2] STARTUP.CMD
+            [1,2] SYE.HLP
+            [1,51] DSCS8.STB
+            [1,51] DSCS8.SYS
+            [1,54] xxDRV.STB      ! Watch out
+            [1,54] xxDRV.TSK      ! for these!
+            [1,54] ACNT.TSK
+            [1,54] ACS.TSK
+            [1,54] BAD.TSK
+            [1,54] BIGMAC.TSK
+            [1,54] BIGTKB.TSK
+            [1,54] BOO.TSK
+            [1,54] BYE.TSK
+            [1,54] DMO.TSK
+            [1,54] EDI.TSK
+            [1,54] FCPxxx.TSK
+            [1,54] FOR.TSK
+            [1,54] F4P.TSK
+            [1,54] HEL.TSK
+            [1,54] IND.TSK
+            [1,54] INI.TSK
+            [1,54] INS.TSK
+            [1,54] LBR.TSK
+            [1,54] LDR.TSK
+            [1,54] LOA.TSK
+            [1,54] MAC.TSK
+            [1,54] MCR.TSK
+            [1,54] MOU.TSK
+            [1,54] PIP.TSK
+            [1,54] RSX11M.STB
+            [1,54] RSX11M.SYS
+            [1,54] SAV.TSK
+            [1,54] SHF.TSK
+            [1,54] SYS.TSK
+            [1,54] TKB.TSK
+            [1,54] TKN.TSK
+            [1,54] UNL.TSK
+            [200,200] RSXMC.MAC
+  Release B.3                       Page    6                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    7
+       If BIGTKB and BIGMAC were found, then type:
+            PIP [1,54]MAC.TSK;*/DE,TKB.TSK;*/DE
+     3.1.4 Compress and Beautify the System Disk
+       Mount a scratch disk in drive 0.  This will become the system disk:
+            INS $BAD         ! May not be necessary.
+            SET /NOPUB=DK0:  ! May not be necessary.
+            ALL DK0:         ! May not be necessary.
+            BAD DK0:
+            BOO LB:[1,51]DSCS8
+            DK0:=DK1:
+            ** If that sequence gives error messages, try:
+            INS $BAD         ! May not be necessary.
+            SET /NOPUB=DK0:  ! May not be necessary.
+            ALL DK0:         ! May not be necessary.
+            BAD DK0:
+            ACS LB:/BLKS=0  ! May not be necessary.
+            INS $DSC         ! May not be necessary.
+            DMO LB:
+            DSC DK0:=LB:
+            ** If that did not succeed, get help from the customer.
+       ******* Boot up the new copy (DK0:).  *******
+     3.1.5 Initialize the Work Disk
+       You are now running the new system copy on DK0.  DK1 has the older system
+       disk which we will use for work space.  Initialize it:
+            INS $INI           ! May not be necessary.
+            SET /NOPUB=DK1:   ! May not be necessary.
+            ALL DK1:          ! May not be necessary.
+            INI DK1:FPSWRK
+            MOU DK1:FPSWRK
+            INS $UFD           ! May not be necessary.
+            UFD DK1:[100,100]
+  Release B.3                       Page    7                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    8
+     3.1.6 Verifying that there is Adequate Space
+       Type "PIP /FR" to find out how much space is free  on  the  system  disk.
+       You can estimate how much will be needed from the following table:
+        LIB100.OLB          425  BLOCKS
+        MATHLIB.OLB(basic)  157  BLOCKS
+            AMLLIB           40  BLOCKS
+            IPRLIB           30  BLOCKS
+            SIGLIB           40  BLOCKS
+            TMRLIB            8  BLOCKS
+            PAGLIB           11  BLOCKS
+        APLIB.OLB(basic)    550  BLOCKS
+            AMLLIB          145  BLOCKS
+            IPRLIB          110  BLOCKS
+            SIGLIB          145  BLOCKS
+            TMRLIB           27  BLOCKS
+            PAGLIB           40  BLOCKS
+        Add 150 blocks for system work files.
+       At the most, 4800 blocks of work space (DK1:)  will also be required.
+   3.2  Reading the Tape.
++       _________________
+     A special FPS supplied tape reading routine must be used.  It is the  first
+     file on the tape, written with a blocking factor of 1.  The procedure shown
+     below  will retrieve this file from the tape and result in a program called
+     MAGTAP.
+       ASN DK1:=SY:
+       SET /UIC= [100,100] to work UIC
+       PIP KEYTAP.FTN=TI:
+       C    SIMPLE TAPE READER PROGRAM
+              BYTE BUF(80)
+              INTEGER IS(2),IP(6)
+              CALL ASSIGN(3,'MM0:',4)
+                      or                (depending on the tape device)
+              CALL ASSIGN(3,'MT0:',4)
+                      or
+              CALL ASSIGN(3,'MS0:',4)
+       C
+              CALL WTQIO("2500,3,,,,0)   (for 800BPI)
+                        or
+              CALL WTQIO("2500,3,,,,"4000)    (for 1600BPI)
+       C
+              CALL ASSIGN(2,'MAGTAP.FTN',10)
+              CALL GETADR(IP,BUF)
+              IP(2)=80
+       100    CALL WTQIO("1000,3,1,,IS,IP,ISW)
+              IF(ISW.NE.1)STOP 'QIO ERROR'
+  Release B.3                       Page    8                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page    9
+              IF(IS(1).EQ.246)CALL EXIT
+              IF(IS(1).NE.1)STOP 'TAPE ERROR'
+              WRITE(2,1)BUF
+       1      FORMAT(80A1)
+              GO TO 100
+              END
+       {ctrl-Z}
+     Mount the first FPS tape and run the KEYTAP routine as follows:
+      INS $FOR/INC=40000          ! May not be necessary.
+      INS $TKB  (or INS $BIGTKB)  ! May not be necessary.
+      FOR KEYTAP=KEYTAP
+      TKB KEYTAP=KEYTAP
+      LOA MM:    (or MT: or MS:)
+      RUN KEYTAP
+     Now compile and task build the MAGTAP program which was read from the tape.
+     Leave the MAGTAP task on either the system disk or the work  disk,  but  in
+     the  work  UIC that you intend to use.  Then install the program and run it
+     to get pass 7 (command files) from the tape, leaving  the  first  FPS  tape
+     mounted and ready:
+      FOR MAGTAP=MAGTAP
+      TKB MAGTAP/AL=MAGTAP
+      INS MAGTAP/TASK=...MAG
+      MAG MM0:(OR MT0:),07,N,d
+        d   = DENSITY **** 0=800BPI , 1=1600BPI
+     Caution:  Make sure MT:  (or MM:)  is loaded before running MAGTAP.  Notice
+     that DK1:  was assigned to SY:  at the beginning  of  this  section.   This
+     means  that the MAGTAP routine will put the command files on disk 1.  For a
+     detailed discussion of the MAGTAP program, see section VII.
+     When possible, command files should be run on a hard copy terminal.  If  on
+     a  soft  copy  terminal,  someone  should  watch for error messages.  It is
+     possible that an error could occur which would not stop  the  command  file
+     but would make the software incorrect.
+  Release B.3                       Page    9                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   10
+ 4  THE INSTALLATION PROCESS
++   ________________________
+   4.1 Introduction
+     4.1.1  Command Files
++           _____________
+       The RSX11M Indirect Command File processor is  used  extensively  in  the
+       installation  of FPS software.  Basically, this is a facility that allows
+       execution of command lines directly from a file.  The principal knowledge
+       required for using command files is how to  invoke  them;   the  rest  is
+       automatic  or  self-explanatory.   There  are 27 command files associated
+       with this installation.  The structure of the command files  is  detailed
+       in the next section.
+       Some additional knowledge may be helpful in running these command  files.
+       The way to invoke a command file and begin its execution is:
+           @FILENAME    (where FILENAME.CMD is the command file)
+       The .CMD extension is assumed by the processor so it is not required.
+       Typing a CTRL-Z will terminate a command file that is asking for terminal
+       input.  This will close all files and cause a clean exit.  Such an action
+       may be  used  if  you  notice  that  a  previous  question  was  answered
+       incorrectly.
+       Typing a CTRL-C will suspend a command file that  is  executing  and  not
+       asking  for  terminal input.  This stops execution and allows the user to
+       communicate with the MCR (Monitor Console Routine) in order  to  enter  a
+       system  command.   To  terminate  the command file, type the following in
+       response to the prompt "MCR>":
+           ABO AT.
+       which aborts the indirect command file  processor.   If  it  was  in  the
+       process  of  executing  an MCR command or program (such as MAC, PIP, TKB,
+       etc.), that program will continue to completion even though  the  command
+       file was stopped.  The program may be aborted by typing:
+           ABO MAC    (or whatever program is executing)
+       Realize that an abort of the command file will require some thought about
+       clean-up before starting over.  This depends on where the  abort  occurs.
+       In general, the installation procedure has a modular structure (described
+       in  the  next  section)  so  it  is  not difficult to recover.  It is not
+       usually necessary to start completely over.
+       Basically there are three types of questions that will be  asked  by  the
+       command files.  The first type is "Yes/No" where the answer is "Y" or "N"
+       (with "N" being the default on a carriage return).
+  Release B.3                       Page   10                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   11
+       The second type has a string response with  no  default.   This  question
+       displays  an  acceptable  range  for  the  number  of  characters  in the
+       response, e.g.:
+           GIVE FILE NAME  [S R:1-10]:
+       The range, enclosed in brackets, says that between 1  and  10  characters
+       will be accepted as an answer.
+       The third type is an integer value response  question  which  displays  a
+       number base indicator and default value, e.g.:
+           ENTER CSR LOCATION FOR APnn [O D:176000]:
+       This indicates octal base with a default of 176000.
+       Another command file technique used is the  "PAUSE".   This  is  used  to
+       allow  in-line  correction  of  detected  problems  that  may  be  easily
+       corrected in many cases.  If you forgot to include  a  required  utility,
+       the  command file will notify you of the problem and give you a chance to
+       correct it.  The message from the command file processor is:
+           AT.-- PAUSING. TO CONTINUE TYPE "RES ...AT."
+       which then accepts commands from the terminal.  When the required actions
+       have been performed, type
+           RES AT.
+       to continue the command file where it left off.  If the  required  action
+       cannot  be  performed  for  some  reason at that point, abort the command
+       processor by typing
+           ABO AT.
+       and then correct the problem.  In general, this condition will not  occur
+       if the System Setup was performed correctly.
+  Release B.3                       Page   11                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   12
+     4.1.2 Structure of the Installation
+       The installation command files are modularly structured so that  any  one
+       of  them  may  be  executed  separately.  This allows a number of partial
+       installation possibilities and error recovery options.
+       The command  files  are  listed  at  the  end   of   these   installation
+       instructions,  Section  IX.  Each command file has a header which defines
+       the requirements for using that command file.
+       A special command file called FIRST.CMD must be executed  before  any  of
+       the  others.   It  collects  the information needed for the other command
+       files and creates a parameter file called SETUP.CMD.
+       The command files are arranged in a three level structure:
+           master level
+           product level
+           program level
+       MASTER.CMD is  the  "master"  command  file  that  controls  a   complete
+       installation from start to finish.  Its sole function is to invoke all of
+       the other command files in succession.
+       The "product"  level  command  files  are  responsible  for  reading  the
+       distribution  tape,  installing  the products, and deleting source files.
+       They invoke the  lowest  level  "program"  command  files  to  build  the
+       software.   Therefore, the "product" command files may be used to install
+       software sub-groups such as PDS, LIB100, APLIB, MATHLIB, the  AP  Driver,
+       FPS100 Supervisors, or Diagnostics.
+       The "program" level command files are used to install  separate  programs
+       such  as ASM100, FFT100, etc.  They do not read the tape or delete source
+       files, and may be run separately to reinstall any programs that  did  not
+       install correctly or require unforseen modifications.
+  Release B.3                       Page   12                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   13
+       A table of the structure in execution order follows:
+       FIRST.CMD      Run only once to define parameters
+                      and create SETUP.CMD
+       MASTER.CMD     To install all of the software
+       TREAD.CMD      Tape reading command file which
+                      cannot be executed separately
+       Product Level    Program Level     Comments
+       -------------    -------------     --------
+       DRV100.CMD *     no subfiles       installs AP Driver
+       HSR100.CMD       no subfiles       installs HSR library (Math Lib)
+       LIB100.CMD       APX10.CMD         installs APX100 routines
+                        UTL10.CMD         installs Utility routines
+       PDS100.CMD *     ASM10.CMD         installs ASM100
+                        SIM10.CMD         installs SIM100
+                        DBG10.CMD         installs DBG100
+                        LNK10.CMD         installs LNK100
+                        LOD10.CMD         installs LOD100
+                        LED10.CMD         installs LED100
+                        VFC10.CMD         installs VFC100
+       DGN100.CMD *     TST10.CMD         installs TST100
+                        PTH10.CMD         installs PTH100
+                        ART10.CMD         installs ART100
+                        FFT10.CMD         installs FFT100
+                        MEM10.CMD         installs MEM100
+                        UFT10.CMD         installs UFT100
+       APL100.CMD *     no subfiles       installs APLIB (Math Lib)
+       PDSTST.CMD *     no subfiles       installs PDS Tests
+       SUP100.CMD *     no subfiles       installs Supervisors
+       CLEAN.CMD        no subfiles       cleans up disk
+        * Indicates tape reading is done in this command file.
+          To disable this when running partial installations, edit
+          the desired command file and locate the line containing
+          "@TREAD". Insert a semicolon ahead of this line, making it
+          read ";@TREAD", and the pass to be read from the tape will
+          be skipped when the command file is executed.
+       The order of doing partial installations is  crucial;   certain  previous
+       steps  must  be  completed  before  installing a particular portion.  The
+       requirements for running each command file are given  in  the  header  of
+       each file (see Section IX).
+  Release B.3                       Page   13                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   14
+       Notice in the above table that HSR100.CMD and LIB100.CMD do not read  the
+       tape.   Because  of  this,  the option to delete source files is given if
+       they are invoked directly (not by MASTER.CMD).  This is  helpful  if  you
+       have  difficulties  installing  these  portions  and  the process must be
+       repeated.  Driver sources are deleted at the very end by CLEAN.CMD.
+       Generally speaking, if the  sources  are  already  on  disk,  it  is  not
+       necessary  to read the tape.  The "program" level command files should be
+       used to save time if the files are already on disk.
+  Release B.3                       Page   14                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   15
+     4.1.3 Error Recovery
+       Referring to the previous section, one can easily tell where to resume if
+       an error occurs.   Also,  each  command  file  includes  a  header  which
+       specifies the requirements for executing it (listings are in Section IX).
+       Remember  that  the  required  previous  steps  must  be completed before
+       continuing from some point.
+       The first step in recovering from command file errors is to determine and
+       correct the cause of the error.  Possible causes of errors include:
+           I/O errors- Usually hardware.  Have the disk and tape drives checked.
+               The disk packs themselves may be faulty.
+           Workfile errors- Usually means the system disk is full.  Clean it  up
+               and make sure there is a comfortable margin of free space.
+           Files Deleted errors- Determine which files are missing  and  restore
+               them;  or be sure the files are in the correct UIC.
+           File Allocation errors- This applies to  a  wide  variety  of  RSX11M
+               error  messages,  but  usually  means  the  desired disk is full.
+               Clean up unnecessary files to create extra disk space.
+       The next step is to determine that all required files are present.  Refer
+       to the command file headers for the list of required files.  See  Section
+       VII.   on  MAGTAP  for  instructions  on  using  the  MAGTAP tape reading
+       program.
+       If errors occur in certain "program" sections when  doing  the  automatic
+       installation,  it  is  safe  to  allow the installation to complete.  The
+       "safe" sections are the PDS  and  Diagnostic  programs,  PDS  tests,  and
+       Supervisors.  After correcting the problem, run the command files for the
+       programs in error.
+       If an error occurs in a "product" level command file, the best course  of
+       action is to abort the command file, correct the problems, and proceed by
+       rerunning the product level command file again.  Continue from this point
+       by  running  the  remaining product level command files manually.  If the
+       command file processor aborts by itself, the same  course  of  action  is
+       applicable.   If  the  source  files are present, run the "program" level
+       command files to avoid reading  the  tape  again,  or  disable  the  tape
+       reading as described in the previous section.
+       It is not possible to resume  execution  from  the  Master  command  file
+       without  modifying  it  to  skip  the  already  finished  sections.  Such
+       modification is not recommended for the RSX11M amateur.
+  Release B.3                       Page   15                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   16
+       If you run the "program" level command files manually,  you  must  delete
+       source  file  as  you  proceed.   This  is required because disk space is
+       limited.  Map files created by the task builder (FILE.MAP) must  also  be
+       deleted.   These  maps  are  useful  for  debug purposes and are normally
+       deleted by the "product" level command file.
+  Release B.3                       Page   16                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   17
+     4.1.4 Site Dependencies
+       Probably by the time you are ready to run the command files you will know
+       what disks you are using, the kind of mag tape unit, etc.  But as an  aid
+       in  preparing  to do the installation, the following items of information
+       are required:
+       The mag tape handler mnemonic and unit number
+       (e.g. "MM:" and "MM0:").
+       The disk drive unit names for both the work disk and the system disk (may
+       be the same if using a big disk) (e.g.  "DK0:"  and "DK1:").
+       The FPS tape density and blocking factor.
+       Which products are to be installed.
+       Which vector and CSR location to use for the AP driver.  These  must  not
+       be  in  conflict  with  the user's devices and should be checked with the
+       site manager (170 and 176000 are recommended).
+       It is important to have  a  hard  copy  terminal  if  possible.   If  not
+       available,  a  CRT  terminal  must be monitored at all times since errors
+       affecting the integrity of the software could occur.
+       It is necessary to use a privileged terminal for this installation.   The
+       system console on a multi-user system may be used.
+       It is not necessary to inform the command files which utilities are being
+       used, but it must be specified during system setup whether  F4P  or  FOR,
+       MAC  or  BIGMAC, and TKB or BIGTKB will be used.  The unused and unwanted
+       compilers, assemblers, and utilities should be deleted  from  the  system
+       disk  to  prevent  accidental  and unexpected use.  The alternative is to
+       "install" only the desired utilities when starting the  system.   If  the
+       desired utility is the only one installed, that one will be used.  In the
+       case of F4P and FOR, errors will result if both are installed.
+  Release B.3                       Page   17                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   18
+   4.2  Patch Implementation
++       ____________________
+     The  file  PATCH.DAT  is read in along with the command files.  It contains
+     installation fixes to be applied directly to the software and documentation
+     of identified problems.  The fixes specified in  the  PATCH  file  must  be
+     applied prior to starting the command files.
+     The following procedure may be used:
+     1.  Using MAGTAP, manually read the files to be patched.
+     2.  Use the text editor to apply the changes.
+     3.  Delete the old versions of the files.
+     MAGTAP always creates version 1 files.  Regardless of what  is  present  on
+     the  disk, ASM100.FTN will always be read in as ASM100.FTN;1 (e.g.  version
+     1).  When the file is modified using  the  editor,  it  receives  a  higher
+     version  number.   When  the command file reads the tape, that file will be
+     version 1 always.  But the compilers and assemblers use the higher numbered
+     versions which are the patched files.  Furthermore, the command files  only
+     delete the version 1 files so the patched files are not lost.
+     Since disk space is critical, if numerous large files must  be  patched,  a
+     partial  (rather  than  complete) installation must be performed.  If it is
+     desired to save the patched sources, they should be transferred to  another
+     disk  before disk space on the work disk runs out.  If space is no problem,
+     the patched sources may be deleted after the tasks are all built.
+     Note that when patches are made,  and  the  command  files  try  to  delete
+     version  1  files  that have already been deleted, a PIP error message will
+     appear during command file execution.  This type of error  message  may  be
+     ignored, and does not affect the correctness of the installation.
+  Release B.3                       Page   18                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   19
+   4.3  Complete Installation
++       _____________________
+     To  initiate  the  automatic  installation,  the  following  steps  must be
+     performed:
+     The system must be booted and the  work  disk  mounted.   Set  the  UIC  to
+     [100,100], assign SY:  to the work disk (ASN dev:=SY:), and start the Setup
+     command file by typing:
+         @FIRST
+     The command file asks questions which must be answered in  accordance  with
+     this  particular  installation  (see  Site  Dependencies  in  the  previous
+     section).  When the Setup session is completed, the file SETUP.CMD will  be
+     present.   Do  not  delete  this file since it is used by the other command
+     files.
+     Start the automatic procedure by typing:
+         @MASTER
+     The command files will ask for the vector and CSR locations for use by  the
+     AP driver.  The installation then proceeds to completion.
+     The only operator intervention required is to mount tapes if  the  software
+     exists on multiple tapes.  The tape reading command files were specified in
+     the  earlier  section  "Structure of the Installation".  If a tape mount is
+     required, the MAGTAP program pauses while the tape is being  mounted.   The
+     option  to  terminate  should  be answered negatively and a carriage return
+     signals that the next tape is ready.  After the tape reading is  completed,
+     remount  the  first  FPS  tape  in  preparation  for  the next tape reading
+     operation.
+     If all the software installs correctly, proceed  to  Section  E.,  and  run
+     APLIB  through  LED100.   Then  proceed  to  the tests.  In case of errors,
+     consult the section on Error Recovery.
+     An automatic installation may be restarted from the beginning but you  must
+     first  delete  any extra files in order to provide the required disk space.
+     The automatic installation cannot be continued from a certain point without
+     modifying the MASTER.CMD file.  As previously mentioned, modifying  command
+     files is dangerous unless you are familiar with the RSX11M indirect command
+     file processor.
+  Release B.3                       Page   19                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   20
+   4.4  Partial Installation
++       ____________________
+     The  preliminary  steps  for  a  partial installation are the same as for a
+     complete automatic installation.  The file SETUP.CMD  must  be  created  as
+     described above.
+     A partial installation is invoked by typing:
+         @FILENAME
+     where FILENAME specifies a "product" or "program" level command file to  be
+     executed.   The  names  and software installed are specified in the section
+     "Structure of the Installation".  Partial installations must be done in the
+     order shown in the table since  subsequent  portions  use  the  results  of
+     earlier  portions.   For  example, LIB100 must be completed before building
+     any PDS or Diagnostic tasks.
+     The only other consideration is whether you need to  manually  read  source
+     files  from  the  tape and whether you need to delete them (and .MAP files)
+     after a section is completed.  If you are running from the "product" level,
+     the tape reading and disk clean-up is done automatically.  If running  from
+     the  "program"  level,  the  source files must be present when required and
+     files must be deleted to provide space on the disk.
+     The exceptions to this rule are HSR100.CMD and LIB100.CMD which do not read
+     from the tape.  They require Pass 1 files which are read during  DRV100.CMD
+     execution  (another  reason  why  the  order  of  execution  is important).
+     Because of this and the fact that partial installations  may  be  repeated,
+     the  option  to  delete  source  files  is  given at the end.  If a problem
+     occurred, answer "N" and try again after correcting the problem.
+     Multiple tapes require the same procedure as  described  for  the  complete
+     automatic installation.
+     When all the software has installed correctly, proceed to the next  section
+     and run APLIB through LED100.  Then go on to the tests.
+  Release B.3                       Page   20                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   21
+   4.5  Running APLIB Through the Library Editor
++       ________________________________________
+     Before  performing  this operation, make sure that enough disk space exists
+     on the  work  disk.    (Do   "PIP   /FR"   for   free   space,   and   "PIP
+     LB:[1,1]APLIB.*/LI" for the library size.)
+     If there is not enough, you will need to dismount the current work disk and
+     use a scratch disk, making sure that the LED100 task is  available  to  run
+     (transfer it to the system disk if there is room).  You will need 1.2*(size
+     of APLIB) blocks of free space on the work disk, and 0.2*(size of APLIB) on
+     the system disk.
+     The procedure is to have LED100 read APLIB from the system disk  and  write
+     the  edited  APLIB  to the work disk.  Then tell PIP to copy it back to the
+     system disk, superseding the original version:
+          *** If you have enough space:
+          SET /UIC=[1,1]
+          ASN dev0:=LB:         (where dev0: is the system disk)
+          ASN dev1:=SY:         (where dev1: is the work disk)
+          INS $UFD           ! May not be necessary.
+          UFD SY:[1,1]       ! May not be necessary.
+          RUN [100,100]LED100
+          (input file)  LB:APLIB.LIB
+          (output file)  SY:APLIB.TMP
+          ...........come back later
+          PIP LB:APLIB.LIB;*/DE
+          PIP LB:APLIB.LIB=APLIB.TMP
+          PIP APLIB.TMP;*/DE
+          *** If you need to use a new work disk:
+          SET /UIC=[1,1]
+          ASN dev0:=LB:         (where dev0: is the system disk)
+          ASN dev1:=SY:         (where dev1: is the work disk)
+          PIP LB:=[100,100]LED100.TSK    (Pray.)
+          DMO SY:
+          .............(put in the new work disk)
+          INS $BAD           ! May not be necessary.
+          SET /NOPUB=SY:     ! May not be necessary.
+          ALL SY:                ! May not be necessary.
+          BAD SY:            ! (Be sure it's OK to kill this disk!!)
+          INS $INI           ! May not be necessary.
+          INI SY:LEDWRK
+          INS $MOU           ! May not be necessary.
+  Release B.3                       Page   21                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   22
+          MOU SY:LEDWRK
+          INS $UFD           ! May not be necessary.
+          UFD SY:[1,1]
+          RUN LB:LED100
+          (input file)  LB:APLIB.LIB
+          (output file)  SY:APLIB.TMP
+          ...........come back later
+          PIP LB:LED100.TSK;*/DE
+          PIP LB:APLIB.LIB;*/DE
+          PIP LB:APLIB.LIB=APLIB.TMP
+          DMO SY:
+          ...............(mount up original work disk)
+          MOU SY:FPSWRK
+     When this has been successfully completed, proceed to the global tests.
+  Release B.3                       Page   22                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   23
+ 5  FPS-100 SUPERVISORS.
++   ____________________
+   5.1  Super-100 (MTS100) Configuring
++       ______________________________
+     Note to installer:
+     This section may be skipped  unless  the  customer  wishes  to  change  the
+     "configuration" as described below.
+     The following files  are  related  to  the  MTS100  supervisor.   The  disk
+     containing those files should be mounted in a work drive.
+     Assign disk names:
+           ASN DK0:=LB:     (Assuming two RK05 drives)
+           ASN DK1:=SY:
+     source files  insert files   object files   command files
+     ------------  ------------   ------------   -------------
+     BOOTSP.S      COMSYS.DAT     BOOTSP.B       LODSYS.INP
+     TABLES.S      CNFGCM.DAT     TABLES.B
+     SYSSVC.S      SYSDEF.DAT     SYSSVC.B
+     HSVC.S        FHOSTC.DAT     HSVC.B
+     ENABLE.S                     ENABLE.B
+     KERNEL.S                     KERNEL.B
+     RTC.S                        RTC.B
+     HIRP.S                       HIRP.B
+     NORTC.S                      NORTC.B
+     FUNC.S                       FUNC.B
+     UPEX.S                       UPEX.B
+     The "source" files and "insert" files are  normally  not  required  by  the
+     user.  They are used only if the user wishes to change the configuration as
+     described below.
+     The "object" files and "command" files must be located  on  the  SY:   disk
+     when the customer runs LOD100 to create a Supervisor load module.
+     The command file LODSYS.INP is used by LOD100 to automate the creation of a
+     Super-100 load module.  The user builds a load module for each application.
+     The load module contains both the User tasks and  the  Super-100  routines.
+     The  Super-100  routines are provided in object form for use by LOD100;  it
+     is not necessary to assemble  the  source  files  if  the  standard  system
+     defaults  are  used.   The insert files are used when assembling the source
+     code.
+     The TABLES file contains the  two  "block  data"  equivalents,  SYSCOM  and
+     CONFIG, referred to below.
+  Release B.3                       Page   23                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   24
+     The SYSGEN procedure consists of checking and possibly modifying two system
+     data areas, namely the commons SYSCOM and CONFIG.
+     SYSCOM defines the size of the system save area.  This area should be large
+     enough to handle interrupts from all possible sources.  These include:
+             3 internal synchonous
+             1 spurious
+             2 host
+             1 RTC
+             1 spurious I/O
++           ___
+             8    plus 1 or 2 for each I/O device
+                          (e.g. 2 for IOP, 1 for GPIOP)
+     The system is delivered with a default of 10  interrupt  save  blocks.   If
+     this  is  not  large enough, then the file COMSYS.DAT should be modified as
+     follows:  (for 'n' possible interrupt sources)
+             Change the line
+                     SYSIZE = MNSIZE * 10.
+             to
+                     SYSIZE = MNSIZE * n.
+     Then reassemble all files using COMSYS as a $INSERT file.
+     CONFIG is the configuration table for  I/O  devices.   Each  I/O  interrupt
+     corresponds  to  a  5-word entry in this table.  The user sets the relative
+     priority of each device by setting the priority mask (first word)  of  each
+     entry.   A  bit on means that interrupts from the corresponding device will
+     be disabled during the interrupt servicing of  the  device  whose  priority
+     mask it is.
+     Examples:
+         A device with the highest priority  should  have  all  bits  set,  i.e.
+         priority mask = 177777 (octal).  This will mask out interrupts from all
+         other devices while this device is being serviced.
+         A device with the lowest priority should have only  its  own  bit  set.
+         E.g.   the  device  corresponding to IMASK bit 1 should have a priority
+         mask of 040000 (octal).
+         If the device corresponding to bit 1  of  IMASK  is  supposed  to  have
+         higher priority than only the device corresponding to IMASK bit 2, then
+         DEV1's priority mask = 060000 (octal) and DEV2's priority mask = 020000
+         (octal).
+     The system is delivered with the minimum mask for each device,  i.e.   only
+     its  own  bit  set.  If the user wishes to change it, the CONFIG portion of
+     the TABLES.S file must be reassembled.
+  Release B.3                       Page   24                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   25
+     Other than the above procedures, the system is "generated"  with  each  new
+     load  module.   A command file (LODSYS.INP) is provided as input to LOD100,
+     in order to load the supervisor kernel and service routines.   The  command
+     file ends leaving the loader ready to receive ISR's and tasks.
+     The following shows the contents (plus explanations) of LODSYS.INP:
+     PS 7740            set initial PS address near top of 4K PS memory
+     LOAD BOOTSP.B      load system initializer
+     PS 0               set base PS address to 0
+     MD 0               set base MD address to 0
+     LOAD TABLES.B      load SYSCOM and CONFIG
+     LOAD SYSSVC.B      load system services
+     LOAD HSVC.B        load host communication routines
+     LOAD ENABLE.B      load I/O device interrupt enable routine
+     MARK               make all of the above stay in loader's tables
+     LOAD KERNEL.B      load supervisor kernel
+     LOAD RTC.B         load real time clock routines
+     LINK               link all of the above
+     MAP 0 SYSMAP       output load map to file "SYSMAP"
+     MODE TASK          change loader mode to accept ISR's and tasks
+     The user should invoke this file immediately following the OUT command in a
+     LOD100 session, which should be the first command  to  the  loader.   After
+     LODSYS.INP  terminates,  he  may  load the appropriate ISR's and his tasks.
+     (He may want to make his own command file for that.)
+     Some examples of creating Super-100 load modules can be found in the  FINAL
+     TESTING  section  of  this document.  The following is an example of a load
+     session in which the host ISR and one task is loaded.
+     Example only;  it is not intended to actually run.
+     R LOD100
+     OUT hasifile lmfile /D       set up output files
+     INPUT LODSYS.INP             get commands from LODSYS.INP
+     LOAD HIRP.B                  load host ISR
+     LINK                         link
+     MAP 0 HIRP.MAP               send map to file "HIRP.MAP"
+     TREE ((1))                   set up task overlay structure
+     OV 1                         (same) (see loader manual)
+     LOAD TASK1.B                 load task
+     LINK                         link
+     MAP 0 TASK1.MAP              send map to file "TASK1.MAP"
+     EXIT                         exit from load session
+     If the host machine has the facility to record  terminal  I/O  (similar  to
+     Prime COMO files), then the user is advised to use it to document each load
+     session.   He  can then replace all the "MAP 0 filename" commands with just
+     "MAP", which will print a load map at the terminal (and  therefore  in  the
+     record file), instead of having several map files.
+  Release B.3                       Page   25                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   26
+     Note on Real Time Clock routines:
+     For those users who need as much user PS space as they can get and  who  do
+     not  require  software  support  of the real time clock as a system service
+     (i.e.  don't use the timed-wait SVC's), the LODSYS.INP command file may  be
+     altered as follows:
+        Change        L RTC.B
+        to            L NORTC.B
+     This will load null routines to satisfy entry points, and will  reduce  the
+     amount of PS space the system uses by about 190 words.
+  Release B.3                       Page   26                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   27
+   5.2  Mini-100 (RTS100) Configuring
++       _____________________________
+     Note to installer:
+     This section may be skipped  unless  the  customer  wishes  to  change  the
+     "configuration" as described below.
+     The following files  are  related  to  the  RTS100  supervisor.   The  disk
+     containing those files should be mounted in a work drive.
+     Assign disk names:
+           ASN DK0:=LB:    (Assuming two RK05 drives)
+           ASN DK1:=SY:
+     source files  insert files   object files   command files
+     ------------  ------------   ------------   -------------
+     BOOTMN.S      MINCOM.DAT     BOOTMN.B       LODMIN.INP
+     MINI.S        MINDEF.DAT     MINI.B
+     HSVCM.S                      HSVCM.B
+     HIRPM.S                      HIRPM.B
+     UPEXM.S                      UPEXM.B
+     RTCISR.S                     RTCISR.B
+     RTCREQ.S                     RTCREQ.B
+     IOQUE.S                      IOQUE.B
+     The "source" files and "insert" files are  normally  not  required  by  the
+     user.  They are used only if the user wishes to change the configuration as
+     described below.
+     The "object" files and "command" files must be located  on  the  SY:   disk
+     when  the  customer  runs LOD100 to create a Supervisor Load module.  These
+     files are on the "Source Disk 3", where they were read from the tape.
+     The command file LODMIN.INP is used by LOD100 to automate the creation of a
+     Mini-100 load module.  The user builds a load module for each  application.
+     The  load  module  contains  both  the  User's  routines  and  the Mini-100
+     routines.  The Mini-100 routines are provided in object  form  for  use  by
+     LOD100;   it  is not necessary to assemble the source files if the standard
+     system defaults are used.  The insert files are used  when  assembling  the
+     source code.
+     The MINI file contains the two "block data" equivalents, SYSCOM and CONFIG,
+     referred to below.
+     The SYSGEN procedure consists of checking and possibly modifying two system
+     data areas, namely the commons SYSCOM and CONFIG.
+  Release B.3                       Page   27                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   28
+     SYSCOM defines the size of the system save area.  This area should be large
+     enough to handle interrupts from all possible sources.  These include:
+             3 internal synchonous
+             1 spurious
+             2 host
+             1 RTC
+             1 spurious I/O
++           ___
+             8    plus 1 or 2 for each I/O device
+                          (e.g. 2 for IOP, 1 for GPIOP)
+     The system is delivered with a default of 10  interrupt  save  blocks.   If
+     this  is  not  large enough, then the file MINCOM.DAT should be modified as
+     follows:  (for 'n' possible interrupt sources)
+             Change the line
+                     SYSIZE = MNSIZE * 10.
+             to
+                     SYSIZE = MNSIZE * n.
+     Then reassemble all files  using  MINCOM  as  a  $INSERT  file.   (See  the
+     LODMIN.INP command file for a list of files to reassemble.)
+     CONFIG is the configuration table for  I/O  devices.   Each  I/O  interrupt
+     corresponds  to  a  5-word entry in this table.  The user sets the relative
+     priority of each device by setting the priority mask (first word)  of  each
+     entry.   A  bit on means that interrupts from the corresponding device will
+     be disabled during the interrupt servicing of  the  device  whose  priority
+     mask it is.
+     Examples:
+         A device with the highest priority  should  have  all  bits  set,  i.e.
+         priority mask = 177777 (octal).  This will mask out interrupts from all
+         other devices while this device is being serviced.
+         A device with the lowest priority should have only  its  own  bit  set.
+         E.g.   the  device  corresponding to IMASK bit 1 should have a priority
+         mask of 040000 (octal).
+         If the device corresponding to bit 1  of  IMASK  is  supposed  to  have
+         higher priority than only the device corresponding to IMASK bit 2, then
+         DEV1's priority mask = 060000 (octal) and DEV2's priority mask = 020000
+         (octal).
+     The system is delivered with the minimum mask for each device,  i.e.   only
+     its  own  bit  set.  If the user wishes to change it, the CONFIG portion of
+     the MINI.S file must be reassembled.
+  Release B.3                       Page   28                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   29
+     Other than the above procedures, the system is "generated"  with  each  new
+     load  module.   A command file (LODMIN.INP) is provided as input to LOD100,
+     in order to load the supervisor kernel and service routines.   The  command
+     file  ends leaving the loader ready to receive ISR's and the UPEX task with
+     user routines.
+     The following shows the contents (plus explanations) of LODMIN.INP:
+     MD 0               set base MD address to 0
+     PS 1740            set initial PS address near top of 1K PS memory
+     LOAD BOOTMN.B      load system initializer
+     PS 0               set base PS address to 0
+     LOAD MINI.B        load supervisor kernel
+     LOAD HSVCM.B       load host communication routines
+     MARK               make all of the above stay in loader's tables
+     LINK               link all of the above
+     MAP 0 MINMAP       output load map to file "MINMAP"
+     MODE TASK          change loader mode to accept ISR's and tasks
+     The user should invoke this file immediately following the OUT command in a
+     LOD100 session, which should be the first command  to  the  loader.   After
+     LODMIN.INP  terminates, he may load the appropriate ISR's and his routines.
+     (He may want to make his own command file for that.)
+     Some examples of creating Mini-100 load modules can be found in  the  FINAL
+     TESTING  section  of  this document.  The following is an example of a load
+     session in which the host ISR and one user routine is loaded.
+     Example only;  it is not intended to actually run.
+     R LOD100
+     OUT hasifile lmfile /D       set up output files
+     INPUT LODMIN.INP             get commands from LODMIN.INP
+     LOAD HIRPM.B                 load host ISR
+     LINK                         link
+     MAP 0 HIRPM.MAP              send map to file "HIRPM.MAP"
+     TREE ((1))                   set up task overlay structure
+     OV 1                         (same) (see loader manual)
+     LOAD UPEXM.B                 load the single task
+     CALL SUBR1 /                 make HASI for SUBR1
+     LOAD SUBR1.B                 load user routine
+     LINK                         link
+     MAP 0 SUBR1.MAP              send map to file "SUBR1.MAP"
+     EXIT                         exit from load session
+     If the host machine has the facility to record  terminal  I/O  (similar  to
+     Prime COMO files), then the user is advised to use it to document each load
+     session.   He  can then replace all the "MAP 0 filename" commands with just
+     "MAP", which will print a load map at the terminal (and  therefore  in  the
+     record file), instead of having several map files.
+  Release B.3                       Page   29                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   30
+     Note on Real Time Clock support:
+     For those users who habitually will use the Real Time Clock as an available
+     device, the LODMIN.INP command file should be altered  to  include  loading
+     the  files  RTCREQ.B  and IOQUE.B with the rest of the permanently resident
+     kernel, and the clock's ISR (RTCISR.B) should be loaded with  other  ISR's.
+     If MINCOM was altered as explained for the SYSGEN, then  the  source  files
+     RTCREQ.S, IOQUE.S, and RTCISR.S should also be re-assembled.
+     For a sample load session, see the command file for the Mini-100 Supervisor
+     Test 5:  MAKE5.INP .
+  Release B.3                       Page   30                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   31
+ 6  FINAL TESTING AND DEMONSTRATION
++   _______________________________
+   6.1 Diagnostics.
+     (To be supplied)
+   6.2  Global Testing.
++       _______________
+     6.2.1  Program Development Software Tests.
++           ___________________________________
+       There are six files on the tape  involved  with  global  testing  of  the
+       software.  These files are:
+       GLBTST.FTN - FORTRAN mainline for the tests.
+       PDSTST.VFC - VFC subroutine for the tests.
+       SEQV1.S    - Assembler source for one of the tests.
+       SEQV1.DAT  - Insert file for SEQV1.S.
+       SEQV2.S    - Assembler source for one of the tests.
+       LODTST.DAT - Command file for LOD100.
+       The purpose of these tests is to verify that the software  products  have
+       been  interfaced  properly  to the system and to each other.  These tests
+       will check a typical path through the software products in a  manner  not
+       unlike the way a user would develop his application.
+  Release B.3                       Page   31                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   32
+       6.2.1.1  VFC100 > ASM100 > LOD100 > DBG100
++               _________________________________
+         This test creates a program which will be  run  in  the  FPS-100.   The
+         program  creates  a  vector  of  integers  from 1 to 32 and a vector of
+         floating point values from 2.0 to 64.0  with  a  step  of  2.0  between
+         elements.
+         This test will produce some object code that  will  be  used  in  later
+         tests.   The  following test will check the VFC100, ASM100, LOD100, and
+         DBG100 interfaces to see if a program can be built and  executed.   You
+         will need the Math Library LB:APLIB.LIB to run this test.
+         First build PDSTST.B.
+         RUN VFC100
+         (source file =)  PDSTST.VFC
+         (object file =)  PDSTST.S
+         Now you must assemble PDSTST.S to get PDSTST.B.
+         RUN ASM100
+         (source file =)  PDSTST.S
+         (object file =)  PDSTST.B
+         (listing file =) PDSTST.LST
+         (listing y/n)    Y
+         (listing radix)  8
+         You also need to create SEQV1.B.  To do this run ASM100.
+         RUN ASM100
+         (source file =)  SEQV1.S
+         (object file =)  SEQV1.B
+         (listing file =) SEQV1.LST
+         (listing y/n)    Y
+         (listing radix)  8
+         Be sure to print a copy of PDSTST.LST for use later in this test.   Now
+         that   you  have  created  SEQV1.B  and  PDSTST.B  you  can  create   a
+         load-module.  To build a load-module, run LOD100.
+         RUN LOD100
+         *  OUT PDSTST.FTN LOADM.LM /D
+         *  INPUT LODTST.DAT
+             The following commands are in the command file LODTST.DAT.
+               MDOFF 100             Set MD offset to 100 octal.
+               CALL PDSTST           Generate a HASI called PDSTST.
+               LOAD PDSTST.B         Load VFC part
+               LOAD SEQV1.B          Load ASM100 subroutine part.
+               LIB LB:[1,1]APLIB.LIB  Load Math Libraries.
+               LINK                  Link modules.
+               MAP 0 SY:MAP1.MAP     Save octal map as MAP1.MAP
+               R 10                  Change to radix ten.
+  Release B.3                       Page   32                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   33
+               MAP 0 MAP2.MAP        Save decimal map as MAP2.MAP.
+         *  EXIT
+         Print the MAP files if desired.  You can now take your load-module  and
+         run  it  in  DBG100.   The  purpose  of this DBG100 test is to see if a
+         LOD100 load-module can be loaded into the AP and then  run.   The  test
+         starts out by loading the load-module created above.
+         A command sequence  for  DBG100  is  given  below  with  various  steps
+         explained in the following text.
+             RUN DBG100
+             1
+             I             initialize the machine
+             Z MD 0 2000   zero out MD for the test
+             E TM 4001     For 2.5K ROM = 1.0, 4.5K ROM = 0.7068355605
+             E TM 10001    For 2.5K ROM = 0.0, 4.5K ROM = 1.0
+             G LOADM.LM
+             E PS 25        compare to PDSTST.LST address 5
+             E MD 100      value should be 1.00
+             +           value should be 2.00
+             +        value is a triple, see below
+             F 0           change display format
+             .            value should be 001 001 001
+             E SP 0        change SPAD values
+             C 200
+             +
+             C 300
+             +
+             C 400
+             O 20          set PS offset
+             N 16          change radix
+             B PS 40       set breakpoint
+             R 4           run PDSTST
+             N 8            octal radix
+             E MD 103      value should be integer 2
+             +           value should be integer 3
+             O 0          set PS offset to zero
+             F 0                      prepare for write
+             N 10
+             W PS 20 33 DXXPS         dump PS to file
+             W MD 64 72 DXXMD       dump MD to file
+             Y PS 220 DXXPS           load PS
+             Y MD 564 DXXMD           load MD
+             E PS 220                 compare to PS 20
+             E PS 20
+             E MD 564                 compare to MD 64
+             E MD 64
+             F 1                      floating pt. format
+             E MD 100
+             C 2.5                  set MD values
+             +
+             C -.0001
+  Release B.3                       Page   33                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   34
+             W MD 100 101 DXXFL       dump in decimal
+             Y MD 600 DXXFL           load MD
+             E MD 601                 compare to MD 101
+             E MD 101
+             X
+         Explanation:
+         The G command places the load-module in the  FPS100.   Location  PS  25
+         should  have  the  same  value  as  location  5  in the printed copy of
+         PDSTST.LST.  Additional PS locations may be compared if desired.
+         MD location 100 (octal) should have a value close to  1.00.   The  next
+         location  should have a value close to 2.00.  The value in location 102
+         (octal) of MD is a triple.  The F 0 command changes the display format.
+         Now the value should be 001 001 001.
+         The series of commands starting at E SP 0 will set the values 200, 300,
+         and 400 in S-pads 0, 1, and 2.  These values are used  in  the  program
+         execution following.
+         The program is executed by setting the PS offset to  20  (octal)  using
+         the O 20 command.  Then N 16 changes the radix to Hex.  A breakpoint is
+         placed in PS at 40 Hex and the program is started by the R command.
+         When PDSTST halts,  (hits  breakpoint),  it  should  have  generated  a
+         vector.   At  location  103  (octal),  of  MD, the vector will have the
+         integers 1 through 32 in ascending order.
+         The series of commands including W and Y are designed to test the  file
+         writing and yanking mechanism.
+         This is the end of the VFC100>ASM100>LOD100>DGB100 global test.
+  Release B.3                       Page   34                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   35
+       6.2.1.2  ASM100 > LNK100 > SIM100
++               ________________________
+         This test creates a program which  can  be  executed  in  SIM100.   The
+         program generates a vector of integer values from 1 to 32.
+         This test will check the ASM100, LNK100, and SIM100 interfaces  to  see
+         if a program can be built and executed.
+         First build SEQV2.B.  To do this, run ASM100.
+         RUN ASM100
+         (source file =)  SEQV2.S
+         (object file =)  SEQV2.B
+         (listing file =) SEQV2.LST
+         (listing y/n)    Y
+         (listing radix)  8
+         Print a copy of SEQV2.LST for later use.  Now take SEQV2.B and create a
+         linked file called SEQV2.DAT.  The * indicates the prompt displayed  by
+         LNK100 or SIM100.
+           RUN LNK100
+           *
+             L             load SEQV2.B.
+             SEQV2.B
+           *
+             S             write symbol table.
+             LNKMAP.MAP
+           *
+             M             display memory used.
+           *
+             E             output link file.
+             SEQV2
+           *
+             X             done.
+         Now take SEQV2.DAT and test it in SIM100.  The purpose of this test  is
+         to  determine  if  the  routine created in ASM100 can be run in SIM100.
+         The test begins loading the linked file, SEQV2.DAT, into SIM100.
+         A command sequence  for  SIM100  is  given  below  with  various  steps
+         explained in the following text.
+         RUN SIM100
+          *
+            Z
+          *
+            E
+            TM
+            4001          For 2.5K ROM = 1.0, 4.5K ROM = 0.0
+          *
+  Release B.3                       Page   35                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   36
+            E
+            TM
+            10001         For 2.5K ROM = 0.0, 4.5K ROM = 1.0
+          *
+            Y             load SEQV2.
+            PS
+            0
+            SEQV2
+          *
+            E             verify loaded file.
+            PS
+            0          compare to SEQV2.LST
+          *
+            B             set breakpoint.
+            PS
+            5
+          *
+            R             run SEQV2.
+            0
+          *
+            F             change display format.
+            0
+          *
+            E             check vector values.
+            MD
+            0           value should be integer 1
+          *
+            +           value should be integer 2
+          *
+            N           Set radix for decimal output
+            10
+          *
+            W           display a vector
+            MD
+            0
+            31
+            LP:          (or TI: if LP: not defined)
+          *
+            N           octal radix
+            8
+          *
+            G             bring in the load module
+            SY:LOADM.LM
+          *
+            E             check if loaded correctly
+            PS
+            25         compare to PDSTST.LST address 5
+          *
+            F
+            1
+          *
+            E
+            MD
+  Release B.3                       Page   36                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   37
+            77
+          *
+            C                       set MD value
+            -.0023
+          *
+            E
+            MD
+            100           value should be 1.00
+          *
+            +             value should be 2.00
+          *
+            +             this will give "Out of Range" comment
+          *
+            F             change display format to display triple
+            0
+          *
+            .             value should be 001 001 001
+          *
+            N
+            10
+          *
+            W          dump PS to file
+            PS
+            20
+            30
+            SXXPS
+          *
+            W          dump MD to file
+            MD
+            63
+            70
+            SXXMD
+          *
+            Y          load PS
+            PS
+            40
+            SXXPS
+          *
+            Y          load MD
+            MD
+            163
+            SXXMD
+          *
+             E         compare to PS 47
+             PS
+             27
+          *
+             E         compare to PS 27
+             PS
+             47
+          *
+             E         compare to MD 163
+             MD
+  Release B.3                       Page   37                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   38
+             63
+          *
+             E
+             MD        compare to MD 63
+             163
+          *
+             F         floating pt. format
+             1
+          *
+             N
+             10
+          *
+             E
+             MD
+             100
+          *
+             C                      set MD values
+             2.33
+          *
+             +
+          *
+             C
+             -111.7
+          *
+             W         dump in decimal
+             MD
+             100
+             101
+             SXXFL
+          *
+             Y         load MD
+             MD
+             150
+             SXXFL
+          *
+             E         compare to MD 101
+             MD
+             151
+          *
+             E         compare to MD 151
+             MD
+             101
+          *
+            X             done.
+         Explanation:
+         After loading the program, the examine function verifies that the  file
+         was  loaded  correctly.   Examine  PS location 0.  This should have the
+         same value in it as location 0 in SEQV2.LST.
+  Release B.3                       Page   38                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   39
+         The next part of the test sets a breakpoint in PS memory at location 5.
+         The R command starts the program running at 0 and it runs until address
+         5 is reached.  When SEQV2 halts,  (hits  breakpoint),  it  should  have
+         generated  a  vector  at  location  0 in MD.  This vector will have the
+         integer values 1 through 32 in ascending order.  The F command  changes
+         the display format for integers and the E command displays the value at
+         MD 0 which should be 1.  The next value should be 2.
+         The W command prints a sequence of values  on  the  line  printer.   If
+         there  is  no printer, use TI:  for output to the terminal.  The values
+         should be integers in ascending order from 1 to 32.
+         The G command loads the previously created load module that was created
+         by LOD100.  PS location 25 should have the same value as location 5  in
+         the printout of PDSTST.LST.  Additional PS locations can be compared to
+         verify the correct contents.  MD location 100 should have a value close
+         to  1.00  while  location  101 has about 2.00.  Location 102 contains a
+         triple with the value 001 001 001.
+         The series of commands including W and Y are designed to test the  file
+         writing and yanking mechanism.
+         This is the end of the ASM100>LNK100>SIM100 global test.
+  Release B.3                       Page   39                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   40
+       6.2.1.3  TEST DBG100 Y COMMAND
++               _____________________
+         This test verifies that DBG100 can read output  from  LNK100.   Execute
+         the following sequence.
+         RUN DBG100
+         1
+         Y PS 0 SEQV2
+         E PS 0
+         W PS 0 10 LP:      (or TI: if LP: not defined)
+         X
+         The printed values should agree with the values in SEQV2.LST which  was
+         printed earlier.
+  Release B.3                       Page   40                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   41
+     6.2.2  Super-100 (MTS100) tests.
++           _________________________
+       Three Tests are provided for Super-100:
+           Host Interface Test
+           Host Called Subroutines (HASI) Test
+           Real Time Clock Test
+       Mount the disk containing the Super-100 files into a working  drive,  and
+       use  the  system  disk  that  contains the FPS software (LIB100).  Assign
+       "SY:"  to the working disk and "LB:"  to the system disk:
+        ASN DK0:=LB:     (This example assumes two RK05 drives)
+        ASN DK1:=SY:
+  Release B.3                       Page   41                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   42
+       6.2.2.1  Host Interface Test (MTS100)
++               ____________________________
+         The files required for this test include the Super-100 files  mentioned
+         earlier and the following additional files:
+               MAKE22.INP
+               ECHO.B
+               RUN2X.FTN
+         The Super-100 Load Module is created as follows:
+               RUN LOD100
+               * OUT  TEST22.FTN  TEST22.LM  /D
+               * INPUT  LODSYS.INP
+               * INPUT  MAKE22.INP
+               FOR RUN2X=RUN2X
+               FOR TEST22=TEST22
+               TKB
+               RUN2X=RUN2X,TEST22,LB:[1,1]LIB100/LB
+               /
+               COMMON=APDEV:RW
+               UNITS=15
+               //
+               @LB:[1,2]UPAP
+               RUN RUN2X
+         The program will ask if you want terminal or printer output.  There  is
+         then a delay while the Load Module is transferred to the FPS-100.  When
+         the  Run light goes on steady, the test is running.  A stream of output
+         should appear;  if not, there is an interface problem.
+         The output includes several 2 line blocks that have the following form:
+          # 22   SWR 123456 RUNFG 123456    FN 123456  CTRL 123456  LITES 123456
+          # 22 SUPVR 123456
+         The first number on each line (22) is just an identifying  number  used
+         for locating the program line that generated this block.  The remainder
+         of the data shows the values of various registers, flags, and counters.
+         These values are used mainly for debug purposes.
+           SWR      Switch register value on last call to AP.
+           RUNFG    The Run flag value.  Normally zero.
+           FN       Function register value.
+           CTRL     Control register value.
+           LITES    Lites register value on last interrupt from AP.
+           SUPVR    Supervisor flag.  0 = No Supervisor.
+                                      1 = MTS100 running in the AP.
+                                     -1 = RTS100 running in the AP.
+  Release B.3                       Page   42                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   43
+         A number of lines with the following form will appear:
+               HPUT.  DEST =  5    DATUM =  1234
+         These lines show the values being sent  to  the  FPS-100.   The  number
+         following DEST is in the range 1 to 7 and indicates which of the 7 full
+         duplex  ports  is  being used.  The number following DATUM is the value
+         being sent to the FPS-100.
+         Some lines with the following form also appear:
+             HTST      5      0      16      LITES= 133
+         This shows values received from the FPS-100.  The first number  on  the
+         line  is  the  port  number  in the range 1 to 7 on which the value was
+         received.  The second number is a flag:
+             0  means a value was received, FPS-100 running.
+            -1  means no value received, FPS-100 running.
+             1  means no value received, FPS-100 is halted.
+             2  means a value was received, FPS-100 is halted.
+         The third number is the datum value received.  It should correspond  to
+         a  value  previously  sent  (HPUT) to the same port number.  The number
+         following LITES is the most recent value from the LITES register.
+         The last few lines of output should include:
+             HTST     6     0     15     LITES= 33
+             HTST     7     0     14     LITES= 33
+  Release B.3                       Page   43                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   44
+       6.2.2.2  Host Called Subroutines (HASI) test (MTS100)
++               ____________________________________________
+         The files required for this test include the Super-100 files  mentioned
+         earlier and the following additional files:
+               MAKE63.INP             RUN6X.FTN
+               SUBR1.B                VADD.APO
+               SUBR2.B                SHOOT.B
+         The Load Module for this test is created as follows:
+               RUN LOD100
+               *  OUT  TEST63.FTN  TEST63.LM  /D
+               *  INPUT  LODSYS.INP
+               *  INPUT  MAKE63.INP
+               FOR RUN6X=RUN6X
+               FOR TEST63=TEST63
+               TKB
+               RUN6X=RUN6X,TEST63,LB:[1,1]LIB100/LB
+               /
+               COMMON=APDEV:RW
+               UNITS=15
+               //
+               @LB:[1,2]UPAP
+               RUN RUN6X
+         The program will ask if you want terminal or printer output.
+         T ram will ask if you want terminal or printer output.
+         enThere is then a delay while the Load Module  is  transferred  to  the
+         FPS-100.  When the Run light goes on steady, the test is running.
+         The comment "START TIMING" appears on  the  terminal  and  the  program
+         calls  an  FPS100  subroutine 20000 times.  Each call includes some DMA
+         transfers and some APWD calls.  The execution time is about 5.0 to  5.5
+         minutes.   Finally,  the  comment  "END  TIMING"  will  appear and some
+         additional values are then printed.
+         The program contains a DMA address which is supposed to be the same  as
+         an  address  in  the  HASI  file.   The program prints this address for
+         comparison.  This address is found in the  file  TEST63.FTN  (the  HASI
+         file).   Find  SUBR1  and  look for APPUT or APGET.  The address is the
+         second parameter in the call.  If the address does not match,  it  will
+         be  neccesary  to  change  the value for KADD in the file RUN6X.FTN and
+         then do the FORTRAN and TKB steps again.
+  Release B.3                       Page   44                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   45
+         The output from this test includes one of the 2 line blocks of register
+         data as described for the test above.  The value for SUPVR should be 1.
+         about 21213.
+         This output also contains several HTST lines as described above.   Some
+         of those lines should appear as follows:
+           HTST     2     0     202
+           HTST     3     0      44
+           HTST     4     0      22
+         The last line of the output should be:
+           K FWAS FNOW   250    505.00    505.00
+  Release B.3                       Page   45                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   46
+       6.2.2.3  Real Time Clock Test (MTS100)
++               _____________________________
+         The files required for this test include the Super-100 files  mentioned
+         earlier and the following additional files:
+               MAKE51.INP
+               TASK51.B
+               TASK52.B
+               TASK53.B
+               RUN5X.FTN
+         The Load Module for this test is created as follows:
+               RUN LOD100
+               * OUT  TEST51.FTN  TEST51.LM  /D
+               * INPUT  LODSYS.INP
+               * INPUT  MAKE51.INP
+               FOR RUN5X=RUN5X
+               FOR TEST51=TEST51
+               TKB
+               RUN5X=RUN5X,TEST51,LB:[1,1]LIB100/LB
+               /
+               COMMON=APDEV:RW
+               UNITS=15
+               //
+               @LB:[1,2]UPAP
+               RUN RUN5X
+         The program will ask if you want terminal or printer output.  There  is
+         then a delay while the Load Module is transferred to the FPS-100.  When
+         the  Run light goes on steady, the test is running.  A stream of output
+         should appear;  if not, there is an interface problem.
+         This test runs 3  tasks  that  wait  for  differing  periods  of  time,
+         increment a counter, and send the count value to the host.  Task 1 uses
+         port  1,  task 2 uses port 2, and task 3 uses port 3.  In the meantime,
+         the host program just loops for 99 times and requests values from the 3
+         ports.
+         The output includes a series of HTST lines as described above.  If  the
+         second  number  is -1, it means that the corresponding task has not yet
+         timed out since the last value was read from that port.
+             If the second number is -1, ignore this line.
+             If the second number is  0, the third number is valid.
+         The final values should have a particular  ratio.   The  task  1  count
+         should be double the task 3 count while task 2 falls between (about 1.3
+         times task 3).
+  Release B.3                       Page   46                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   47
+         The results of this test may differ on  successive  runs  since  it  is
+         highly  dependent on the host machine activity and interrupt servicing.
+         The FPS-100 tasks run at their own speed and are  not  synchronized  to
+         the  host.   For  example, the terminal output differs greatly from the
+         printer output since the different output devices have  much  different
+         timings.  On the printer, a jump in the counts is noticed when the host
+         services a print buffer.  On the terminal, the results are more uniform
+         since the output is not collected in a buffer.
+  Release B.3                       Page   47                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   48
+     6.2.3  Mini-100 (RTS100) tests.
++           ________________________
+       Four Tests are provided for Mini-100:
+           Basic Mechanism Test
+           Host Communications Test
+           HASI Test
+           Real Time Clock Test
+       Mount the disk containing the Mini-100 files in a working drive, and  use
+       the  system  disk  containing  the FPS software.  Assign mneumonics "SY:"
+       and "LB:"  to the working and system disks respectively:
+        ASN DK0:=LB:   (This example assumes two RK05 drives)
+        ASN DK1:=SY:
+  Release B.3                       Page   48                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   49
+       6.2.3.1  Basic Mechanism Test (RTS100)
++               _____________________________
+         The files required for this test include the Mini-100  files  mentioned
+         earlier and the following additional files:
+               MAKE1.INP
+               SUBR3.B
+               SUBR4.B
+               RUN1.FTN
+         The Mini-100 Load Module is created as follows:
+             Time required is about 5 minutes.
+               RUN LOD100
+               * OUT  TEST1.HSI  TEST1.LM  /D
+               * INPUT  LODMIN.INP
+               * INPUT  MAKE1.INP
+               FOR RUN1=RUN1
+               FOR TEST1=TEST1.HSI
+               TKB
+               RUN1=RUN1,TEST1,LB:[1,1]LIB100/LB
+               /
+               COMMON=APDEV:RW
+               UNITS=15
+               //
+               @LB:[1,2]UPAP
+               RUN RUN1
+         The program runs two subroutines on the FPS-100.  The results  must  be
+         checked  with  the debugger (DBG100).  First, verify the PS location of
+         the subroutines by looking at the final  map  from  LOD100:   the  file
+         TEST1.MP2.  There should be a column which looks like:
+               PSADDR
+                 613
+                 614
+                 614
+         The  numbers  in this column may vary slightly.  One of the subroutines
+         uses a PS memory location to record the number of times it was  called.
+         The  address  of  this  location  is 4 more than the last number in the
+         above column (620 octal in this case).  The other subroutine leaves its
+         parameters and their sum in MD locations 17701-17703 (octal).  Run  the
+         debugger as follows:
+         RUN DBG100
+         1
+         F 0
+         W MD 17701 17703 TI:
+             (octal results:  5, 24, 31  )
+         E PS 620
+  Release B.3                       Page   49                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   50
+             (second quarter word should contain 2)
+         X
+  Release B.3                       Page   50                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   51
+       6.2.3.2  Host Communications Test (RTS100)
++               _________________________________
+         The files required for this test include the Mini-100  files  mentioned
+         earlier and the following additional files:
+               MAKE2.INP
+               TEST2.B
+               RUN2.FTN
+         The Mini-100 Load Module is created as follows:
+               RUN LOD100
+               * OUT  TEST2.HSI  TEST2.LM  /D
+               * INPUT  LODMIN.INP
+               * INPUT  MAKE2.INP
+               FOR RUN2=RUN2
+               FOR TEST2=TEST2.HSI
+               TKB
+               RUN2=RUN2,TEST2,LB:[1,1]LIB100/LB
+               /
+               COMMON=APDEV:RW
+               UNITS=15
+               //
+               @LB:[1,2]UPAP
+               RUN RUN2
+         The program will ask if you want terminal or printer output.  There  is
+         then a delay while the Load Module is transferred to the FPS-100.  When
+         the  Run light goes on steady, the test is running.  A stream of output
+         should appear;  if not, there is an interface problem.
+         The output includes several 2 line blocks that have the following form:
+          # 22   SWR 123456 RUNFG 123456    FN 123456  CTRL 123456  LITES 123456
+          # 22 SUPVR 123456
+         The first number on each line (22) is just an identifying  number  used
+         for locating the program line that generated this block.  The remainder
+         of the data shows the values of various registers, flags, and counters.
+         These values are used mainly for debug purposes.
+           SWR      Switch register value on last call to AP.
+           RUNFG    The Run flag value.  Normally zero.
+           FN       Function register value.
+           CTRL     Control register value.
+           LITES    Lites register value on last interrupt from AP.
+           SUPVR    Supervisor flag.  0 = No Supervisor.
+                                      1 = MTS100 running in the AP.
+                                     -1 = RTS100 running in the AP.
+  Release B.3                       Page   51                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   52
+         A number of lines with the following form will appear:
+               HPUT.  DEST =  5    DATUM =  1234
+         These lines show the values being sent  to  the  FPS-100.   The  number
+         following DEST is in the range 1 to 7 and indicates which of the 7 full
+         duplex  ports  is  being used.  The number following DATUM is the value
+         being sent to the FPS-100.
+         Some lines with the following form also appear:
+             HTST      5      0      16      LITES= 33
+         This shows values received from the FPS-100.  The first number  on  the
+         line  is  the  port  number  in the range 1 to 7 on which the value was
+         received.  The second number is a flag:
+             0  means a value was received, FPS-100 running.
+            -1  means no value received, FPS-100 running.
+             1  means no value received, FPS-100 is halted.
+             2  means a value was received, FPS-100 is halted.
+         The third number is the datum value received.  It should correspond  to
+         a  value  previously  sent  (HPUT) to the same port number.  The number
+         following LITES is the most recent value from the LITES register.
+         The last few lines of output should include:
+             HTST     6     0     15     LITES= 33
+             HTST     7     0     14     LITES= 33
+  Release B.3                       Page   52                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   53
+       6.2.3.3  HASI test (RTS100)
++               __________________
+         The files required for this test include the Mini-100  files  mentioned
+         earlier and the following additional files:
+               MAKE6.INP
+               SUB1.B
+               SUB2.B
+               SHOOTM.B
+               RUN6.FTN
+               VADD.APO
+         The Load Module for this test is created as follows:
+               RUN LOD100
+               * OUT  TEST6.HSI  TEST6.LM  /D
+               * INPUT  LODMIN.INP
+               * INPUT  MAKE6.INP
+               FOR RUN6=RUN6
+               FOR TEST6=TEST6.HSI
+               TKB
+               RUN6=RUN6,TEST6,LB:[1,1]LIB100/LB
+               /
+               COMMON=APDEV:RW
+               UNITS=15
+               //
+               @LB:[1,2]UPAP
+               RUN RUN6
+         The program will ask if you want terminal or printer output.
+         There is then a delay while the  Load  Module  is  transferred  to  the
+         FPS-100.  When the Run light goes on steady, the test is running.
+         The comment "START TIMING" appears on  the  terminal  and  the  program
+         calls  an  FPS100  subroutine 20000 times.  Each call includes some DMA
+         transfers and some APWD calls.  The execution time is about 5.0 to  5.5
+         minutes.   Finally,  the  comment  "END  TIMING"  will  appear and some
+         additional values are then printed.
+         The program contains a DMA address which is supposed to be the same  as
+         an  address  in  the  HASI  file.   The program prints this address for
+         comparison.  This address is found in  the  file  TEST6.HSI  (the  HASI
+         file).   Find  SUBR1  and  look for APPUT or APGET.  The address is the
+         second parameter in the call.  If the address does not match,  it  will
+         be neccesary to change the value for KADD in the file RUN6.FTN and then
+         do the FORTRAN and TKB steps again.
+  Release B.3                       Page   53                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   54
+         The output from this test includes one of the 2 line blocks of register
+         data as described for the test above.  The value for SUPVR should be -1
+         while the value for SUM should be about 21214.
+         This output also contains several HTST lines  as  described  above.   A
+         couple of those lines should appear as follows:
+           HTST     2     2     202
+           HTST     3     2      44
+           HTST     4     2      22
+         The last line of the output should be:
+           K FWAS FNOW   250    505.00    505.00
+  Release B.3                       Page   54                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   55
+       6.2.3.4 Real Time Clock Test (RTS100)
++      _____________________________________
+         The files required for this test include the Mini-100  files  mentioned
+         earlier and the following additional files:
+               MAKE5.INP
+               RUN5.FTN
+               RTCTST.B
+               RTCDUM.B
+         The Load Module for this test is created as follows:
+         (NOTE:  The command 'INPUT LODMIN.INP' is not used for this test!)
+               RUN LOD100
+               INPUT  MAKE5.INP
+               FOR RUN5=RUN5
+               FOR TEST5=TEST5.HSI
+               TKB
+               RUN5=RUN5,TEST5,LB:[1,1]LIB100/LB
+               /
+               COMMON=APDEV:RW
+               UNITS=15
+               //
+               @LB:[1,2]UPAP
+               RUN RUN5
+         The program will ask if you want terminal or printer output.  There  is
+         then a delay while the Load Module is transferred to the FPS-100.  When
+         the  Run light goes on steady, the test is running.  A stream of output
+         should appear;  if not, there is an interface problem.
+         This test runs 3 timeout requests that wait for  differing  periods  of
+         time,  increment  a  counter,  and  send  the  count value to the host.
+         Timeout request 1 uses port 1, timeout  request  2  uses  port  2,  and
+         timeout  request  3  uses  port  3.  The timeout requests run serially.
+         After a timeout request's period has elapsed, the next one in the queue
+         starts.  In the meantime, the host program just loops for 99 times  and
+         tests for values from the 3 ports.
+         The output includes a series of HTST lines as described above.  If  the
+         second  number  is  -1, it means that the corresponding request has not
+         yet timed out since the last value was read from that port.
+             If the second number is -1, ignore this line.
+             If the second number is  0, the third number is valid.
+         The final values should be about the same for the three  requests.   No
+         one request should be more than 1 count greater than the other two.
+  Release B.3                       Page   55                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   56
+         The results of this test may differ on  successive  runs  since  it  is
+         highly  dependent on the host machine activity and interrupt servicing.
+         The FPS-100 tasks run at their own speed and are  not  synchronized  to
+         the  host.   For  example, the terminal output differs greatly from the
+         printer output since the different output devices have  much  different
+         timings.  On the printer, a jump in the counts is noticed when the host
+         services a print buffer.  On the terminal, the results are more uniform
+         since the output is not collected in a buffer.
+  Release B.3                       Page   56                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   57
+   6.3  Clean Up The Disk
++       _________________
+     This completes the software testing.  Some files may be deleted.  The  test
+     files  read  from  the  tape  and  the test programs created during testing
+     should be saved for the customer.
+     PIP TESTx.OBJ;*,RUNx.OBJ;*,*.HSI;*,TESTx.FTN;*/DE
+     PIP RUNx.FTN;*,TESTx.MPx;*/DE
+     PIP *.;*,PDSTST.*;*,SEQV1.*;*,SEQV2.*;*,*.MAP;*,*.LM;*/DE
+  Release B.3                       Page   57                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   58
+ 7  MAGTAP
++   ______
+   7.1  INTRODUCTION
++       ____________
+     The purpose of this program is to facilitate the transfer of FPS files from
+     the distribution tape to the host computer on-line storage.  It is designed
+     for use in three modes.  The first is the command line mode where the  task
+     may  be  installed  and invoked totally from a command line.  The second is
+     the semi-automatic mode where dialogue is performed with the operator.  The
+     Third mode is the manual mode.
+   7.2  COMMAND LINE MODE
++       _________________
+     The command line mode of operation  is  fully  automatic  and  requires  no
+     operator  action  once  the  command  line  has  been entered The following
+     sequence is used to install and execute the program.
+     LOA MM:  (or MT:)
+     INS MAGTAP/TASK=...MAG
+     MAG dev,pass,f,dens,nflag,name
+     The magnetic tape handler must be loaded for use  of  the  MAGTAP  program.
+     Then the task must be installed such that the system knows about it and can
+     pass  control  to it when invoked.  The MAG command invokes the program and
+     the arguments on the line are passed to the program.  The  "dev"  paramater
+     is  either MMn:  or MTn:  depending on which type of magnetic tape drive is
+     being used, where "n" is the unit number of the drive, limited to a  single
+     integer  digit.   The  "pass" parameter is the two (2) digit pass number of
+     files to be retrieved from the tape.  The "f" parameter is a flag the value
+     of which is either "Y" or "N".  "Y" should be used if the  user  wants  the
+     program  to  delete all comment lines from FORTRAN files and "N" otherwise.
+     The "dens" parameter is "0" for 800 BPI and "1" for 1600 BPI.  The  "nflag"
+     and "name" parameters are optional.  The "nflag" is an "N" for retrieving a
+     file  from  the tape by name and the "name" is the complete file name as it
+     appears in the names file on the tape.  NOTE:  The format for  the  command
+     line  input  is  fixed  and  must  be  entered as noted with "," separating
+     parameters.  The program then reads  the  names  file  from  the  tape  and
+     transfers  all  files  with  the  specified pass number to the SY:  logical
+     unit, under the current UIC.
+  Release B.3                       Page   58                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   59
+   7.3  SEMI-AUTOMATIC MODE
++       ___________________
+     The semi-automatic mode is very much like the automatic  mode,  except  the
+     program gets the required information from a dialogue with the user instead
+     of from the command line.  The semi-automatic mode is invoked with:
+     LOA MM: (or MT:)
+     RUN MAGTAP(or "MAG" , if the program has already been installed
+                with /TASK=...MAG)
+     The program will then announce itself and ask "IS MAG TAPE HANDLER LOADED".
+     An "N" answer will result in program termination for the user to  load  the
+     proper handler.  A "Y" response causes the program to proceed by asking the
+     following questions with the user supplying the proper responses.
+      ENTER MAGTAPE DEVICE NAME (E.G. MT0:):
+      ENTER TAPE DENSITY 0=800 BPI, 1=1600 BPI:
+      IS THIS THE FIRST FPS TAPE (Y OR N):
+     A "Y" answer causes the names file to be read from the tape.
+      AUTO(0) OR MANUAL(1) MODE:
+     A "0" answer will allow the user to read files by pass numbers or by  name.
+      PASS NO.(0) OR NAME (1) MODE:
+     A "1" will put the magtape program into the extract by name mode and a  "0"
+     will receive:
+      ENTER PASS NUMBER:
+     The user then enters a two (2) digit pass number.  The next prompting  line
+     will be:
+      DELETE FORTRAN COMMENTS (Y OR N):
+     The program will then read the files which are  contained  in  the  entered
+     pass  number  to  the  SY:  disk under the current UIC, rewind the tape and
+     exit.
+     If names mode were selected, the following prompt would be issued:
+      ENTER FILE NAME:
+     The user then enters the filename to be read from the  tape.   The  "DELETE
+     FORTRAN COMMENTS (Y OR N):"  will be displayed, and must be answered.  Then
+     the  program will search for the specified file and copy it to disk.  Since
+     rewinds are not performed in this mode, names must be entered in the  order
+     they  appear on the tape.  The user can extract files by name one at a time
+     until finished.  To terminate names mode, enter a carriage  return  at  the
+  Release B.3                       Page   59                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   60
+     "ENTER FILENAME:"  level.
+   7.4  MANUAL MODE
++       ___________
+     The manual mode allows full control over what files are read and the  names
+     the files are given.  This mode is invoked with:
+     LOA MM:  (or MT:)
+     RUN MAGTAP  (or "MAG", if the program has already been installed
+                  with /TASK=...MAG)
+     The program will then announce itself and ask "IS MAG TAPE HANDLER LOADED".
+     An "N" answer will result in program termination for the user to  load  the
+     proper handler.  A "Y" response causes the program to proceed by asking the
+     following questions with the user supplying the proper responses.
+      ENTER MAGTAPE DEVICE NAME (E.G. MT0:):
+      ENTER TAPE DENSITY 0=800 BPI, 1=1600 BPI:
+      IS THIS THE FIRST FPS TAPE (Y OR N):
+     A "Y" answer causes the names file to be read from the tape.   "N"  may  be
+     appropriate  to  use if the names file is not on the current tape, or if it
+     is not going to be used.  A "Y" response causes the following:
+      AUTO(0) OR MANUAL(1) MODE:
+     A "1" answer puts MAGTAP into manual mode.  If "N" were the reponse to  the
+     previous  question,  the automatic mode would be overridden and manual mode
+     is forced.  MAGTAP will now prompt with:
+      n filename :
+     When the names file is being used or with:
+      n COMMAND OR FILENAME :
+     When the names file is not being used.  The user then can respond with  one
+     of the following.
+      CARRIAGE RETURN   (only when the names file was read in; causes
+                         the displayed filename to be used to copy the
+                         current file to disk)
+      filename.ext   (the typed in filename will be used to copy the
+                      current file to disk)
+      $R  (the tape will be rewound)
+  Release B.3                       Page   60                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   61
+      $F  (causes a shift to "file skip" mode. A further question
+           will be asked to identify how many files to skip (if no
+           names file was read in), or which file to skip to (if a
+           names file was read in). In the latter case, skipping to
+           previous files is allowed, but if the names file mode is
+           not being used the positioning is strictly forward)
+      $D  (all FORTRAN comments except FPS title lines are deleted
+           during the copying of a file. This is a flip flop and
+           entering it again will cause verbatim copying. The use of
+           this on non-FORTRAN files should be discouraged, as any line
+           beginning with a "C" will be deleted)
+      $Q  (causes program termination, leaving the tape position
+           wherever the last action left it. If reinvoked in manual
+           mode without reading the names file MAGTAP can pick up from
+           where it left off, but note that the index number will start
+           at 0, regardless of the actual tape position)
+  Release B.3                       Page   61                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   62
+ 8  CUSTOMER USAGE
++   ______________
+   The APEX uses logical units 3 and 4 and  events  flags  22,  23  and  24  for
+   communication  with  the  AP  driver,  and  these  may  not be used for other
+   purposes in any APEX task.
+   The user must specify the use of APDEV common when task building a task which
+   uses the AP.  This is done with the following TKB  command  included  in  the
+   "ENTER OPTIONS" section of input:
+   COMMON=APDEV:RW
+   A command file called UPAP.CMD has been placed on the system disk  under  UIC
+   [1,2]  by  the  installation.   This  file when run from the indirect command
+   processor with:
+   @DK:[1,2]UPAP
+   Will load the required device common and the AP driver.
+   Note also that since one page (4K) is devoted to device common  in  any  APEX
+   task,  the  maximum  size  possible  is  28K  (28672  words)  for  tasks that
+   communicate with the FPS100.  This 4K reduction in available task  memory  is
+   necessary  to  achieve high speed front panel I/O to the array processor, and
+   may be overcome by use of RSX11M overlaying techniques (see the  RSX11M  Task
+   Builder manual).
+  Release B.3                       Page   62                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   63
+ 9  COMMAND FILE LISTINGS
++   _____________________
+   9.1  First-Time Command File
++       _______________________
+      ; FIRST.CMD - FIRST TIME COMMAND FILE TO CREATE SETUP.CMD
+      ; RSX11M FPS100 FEB 80
+      ;
+      .ENABLE SUBSTITUTION
+      .SETS $LUIC "[1,1]"     .; THE SYSTEM LIBRARY UIC IS ...
+      .SETS $WUIC "[100,100]" .; THE WORK UIC IS ...
+      ;
+      .MM0:
+      .ASKS $MM0 WHAT IS THE MAGTAPE DEVICE NAME?
+      .;
+      .; BEGIN ERROR CHECKING
+      .;
+      .IF <STRLEN> < 2 .OR .IF <STRLEN> > 4  .GOTO MM0
+      .IF <STRLEN> = 2   .SETS $MM0 $MM0+"0"
+      .SETS S $MM0[3:3]
+      .IF S = ":"  .SETS $MM0 $MM0[1:2]+"0"
+      .SETS S $MM0[3:3]
+      .IF S < "0" .OR .IF S > "9"   .GOTO MM0
+      .SETS S $MM0[1:2]
+      .IF S <> "MM" .IF S <> "MT" .IF S <> "MS"  .GOTO MM0
+      .;
+      .; END ERROR CHECKING
+      .;
+      .SETS $MM0 $MM0[1:3]+":"
+      .SETS $MM $MM0[1:2]+":"
+      ;
+      .ASK ANS IS THE INSTALLATION TAPE 800 BPI
+      .IFF ANS .SETN $BPI 0
+      ;
+      ASN =
+      ASN LB:=SY:
+     ;
+      .SETS $LBDSK <SYDISK>+"'<SYUNIT>'"+":"
+      .ASK ANS IS '$LBDSK' THE SYSTEM DISK
+      .IFF ANS .ASKS $LBDSK ENTER SYSTEM DISK NAME:
+      .SETS S "0"
+      .IF <SYDISK> = "DK" .IF <SYUNIT> = 0  .SETS S "1"
+      .IF <SYDISK> = "DL" .IF <SYUNIT> = 0  .SETS S "1"
+      .SETS $WKDSK <SYDISK>+S+":"
+      ;
+      .ASK ANS IS '$WKDSK' THE WORK DISK
+      .IFF ANS .ASKS $WKDSK ENTER WORK DISK NAME:
+     ;
+     ASN '$WKDSK'=SY:
+     SET /UIC='$WUIC'
+  Release B.3                       Page   63                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   64
+     ;
+      ;
+      ; OPEN SETUP.CMD
+      ;
+      .OPEN SETUP.CMD
+      .DATA .ENABLE SUBSTITUTION
+      .DATA .ENABLE GLOBAL
+      .DATA .SETS $MM "'$MM'"
+      .DATA .SETS $MM0 "'$MM0'"
+      .IFNDF $BPI .DATA .SETS $BPI "0"
+      .IFDF $BPI .DATA .SETS $BPI "1"
+      .DATA .SETS $LBDSK "'$LBDSK'"
+      .DATA .SETS $WKDSK "'$WKDSK'"
+      .DATA .SETS $LUIC "'$LUIC'"
+      .DATA .SETS $WUIC "'$WUIC'"
+      ;
+      .ASK ANS ARE BASIC MATH LIBRARIES INCLUDED
+      .IFT ANS .DATA .SETN $BASLB 0
+      ;
+      .ASK ANS ARE TMR LIBRARIES INCLUDED
+      .IFT ANS .DATA .SETN $TMR 0
+      ;
+      .ASK ANS ARE SIGNAL PROCESSING LIBRARIES INCLUDED
+      .IFT ANS .DATA .SETN $SIG 0
+      ;
+      .ASK ANS ARE IMAGE PROCESSING LIBRARIES INCLUDED
+      .IFT ANS .DATA .SETN $IPR 0
+      ;
+      .ASK ANS ARE ADVANCED MATH LIBRARIES INCLUDED
+      .IFT ANS .DATA .SETN $AML 0
+      ;
+      .ASK ANS IS PROGRAM DEVELOPMENT SOFTWARE (PDS) INCLUDED
+      .IFT ANS .DATA .SETN $PDS 0
+      ;
+      .ASK ANS IS THE SUPER-100 SUPERVISOR INCLUDED
+      .IFT ANS .DATA .SETN $SUP10 0
+      ;
+      .ASK ANS IS THE MINI-100 SUPERVISOR INCLUDED
+      .IFT ANS .DATA .SETN $MIN10 0
+      ;
+      .DATA  SET /BUF=TI:80.
+      .DATA .;
+      .DATA .; GET A TASK BUILDER...
+      .DATA .;
+      .DATA .IFINS TKB .GOTO 100
+      .DATA INS $BIGTKB/INC=10000/TASK=...TKB
+      .DATA .IFINS TKB .GOTO 100
+      .DATA INS $TKB/INC=10000/TASK=...TKB
+      .DATA .IFINS TKB .GOTO 100
+      .DATA ; BIGTKB OR TKB CANNOT BE FOUND !!!  INSTALL ONE BEFORE RESUMING.
+      .DATA .PAUSE
+      .DATA .;
+      .DATA .; GET AN ASSEMBLER...
+  Release B.3                       Page   64                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   65
+      .DATA .;
+      .DATA .100: .IFINS MAC .GOTO 110
+      .DATA INS $BIGMAC/INC=10000/TASK=...MAC
+      .DATA .IFINS MAC .GOTO 110
+      .DATA INS $MAC/INC=10000/TASK=...MAC
+      .DATA .IFINS MAC .GOTO 110
+      .DATA ; BIGMAC OR MAC CANNOT BE FOUND !!!  INSTALL ONE BEFORE RESUMING.
+      .DATA .PAUSE
+      .DATA .;
+      .DATA .; GET A FORTRAN COMPILER. F4P WILL BE USED IF INSTALLED.
+      .DATA .; FORCE RE-INSTALLATION WITH LOTS OF MEMORY
+      .DATA .;
+      .DATA .110: .IFINS F4P .GOTO 120
+      .DATA .IFINS FOR REM FOR
+      .DATA INS $FOR/INC=37000
+      .DATA .IFINS FOR  .GOTO 130
+      .DATA .120: .IFINS F4P  REM F4P
+      .DATA INS $F4P/INC=44000
+      .DATA .IFINS F4P  .GOTO 130
+      .DATA ; F4P OR FOR CANNOT BE FOUND !!!  INSTALL ONE BEFORE RESUMING.
+      .DATA .PAUSE
+      .DATA .;
+      .DATA .; GET THE LIBRARIAN, PIP, AND AN EDITOR.
+      .DATA .; (EDT WILL BE USED IF IT IS INSTALLED)
+      .DATA .;
+      .DATA .130: .IFINS LBR .GOTO 150
+      .DATA INS $LBR/TASK=...LBR
+      .DATA .IFINS LBR .GOTO 150
+      .DATA ; LBR CANNOT BE FOUND !!! INSTALL IT BEFORE RESUMING.
+      .DATA .PAUSE
+      .DATA .150: .IFINS PIP .GOTO 160
+      .DATA INS $PIP
+      .DATA .IFINS PIP .GOTO 160
+      .DATA ; PIP CANNOT BE FOUND !!! INSTALL IT BEFORE RESUMING.
+      .DATA .PAUSE
+      .DATA .160: .IFINS EDI .GOTO 170
+      .DATA .IFINS EDT .GOTO 170
+      .DATA INS $EDI/INC=40000/TASK=...EDI
+      .DATA .170:
+      .DATA .;
+      .DATA .; SET UP THE SWITCHES FOR COMPILING.
+      .DATA .;
+      .DATA .SETS $F4P0 ""
+      .DATA .SETS $F4P2 "/CO:99./-TR/-I4"
+      .DATA .SETS $F4P1 $F4P2
+      .DATA .;
+      .DATA .SETS $FOR2 "/-I4/-SN"
+      .DATA .SETS $FOR1 $FOR2+"/-VA"
+      .DATA .;
+      .DATA .SETS $COM "N"   .; DO NOT SAVE FORTRAN COMMENTS ON MAGTAP READS.
+      .DATA .SETN $NOAP 1   .; ONE AP IS BEING CONNECTED.
+      .DATA ASN '$LBDSK'=LB:
+      .DATA .IFNLOA '$MM'  LOA '$MM'
+  Release B.3                       Page   65                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   66
+      .DATA ASN '$WKDSK'=SY:
+      .DATA SET /UIC='$WUIC'
+      .DATA ;
+      .DATA ; *** THE LAST NUMBER IN THE RESPONSE HERE SHOULD BE AT LEAST 400.
+      .DATA SET /POOL
+      .DATA ; *** (IF NOT, MAY DIE.)
+      .DATA ; END SETUP
+      .DATA .EXIT
+      ; END OF FIRST TIME FILE.
+      .EXIT
+  Release B.3                       Page   66                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   67
+   9.2  Master Command File
++       ___________________
+     ; MASTER.CMD - COMPLETE INSTALLATION COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; MUST HAVE PREVIOUSLY RUN FIRST.CMD TO CREATE SETUP.CMD
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+     ; SETUP
+      @SETUP
+     ;
+      .SETN $MAST 0
+     ;
+     ; INSTALL AP DRIVER
+     ;
+      @DRV100
+     ;
+     ; INSTALL HSR LIBRARY (MATHLIB)
+     ;
+      @HSR100
+     ;
+     ; INSTALL LIB100
+     ;
+      @LIB100
+     ;
+     ; INSTALL PDS SOFTWARE
+     ;
+      .IFDF $PDS @PDS100
+     ;
+     ; INSTALL DIAGNOSTICS
+     ;
+      @DGN100
+     ;
+     ; INSTALL AP LIBRARY (APLIB)
+     ;
+      @APL100
+     ;
+     ; INSTALL PDS TESTS
+     ;
+      @PDSTST
+     ;
+     ; INSTALL FPS SUPERVISORS
+     ;
+      .IFDF $SUP10 .GOTO 10
+      .IFDF $MIN10 .GOTO 10
+      .GOTO 20
+      .10:
+      @SUP100
+      .20:
+     ;
+     ; CLEAN UP
+     ;
+  Release B.3                       Page   67                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   68
+      @CLEAN
+     ;
+     ; END OF COMPLETE INSTALLATION COMMAND FILE
+     ;
+      .EXIT
+  Release B.3                       Page   68                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   69
+   9.3  Tape Read Command File
++       ______________________
+     ; TREAD.CMD - TAPE READ COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; MUST PASS GLOBAL PARAMETERS TO THIS FILE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+     ;
+      .IFINS MAG .GOTO 10
+      INS '$WUIC' MAGTAP/TASK=...MAG
+      .IFINS MAG .GOTO 10
+      INS '$LBDSK''$WUIC'MAGTAP/TASK=...MAG
+      .IFINS MAG .GOTO 10
+     ; MAGTAP CANNOT BE FOUND !!! INSTALL IT BEFORE RESUMING.
+     ;
+      .PAUSE
+      .10:
+      MAG '$MM0',0'$PASS','$COM','$BPI'
+     ;
+     ; CAUTION !!! WHEN DEALING WITH MULTIPLE INSTALLATION TAPE SETS,
+     ;             THE FIRST FPS TAPE MUST BE IMMEDIATELY REMOUNTED
+     ;             AFTER READING IN A PASS TO BE READY FOR THE NEXT ONE.
+     ;
+      .EXIT
+      .EXIT
+  Release B.3                       Page   69                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   70
+   9.4  Driver Command File
++       ___________________
+     ; DRV100.CMD - INSTALL AP DRIVER COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; DRIVER.MAC DEVTABLE.MAC
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+         .SETN NAP $NOAP
+             .OPEN FPSMC.MAC
+             .DATA A$$P11='NAP'
+             .SETN APS NAP
+             .SETN DIS 0
+             .SETN CSR 176000
+             .SETN VEC 170
+             .SETN N 0
+             .SETN CSRSIZ 120
+      ;
+      ; ENTER THE CSR LOCATIONS IN ASCENDING ORDER, STARTING WITH THE
+      ; LOWEST LOCATION
+      ;
+      .80:
+      ;
+             .ASKN [::'CSR'] ZN ENTER CSR LOCATION FOR AP # 'N'
+             .DATA APCSR'N'='ZN'
+             .IF N = 0 .SETN $START ZN
+             .SETN DIS'N' ZN-DIS-CSRSIZ
+             .SETN DIS ZN
+             .SETN CSR ZN
+             .ASKN  [::'VEC'] ZN ENTER VECTOR LOCATION FOR AP # 'N'
+             .DATA APVEC'N'='ZN'
+             .SETN VEC ZN
+             .DEC NAP
+             .IF NAP = 0 .GOTO 100
+             .INC N
+             .SETN VEC VEC+4
+             .SETN CSR CSR+CSRSIZ
+             .GOTO 80
+      .100:  .DATA FPS100=1
+             .CLOSE
+      ;
+      ; FPSMC.MAC HAS BEEN GENERATED
+     ;
+      .SETS BLOCK "'CSR'"
+      .SETS BLOCK "7"+BLOCK[2:4]
+      .ASK ANS IS YOUR HOST CPU A PDP-11/70
+      .IFT ANS .SETS BLOCK "17"+BLOCK
+  Release B.3                       Page   70                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   71
+     ;
+     ; READ PASS 1 FROM INSTALLATION TAPE
+     ;
+      .SETN $PASS 1
+      @TREAD
+     ;
+     ; AP DRIVER AND DEVICE TABLES ASSEMBLY
+     ;
+             .SETN N $START/100
+             .SETN M N*100
+             .SETN L $START-M
+             .SETN K CSR-$START
+             .SETN K K+CSRSIZ
+             .SETN J K/100
+             .SETN P J*100
+             .SETN I K-P
+             .IF I <> 0 .SETN J J+1
+             .SETN P J*100
+             .OPEN APDEV.MAC
+             .DATA .PSECT APDEV
+             .DATA .=.+'L'
+             .DATA APCOM0:: .BLKB 'CSRSIZ'
+             .SETN CT 1
+      .650:
+             .DEC APS
+             .IF APS = 0 .GOTO 600
+             .SETN DIS DIS'APS'
+             .DATA .=.+'DIS'
+             .DATA APCOM'CT':: .BLKB 'CSRSIZ'
+             .INC CT
+             .GOTO 650
+      .600:
+             .DATA .END
+             .CLOSE
+             .OPEN APDEV.CMD
+             .DATA LB:APDEV/-HD/PI,,LB:APDEV='$WUIC'APDEV
+             .DATA /
+             .DATA STACK=0
+             .DATA PAR=APDEV:0:'P'
+             .DATA //
+             .CLOSE
+     ;
+     ; APDEV.CMD HAS BEEN GENERATED
+     ; ASSEMBLE AP DUMMY DEVICE COMMON
+     ;
+      MAC APDEV=APDEV
+     ; ASSEMBLE AP DRIVER
+     ;
+      MAC APDRV=FPSMC,LB:[1,1]EXEMC/ML,[11,10]RSXMC/PA:1,SY:'$WUIC'DRIVER
+     ;
+     ;  ASSEMBLE DEVICE TABLES FOR DRIVER
+     ;
+      MAC DEVTBL=FPSMC,LB:[1,1]EXEMC/ML,[11,10]RSXMC/PA:1,SY:'$WUIC'DEVTABLE
+  Release B.3                       Page   71                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   72
+      SET /UIC=[1,1]
+      TKB @'$WUIC'APDEV
+      PIP LB:APDEV.*/PU
+             .SETN N N-1000
+         .OPEN LB:[1,2]UPAP.CMD;1
+         .DATA SET /MAIN=APDEV:'BLOCK':'J':DEV
+         .DATA INS LB:[1,1]APDEV
+         .DATA LOA AP:
+         .CLOSE
+      SET /UIC='$WUIC'
+             .OPEN APDRVBLD.CMD
+             .DATA LB:APDRV/-HD/-MM,,LB:APDRV='$WUIC'APDRV,DEVTBL
+             .DATA LB:[1,54]RSX11M.STB/SS,[1,1]EXELIB/LB
+             .DATA /
+             .DATA STACK=0
+             .DATA PAR=DRVPAR:120000:4000
+             .DATA //
+             .CLOSE
+      SET /UIC=[1,54]
+      TKB @'$WUIC'APDRVBLD
+      PIP LB:APDRV.*/PU
+      SET /UIC='$WUIC'
+      PIP APDRVBLD.*;*,APDEV.*;*,APDRV.*;*,DEVTBL.*;*/DE
+      .EXIT
+  Release B.3                       Page   72                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   73
+   9.5  HSR Command File
++       ________________
+     ; HSR100.CMD - BUILD HSR LIBRARY (MATHLIB) COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ALL HSR SOURCES (XXXHSR.MAC)
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+      SET /UIC='$LUIC'
+      PIP '$LBDSK'MATHLIB.*;*/DE     ! ERROR MESSAGE HERE IS O.K.
+      SET /UIC='$WUIC'
+     ;
+     ; BUILD PEEL AND APEEL INSTALLATION UTILITIES
+     ;
+      .IFINS PEL .GOTO 15
+      .IFINS FOR FOR PEEL=PEEL
+      .IFINS F4P F4P PEEL=PEEL
+      TKB PEEL=PEEL
+      INS PEEL/TASK=...PEL
+      .15:
+      .IFINS APE .GOTO 16
+      .IFINS FOR FOR APEEL=APEEL
+      .IFINS F4P F4P APEEL=APEEL
+      TKB APEEL=APEEL
+      INS APEEL/TASK=...APE
+      .16:
+      PIP APEEL.OBJ;*,PEEL.OBJ;*/DE
+      .SETS ILBR "CR"
+      .IFNDF $AML .GOTO 20
+     ;
+     ; ADVANCED MATH LIBRARY HSRS
+     ;
+      PEL AMLHSR.MAC
+      @AMLHSR
+      SET /UIC='$LUIC'
+      LBR '$LBDSK'MATHLIB/'ILBR'='$WUIC'AMLHSR.
+      .SETS ILBR "IN"
+      SET /UIC='$WUIC'
+      PIP AMLHSR.CMD;*/DE
+      .20: .IFNDF $IPR .GOTO 30
+     ;
+     ; IMAGE PROCESSING LIBRARY HSRS
+     ;
+      PEL IPRHSR.MAC
+      @IPRHSR
+      SET /UIC='$LUIC'
+      LBR '$LBDSK'MATHLIB/'ILBR'='$WUIC'IPRHSR.
+  Release B.3                       Page   73                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   74
+      .SETS ILBR "IN"
+      SET /UIC='$WUIC'
+      PIP IPRHSR.CMD;*/DE
+      .30: .IFNDF $TMR .GOTO 40
+     ;
+     ; TMR LIBRARY HSRS
+     ;
+      PEL TMRHSR.MAC
+      @TMRHSR
+      SET /UIC='$LUIC'
+      LBR '$LBDSK'MATHLIB/'ILBR'='$WUIC'TMRHSR.
+      .SETS ILBR "IN"
+      SET /UIC='$WUIC'
+      PIP TMRHSR.CMD;*/DE
+      .40: .IFNDF $SIG .GOTO 50
+     ;
+     ; SIGNAL PROCESSING LIBRARY HSRS
+     ;
+      PEL SIGHSR.MAC
+      @SIGHSR
+      SET /UIC='$LUIC'
+      LBR '$LBDSK'MATHLIB/'ILBR'='$WUIC'SIGHSR.
+      .SETS ILBR "IN"
+      SET /UIC='$WUIC'
+      PIP SIGHSR.CMD;*/DE
+      .50: .IFNDF $BASLB .GOTO 60
+     ;
+     ; BASIC MATH LIBRARY HSRS
+     ;
+      PEL BAAHSR.MAC
+      @BAAHSR
+      PEL BABHSR.MAC
+      @BABHSR
+      SET /UIC='$LUIC'
+      LBR '$LBDSK'MATHLIB/'ILBR'='$WUIC'BAAHSR.,BABHSR.
+      SET /UIC='$WUIC'
+      PIP BAAHSR.CMD;*,BABHSR.CMD;*/DE
+      .60:
+      .IFDF $MAST .GOTO 65
+      .ASK ANS DELETE HSR SOURCES
+      .IFF ANS .GOTO 70
+      .65:
+      REM PEL
+     ;
+     ; DELETE HSR SOURCES
+     ; *** ERROR MESSAGES HERE ARE OK ***
+     ;
+       PIP IPRHSR.*;1/DE
+       PIP TMRHSR.*;1/DE
+       PIP AMLHSR.*;1/DE
+       PIP SIGHSR.*;1/DE
+       PIP BAAHSR.*;1,BABHSR.*;1/DE
+      .70: .EXIT
+  Release B.3                       Page   74                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   75
+   9.6  LIB100 Command File
++       ___________________
+     ; LIB100.CMD - INSTALL LIB100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; NEED APEX AND UTILITY SOURCES (SEE SHORT INDEX LISTING)
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+      SET /UIC='$LUIC'
+      PIP '$LBDSK'LIB100.*;*/DE    ! ERROR MESSAGE HERE IS O.K.
+      SET /UIC='$WUIC'
+      @APX10
+      @UTL10
+     ;
+     ; DELETE SOURCES
+     ;
+      .IFDF $MAST .GOTO 15
+      .ASK ANS DELETE APEX AND UTILITIES SOURCES
+      .IFF ANS .GOTO 20
+      .15:
+      SET /UIC='$WUIC'
+      PIP IAPEX.*;1,DAPEX.*;1,FDAPEX.*;1,IUTIL.*;1,FDUTIL.*;1/DE
+      PIP ADUTIL.*;1,DGNHSR.*;1/DE
+      .20: .EXIT
+  Release B.3                       Page   75                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   76
+   9.7  Apex Command File
++       _________________
+     ; APX10.CMD - INSTALL APEX
+     ; RSX11M FPS100 FEB 80
+     ; IAPEX.FTN FDAPEX.FTN DAPEX.MAC
+     ; FPSMC.MAC (DRIVER COMMAND FILE MUST HAVE BEEN EXECUTED)
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; COMPILE AND ASSEMBLE APEX PROGRAMS
+     ; IAPEX
+     ;
+      .IFINS FOR FOR IAPEX=IAPEX'$FOR1'
+      .IFINS F4P F4P IAPEX=IAPEX'$F4P1'
+     ;
+     ; FDAPEX
+     ;
+      .IFINS FOR FOR FDAPEX=FDAPEX'$FOR1'
+      .IFINS F4P F4P FDAPEX=FDAPEX'$F4P1'
+     ;
+     ; DAPEX
+     ;
+      MAC DAPEX=FPSMC,DAPEX
+     ;
+     ; CREATE LIB100, INSERT APEX ROUTINES
+     ;
+      SET /UIC='$LUIC'
+      LBR '$LBDSK'LIB100/CR='$WUIC'IAPEX,DAPEX,FDAPEX
+      SET /UIC='$WUIC'
+     ;
+     ; DELETE OBJECTS
+     ;
+      PIP IAPEX.OBJ;*,DAPEX.OBJ;*,FDAPEX.OBJ;*/DE
+      .EXIT
+  Release B.3                       Page   76                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   77
+   9.8  Utilities Command File
++       ______________________
+     ; UTL10.CMD - INSTALL UTILITIES COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ADUTIL.MAC IUTIL.FTN FDUTIL.FTN
+     ; LIB100 MUST HAVE BEEN CREATED AND APEX INSTALLED
+     ; PEEL.TSK MUST HAVE BEEN BUILT (HSR COMMAND FILE EXECUTED)
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ; COMPILE AND ASSEMBLE UTILITIES AND DGNHSR
+     ; IUTIL
+     ;
+      .IFINS FOR FOR IUTIL=IUTIL'$FOR1'
+      .IFINS F4P F4P IUTIL=IUTIL'$F4P1'
+     ;
+     ; FDUTIL
+     ;
+      .IFINS FOR FOR FDUTIL=FDUTIL'$FOR1'
+      .IFINS F4P F4P FDUTIL=FDUTIL'$F4P1'
+     ;
+     ; ADUTIL
+     ;
+      MAC ADUTIL=ADUTIL
+     ;
+     ; DGNHSR
+     ;
+      .IFNINS PEL INS PEEL/TASK=...PEL
+      .IFINS PEL .GOTO 15
+     ; PEEL CANNOT BE FOUND !!! CORRECT THIS, INSTALL PEEL, AND RESUME.
+      .PAUSE
+      .15:
+      PEL DGNHSR.MAC
+      @DGNHSR
+      PIP DGNHSR.CMD;*/DE
+     ;
+     ; INSERT UTILITIES AND DGNHSR INTO LIB100
+     ;
+      SET /UIC='$LUIC'
+      LBR '$LBDSK'LIB100/IN='$WUIC'IUTIL,FDUTIL,ADUTIL,DGNHSR.
+      SET /UIC='$WUIC'
+     ;
+     ; DELETE OBJECTS
+     ;
+      PIP IUTIL.OBJ;*,FDUTIL.OBJ;*,ADUTIL.OBJ;*,DGNHSR.;*/DE
+      .EXIT
+  Release B.3                       Page   77                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   78
+   9.9  PDS Command File
++       ________________
+     ; PDS100.CMD - INSTALL ALL PDS COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ALL PDS SOURCES
+     ; APCOM.FTN
+     ; LIB100 MUST BE BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ; READ PASS 2 FROM INSTALLATION TAPE
+     ;
+      .SETN $PASS 2
+      .SETS $COM "Y"
+      @TREAD
+      .SETS $COM "N"
+     ;
+     ; COMPILE APCOM AND INSERT (REPLACE) INTO LIB100
+     ;
+      .IFINS FOR FOR APCOM=APCOM'$FOR1'
+      .IFINS F4P F4P APCOM=APCOM'$F4P1'
+     ;
+      SET /UIC='$LUIC'
+      LBR '$LBDSK'LIB100/RP='$WUIC'APCOM
+      SET /UIC='$WUIC'
+      PIP APCOM.OBJ;*/DE,APCOM.FTN;1/DE
+     ; BUILD ASM100
+     ;
+     ;
+      @ASM10
+     ; DELETE ASM100 SOURCE
+      PIP ASM100.FTN;1,ASM100.MAP;*/DE
+     ;
+     ; BUILD SIM100
+     ;
+      @SIM10
+     ; DELETE SIM100 SOURCE
+      PIP SIM100.FTN;1,SIM100.MAP;*/DE
+     ;
+     ; BUILD DBG100
+     ;
+      @DBG10
+     ; DELETE DBG100 SOURCE
+     ;
+     PIP DBG100.FTN;1,APSTOP.FTN;1,DBG100.MAP;*/DE
+     ; BUILD LNK100
+     ;
+  Release B.3                       Page   78                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   79
+      @LNK10
+     ; DELETE LNK100 SOURCE
+      PIP LNK100.FTN;1,LNK100.MAP;*/DE
+     ;
+     ; BUILD LOD100
+     ;
+      @LOD10
+     ; DELETE LOD100 SOURCE
+      PIP LOD100.FTN;1,LOD100.MAP;*/DE
+     ;
+     ; BUILD LED100
+     ;
+      @LED10
+     ; DELETE LED100 SOURCE
+      PIP LED100.FTN;1,LED100.MAP;*/DE
+     ;
+     ; BUILD VFC100
+     ;
+      @VFC10
+     ; DELETE VFC100 SOURCE
+      PIP VFC100.FTN;1,VFC100.MAP;*/DE
+      .EXIT
+      .EXIT
+  Release B.3                       Page   79                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   80
+   9.10  ASM100 Command File
++        ___________________
+     ; ASM10.CMD - INSTALL ASM100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ASM100.FTN
+     ; LIB100 MUST BE BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; COMPILE ASM100
+     ;
+      .IFINS FOR FOR ASM100=ASM100'$FOR1'
+      .IFINS F4P F4P ASM100=ASM100'$F4P1'
+     ;
+     ; CREATE ASM100 LIBRARY
+     ;
+      LBR ASM100/CR=ASM100
+     ;
+     ; TASK BUILD ASM100
+     ;
+      .OPEN ASM100.CMD
+      .DATA ASM100/CP,ASM100=ASM100/MP
+      .DATA UNITS=12
+      .DATA ACTFIL=6
+      .DATA //
+      .CLOSE
+        .OPEN ASM100.ODL
+       .DATA  ;BUILDS THE OVERLAY STRUCTURE FOR THE AP ASSEMBLER
+       .DATA ; THE ROOT CONTAINS MUST OF THE COMMON ROUTINES USED BY BOTH
+      .DATA ; PASS 1 AND PASS 2 OF THE ASSEMBLER
+       .DATA ; BRNCH1 IS THE INITIALIZATION PHASE OF THE ASSEMBLER
+       .DATA  ;BRNCH2 IS PASS 1
+      .DATA  ; BRNCH3 IS PASS 2
+       .DATA ; EACH ROUTINE FROM THE ASSEMBLER (ASM100) LIBRARY IS SPECIFILY
+       .DATA  ; CALLED OUT TO BE LOADED IN IT.S PROPER PLACE
+      .DATA  ;
+       .DATA ; BUILD THE BASIC STRUCTURE
+       .DATA ;
+        .DATA     .ROOT ROOT-*(BRNCH1,BRNCH2,BRNCH3)
+      .DATA ;
+      .DATA ; SPECIFY THE ROUTINES FOR THE ROOT
+        .DATA R1: .FCTR ASM100/LB:.MAIN.:TABLES:OPTAB
+        .DATA R2: .FCTR ASM100/LB:ERRMES:EXFLDS:FUSYM:GLINE:GNUM:GSYM:GVAL
+        .DATA R3:.FCTR ASM100/LB:PNUM:WLIN:GBRK:READLN:FLOAT2:PACKS
+       .DATA R4: .FCTR LB:'$LUIC'LIB100/LB:DUTIL:ICMP16:IPFIX:ISUB16:NEGCHK
+        .DATA R5: .FCTR LB:'$LUIC'LIB100/LB:INEG16:PFLOAT:IADDC:DATTIM
+  Release B.3                       Page   80                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   81
+        .DATA R6:  .FCTR  LB:'$LUIC'LIB100/LB:INFILE:PAKS
+        .DATA ROOT: .FCTR R1-R4-R5-R6
+      .DATA ;
+      .DATA ;  BUILD THE INITIALIZATION OVERLAY
+        .DATA BRNCH1: .FCTR ASM100/LB:APALI:LENGTH-LB:'$LUIC'LIB100/LB
+       .DATA ;
+       .DATA ;  BUILD PASS 1 BASE OVERLAY
+        .DATA BRNCH2: .FCTR BRCH2-(LIMB21,LIMB22)
+       .DATA BRCH2: .FCTR ASM100/LB:PASS1:LENGTH:ITAS-R2-R3-LB:'$LUIC'LIB100/LB
+        .DATA LIMB21: .FCTR ASM100/LB:FPGET
+        .DATA LIMB22: .FCTR ASM100/LB:SNDMES:HEADER
+      .DATA ;
+      .DATA ;  BUILD PASS 1 BRANCH OF THE TREE
+        .DATA BRNCH3: .FCTR BRCH3-(LIMB31,LIMB32,LIMB33,LIMB34)
+        .DATA BRCH3: .FCTR ASM100/LB:PASS2:FSYM-R2-R3
+        .DATA LIMB31: .FCTR ASM100/LB:FPGET
+        .DATA LIMB32: .FCTR ASM100/LB:SNDMES:HEADER
+        .DATA LIMB33: .FCTR ASM100/LB:GFIELD:GARG
+        .DATA LIMB34: .FCTR ASM100/LB:RTOE:TYPCHR:ITAS
+        .DATA   .END
+         .CLOSE
+      TKB @ASM100
+      PIP ASM100.TSK/PU
+     ;
+     ; DELETE INTERMEDIATE FILES
+     ;
+      PIP ASM100.OLB;*,ASM100.OBJ;*,ASM100.CMD;*,ASM100.ODL;*/DE
+      .EXIT
+  Release B.3                       Page   81                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   82
+   9.11  SIM100 Command File
++        ___________________
+     ; SIM10.CMD - INSTALL SIM100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; SIM100.FTN
+     ; LIB100 MUST BE BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; COMPILE SIM100
+     ;
+      .IFINS FOR FOR SIM100=SIM100'$FOR2'
+      .IFINS F4P F4P SIM100=SIM100'$F4P2'
+     ;
+     ; CREATE SIM100 LIBRARY
+     ;
+      LBR SIM100/CR=SIM100
+     ;
+     ; TASK BUILD SIM100
+     ;
+         .OPEN  SIM100.CMD
+        .DATA  SIM100/CP,SIM100=SIM100/MP
+         .DATA UNITS=17
+        .DATA //
+        .CLOSE
+        .OPEN  SIM100.ODL
+        .DATA  .ROOT  ROOT-*(BRNCH1,BRNCH2)
+       .DATA ROOT1: .FCTR SIM100/LB:.MAIN.:TMROM:DBGSYM:PSMEM:MDMEM:UNPKRG
+       .DATA  ROOT2: .FCTR SIM100/LB:RMOV:TMMEM:MOVPRT:MREAD:MWRIT
+       .DATA  ROOT3: .FCTR SIM100/LB:NEGATE:NORMAL:SPLIT:TCADD:LAND:LSHFT:LCOM
+        .DATA  ROOT: .FCTR ROOT1-ROOT2-ROOT3
+     ;
+       .DATA ; BUILD OVERLAY 1
+        .DATA  BRNCH1: .FCTR BRCH11-LB:'$LUIC'LIB100/LB
+        .DATA  BRCH11: .FCTR SIM100/LB:APD:LODINP:INCODE:PAKRG:FPOUT:FPINPT
+       .DATA ; BUILD BRANCH 2
+        .DATA  BRNCH2: .FCTR BRCH21-LB:'$LUIC'LIB100/LB:DUTIL
+        .DATA  BRCH21: .FCTR SIM100/LB:APSIM:CLOCK:FPADD:FPMUL:INTRPT
+        .DATA .END
+         .CLOSE
+     ;
+      TKB @SIM100
+      PIP SIM100.TSK/PU
+     ;
+     ; DELETE INTERMEDIATE FILES
+     ;
+  Release B.3                       Page   82                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   83
+      PIP SIM100.OLB;*,SIM100.OBJ;*,SIM100.CMD;*,SIM100.ODL;*/DE
+      .EXIT
+  Release B.3                       Page   83                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   84
+   9.12  DBG100 Command File
++        ___________________
+     ; DBG10.CMD - INSTALL DBG100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; DBG100.FTN APSTOP.FTN
+     ; LIB100 MUST BE BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; COMPILE DBG100
+     ;
+      .IFINS FOR FOR APSTOP=APSTOP'$FOR1'
+      .IFINS F4P F4P APSTOP=APSTOP'$F4P1'
+     ;
+      .IFINS FOR FOR DBG100=DBG100'$FOR1'
+      .IFINS F4P F4P DBG100=DBG100'$F4P1'
+     ;
+     ; CREATE DBG100 LIBRARY
+     ;
+      LBR DBG100/CR=DBG100,APSTOP
+     ;
+     ; TASK BUILD DBG100
+     ;
+         .OPEN  DBG100.CMD
+       .DATA  DBG100/CP,DBG100=DBG100/MP
+       .DATA COMMON=APDEV:RW:7
+       .DATA UNITS=12
+       .DATA //
+         .CLOSE
+        .OPEN  DBG100.ODL
+      .DATA .ROOT ROOT-*(OVL1,OVL2,OVL3,OVL4,APEX1,INFIL)
+      .DATA ROOT: .FCTR ROOT1-ROOT2-ROOT3-ROOT4-ROOT5-ROOT6-ROOT7
+      .DATA ROOT1: .FCTR DBG100/LB:.MAIN.:SUBEXM:SUBRUN:SUBTRS
+      .DATA ROOT2: .FCTR DBG100/LB:SUBYAN:TCBEXM:APSTOP
+      .DATA ROOT3: .FCTR LB:'$LUIC'LIB100/LB:DAPEX:DUTIL:APDEP:APEXAM:EXTSL
+      .DATA ROOT4: .FCTR LB:'$LUIC'LIB100/LB:EXTSS:EXTST:EXTVT:INSCS:INSSS:IPFIX
+      .DATA ROOT5: .FCTR LB:'$LUIC'LIB100/LB:ISUB16:ITOS:NEGCHK:PFLOAT:RMVCS:RMV
+     TOK
+      .DATA ROOT6: .FCTR LB:'$LUIC'LIB100/LB:SRCST:WRTLIN:APWD:APWR:WREG:RREG:PS
+     FUNC
+      .DATA ROOT7: .FCTR LB:'$LUIC'LIB100/LB:PAKS:INEG16:EXTTOK:IFN:TYPC
+      .DATA OVL1: .FCTR  DBG100/LB:APFILL:WRTST2-LB:'$LUIC'LIB100/LB
+      .DATA OVL2: .FCTR DBG100/LB:APDOUT:PUTINT-A
+      .DATA A:    .FCTR LB:'$LUIC'LIB100/LB
+      .DATA OVL3:  .FCTR OVL30-(OVL31,OVL32)
+      .DATA OVL30: .FCTR DBG100/LB:GETINT:GETSYM-LB:'$LUIC'LIB100/LB
+  Release B.3                       Page   84                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   85
+      .DATA OVL31: .FCTR DBG100/LB:APDIN:GETFPN-LB:'$LUIC'LIB100/LB
+      .DATA OVL32: .FCTR DBG100/LB:SUBBRK-LB:'$LUIC'LIB100/LB
+      .DATA OVL4: .FCTR DBG100/LB:DEPST2-LB:'$LUIC'LIB100/LB
+      .DATA APEX1: .FCTR DBG100/LB:APSTPC-LB:'$LUIC'LIB100/LB
+      .DATA INFIL: .FCTR LB:'$LUIC'LIB100/LB:INFILE
+      .DATA  .END
+      .CLOSE
+      TKB @DBG100
+      PIP DBG100.TSK/PU
+     ;
+     ; DELETE INTERMEDIATE FILES
+     ;
+      PIP DBG100.OLB;*,DBG100.OBJ;*,DBG100.CMD;*,DBG100.ODL;*/DE
+      .EXIT
+  Release B.3                       Page   85                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   86
+   9.13  LNK100 Command File
++        ___________________
+     ; LNK10.CMD - INSTALL LNK100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; LNK100.FTN
+     ; LIB100 MUST BE BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; COMPILE LNK100
+     ;
+      .IFINS FOR FOR LNK100=LNK100'$FOR1'
+      .IFINS F4P F4P LNK100=LNK100'$F4P1'
+     ;
+     ; BUILD LNK100
+     ;
+          .OPEN  LNK100.CMD
+        .DATA LNK100/CP,LNK100=LNK100,LB:'$LUIC'LIB100/LB
+        .DATA /
+        .DATA UNITS=12
+        .DATA //
+        .CLOSE
+      TKB @LNK100
+      PIP LNK100.TSK/PU
+     ;
+     ; DELETE INTERMEDIATE FILES
+     ;
+      PIP LNK100.OBJ;*,LNK100.CMD;*/DE
+      .EXIT
+  Release B.3                       Page   86                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   87
+   9.14  LOD100 Command File
++        ___________________
+     ; LOD10.CMD - INSTALL LOD100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; LOD100.FTN
+     ; LIB100 MUST BE BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; COMPILE LOD100
+     ;
+      .IFINS FOR FOR LOD100=LOD100'$FOR2'
+      .IFINS F4P F4P LOD100=LOD100'$F4P2'
+     ;
+     ; CREATE LOD100 LIBRARY
+     ;
+      LBR LOD100/CR=LOD100
+     ;
+     ; TASK BUILD LOD100
+     ;
+         .OPEN  LOD100.CMD
+        .DATA  LOD100/CP,LOD100=LOD100/MP
+        .DATA UNITS=17
+        .DATA ACTFIL=8
+        .DATA //
+        .CLOSE
+        .OPEN LOD100.ODL
+        .DATA   .ROOT ROOT-*(BRNCH1,BRNCH2,BRNCH3)
+       .DATA ROOT: .FCTR R1-R2-R3-LB:'$LUIC'LIB100/LB
+       .DATA R1: .FCTR LOD100/LB:.MAIN.:APLDBD:LIB:LOAD:ERRMES
+       .DATA R2: .FCTR LOD100/LB:LMSRC2:LMDCLR:RDREC:TYPC
+       .DATA  R3: .FCTR LOD100/LB:WRTDAT:WRTLM:WRTBR:LDBMAK:WRTLIN
+        .DATA  BRNCH1: .FCTR BRCH11-BRCH12-BRCH13-LB:'$LUIC'LIB100/LB
+       .DATA BRCH11: .FCTR LOD100/LB:CALLS:COMAND:FINISH:FORCE:INIT:INPUT:MDOFF
+        .DATA  BRCH12: .FCTR LOD100/LB:MMAX:NOLOAD:OUTPUT:OUTSCN:PSOFF:SKPBLK
+        .DATA  BRCH13: .FCTR LOD100/LB:LOADMP:TABGET:MAPLIN
+        .DATA  BRNCH2: .FCTR BRCH21-(LMBS1,LMBS2,LMBS3)
+        .DATA  BRCH21: .FCTR LOD100/LB:LOAD1:BLKSKP:EXTCNT:SKPSUB-LB:'$LUIC'LIB1
+     00/LB
+        .DATA  LMBS1:  .FCTR LOD100/LB:SRCN:SRC1:SRC2:BLNKST:COMPOS:APPRIO-TWIG2
+        .DATA  TWIG2:  .FCTR LOD100/LB:APMDIO-LB:'$LUIC'LIB100/LB
+        .DATA  LMBS2:  .FCTR LOD100/LB:TREE-LB:'$LUIC'LIB100/LB
+        .DATA  LMBS3:  .FCTR LOD100/LB:TASKY:PURGE:MARK-LB:'$LUIC'LIB100/LB
+        .DATA  BRNCH3: .FCTR BRCH31-BRCH32-LB:'$LUIC'LIB100/LB
+        .DATA  BRCH31: .FCTR LOD100/LB:LINKUP:OVLY:DTALNK:LINKS:ENDLNK
+        .DATA  BRCH32: .FCTR LOD100/LB:DTAREL:TSKLNK:ITOSX:SRCBD-TWIG1
+  Release B.3                       Page   87                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   88
+       .DATA  TWIG1:  .FCTR LB:'$LUIC'LIB100/LB
+        .DATA   .END
+        .CLOSE
+      TKB @LOD100
+      PIP LOD100.TSK/PU
+     ;
+     ; DELETE INTERMEDIATE FILES
+     ;
+      PIP LOD100.OLB;*,LOD100.OBJ;*,LOD100.CMD;*,LOD100.ODL;*/DE
+      .EXIT
+  Release B.3                       Page   88                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   89
+   9.15  LED100 Command File
++        ___________________
+     ; LED10.CMD - INSTALL LED100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; LED100.FTN
+     ; LIB100 MUST BE BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; COMPILE LED100
+     ;
+      .IFINS FOR FOR LED100=LED100'$FOR2'
+      .IFINS F4P F4P LED100=LED100'$F4P2'
+     ;
+     ; BUILD LED100
+     ;
+         .OPEN  LED100.CMD
+        .DATA   LED100/CP,LED100=LED100,LB:'$LUIC'LIB100/LB
+        .DATA /
+        .DATA UNITS=12
+        .DATA //
+        .CLOSE
+      TKB @LED100
+      PIP LED100.TSK/PU
+     ;
+     ; DELETE INTERMEDIATE FILES
+     ;
+      PIP LED100.OBJ;*,LED100.CMD;*/DE
+      .EXIT
+  Release B.3                       Page   89                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   90
+   9.16  VFC100 Command File
++        ___________________
+     ; VFC10.CMD - INSTALL VFC100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; VFC100.FTN
+     ; LIB100 MUST BE BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; COMPILE VFC100
+     ;
+      .IFINS FOR FOR VFC100=VFC100'$FOR2'
+      .IFINS F4P F4P VFC100=VFC100'$F4P2'
+     ;
+     ; BUILD VFC100
+     ;
+         .OPEN  VFC100.CMD
+       .DATA   VFC100/CP,VFC100=VFC100,LB:'$LUIC'LIB100/LB
+        .DATA /
+        .DATA UNITS=12
+        .DATA //
+        .CLOSE
+      TKB @VFC100
+      PIP VFC100.TSK/PU
+     ;
+     ; DELETE INTERMEDIATE FILES
+     ;
+      PIP VFC100.OBJ;*,VFC100.CMD;*/DE
+      .EXIT
+  Release B.3                       Page   90                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   91
+   9.17  Diagnostics Command File
++        ________________________
+     ; DGN100.CMD - INSTALL ALL DIAGNOSTICS COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ALL DIAGNOSTICS SOURCES DGCOM.FTN
+     ; LIB100 BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ;
+     ; READ PASS 3 FROM INSTALLATION TAPE
+     ;
+      .SETN $PASS 3
+      .SETS $COM "Y"
+      @TREAD
+      .SETS $COM "N"
+     ;
+     ; COMPILE DGCOM, CREATE DGCOM LIBRARY
+     ;
+      .IFINS FOR FOR DGCOM=DGCOM'$FOR1'
+      .IFINS F4P F4P DGCOM=DGCOM'$F4P1'
+     ;
+      LBR DGCOM/CR=DGCOM
+      PIP DGCOM.OBJ;*/DE,DGCOM.FTN;1/DE
+     ;
+     ; BUILD TST100
+     ;
+      @TST10
+     ; DELETE TST100 SOURCE
+      PIP TST100.FTN;1/DE
+     ;
+     ; BUILD PTH100
+     ;
+      @PTH10
+     ; DELETE PTH100 SOURCE
+      PIP PTH100.FTN;1/DE
+     ;
+     ; BUILD ART100
+     ;
+      @ART10
+     ; DELETE ART100 SOURCE
+      PIP ART100.FTN;1/DE
+     ;
+     ; BUILD FFT100
+     ;
+      @FFT10
+     ; DELETE FFT100 SOURCE
+  Release B.3                       Page   91                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   92
+      PIP FFT100.FTN;1/DE
+     ;
+     ; BUILD MEM100
+     ;
+      @MEM10
+     ; DELETE MEM100 SOURCE
+      PIP MEM100.FTN;1/DE
+     ;
+     ; BUILD UFT100
+     ;
+      @UFT10
+     ; DELETE UFT100 SOURCE
+      PIP UFT100.FTN;1/DE
+     ;
+     ; DELETE MAP FILES
+     ;
+      PIP *.MAP;*,DGCOM.OLB;*/DE
+      .EXIT
+      .EXIT
+  Release B.3                       Page   92                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   93
+   9.18  TST100 Command File
++        ___________________
+     ; TST10.CMD - INSTALL TST100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; TST100.FTN DGCOM.OLB
+     ; LIB100 BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+      .10:
+     ;
+     ; COMPILE TST100
+     ;
+      .IFINS FOR FOR TST100=TST100'$FOR1'
+      .IFINS F4P F4P TST100=TST100'$F4P1'
+     ;
+     ; BUILD TST100
+     ;
+        .OPEN  TST100.CMD
+        .DATA  TST100/CP,TST100=TST100,DGCOM/LB,LB:'$LUIC'LIB100/LB
+         .DATA /
+        .DATA COMMON=APDEV:RW:7
+        .DATA UNITS=10
+        .DATA //
+        .CLOSE
+      TKB @TST100
+      PIP TST100.TSK/PU
+     ; DELETE INTERMEDIATE FILES
+      PIP TST100.OBJ;*,TST100.CMD;*/DE
+      .EXIT
+  Release B.3                       Page   93                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   94
+   9.19  PTH100 Command File
++        ___________________
+     ; PTH10.CMD - INSTALL PTH100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; PTH100.FTN DGCOM.OLB
+     ; LIB100 BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+      .10:
+     ;
+     ; COMPILE PTH100
+     ;
+      .IFINS FOR FOR PTH100=PTH100'$FOR1'
+      .IFINS F4P F4P PTH100=PTH100'$F4P1'
+     ;
+     ; BUILD PTH100
+     ;
+        .OPEN  PTH100.CMD
+       .DATA PTH100/CP,PTH100=PTH100,DGCOM/LB,LB:'$LUIC'LIB100/LB
+        .DATA /
+        .DATA UNITS=10
+        .DATA COMMON=APDEV:RW:7
+        .DATA //
+        .CLOSE
+      TKB @PTH100
+      PIP PTH100.TSK/PU
+     ; DELETE INTERMEDIATE FILES
+      PIP PTH100.OBJ;*,PTH100.CMD;*/DE
+      .EXIT
+  Release B.3                       Page   94                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   95
+   9.20  ART100 Command File
++        ___________________
+     ; ART10.CMD - INSTALL ART100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ART100.FTN DGCOM.OLB
+     ; LIB100 BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+      .10:
+     ;
+     ; COMPILE ART100
+     ;
+      .IFINS FOR FOR ART100=ART100'$FOR1'
+      .IFINS F4P F4P ART100=ART100'$F4P1'
+     ;
+     ; CREATE ART100 LIBRARY
+     ;
+      LBR ART100/CR=ART100
+     ;
+     ; BUILD ART100
+     ;
+        .OPEN  ART100.ODL
+       .DATA  .ROOT  ROOT1-*(OV1,OV2)
+       .DATA  ROOT1: .FCTR ART100/LB:.MAIN.:.DATA.:COMPAR:SETUP:ASSIST:LPTST-ROT
+     11
+       .DATA  ROT11: .FCTR ART100/LB:DUMPDP:DUMPPS:DUMPSP:IMCMD-RT11
+       .DATA  RT11: .FCTR LB:'$LUIC'LIB100/LB:APINIT:DAPEX:APMODE:DUTIL-RT12
+       .DATA  RT12: .FCTR LB:'$LUIC'LIB100/LB:APEXAM:IADDC:NAND16:SIZEPS-RT13
+       .DATA  RT13: .FCTR LB:'$LUIC'LIB100/LB:OMAE:INMPGS:IPFIX:NEGCHK-RT14
+       .DATA  RT14: .FCTR LB:'$LUIC'LIB100/LB
+       .DATA  OV1:   .FCTR DGCOM/LB:CSI:IRDTK:IOCNTL:MEMSIZ:MEMDMP:DUMP:NCOMP:I2
+     ASCI
+       .DATA  OV2:   .FCTR ART100/LB:BITREV:FCMPRS:FEXPND:IDNEG:IDSHFT:NORMAL-OV
+     21
+       .DATA  OV21:  .FCTR ART100/LB:RMOV:ZCHCK:BOOTH:SPADS:FADDS:FMULS
+       .DATA  .END
+        .CLOSE
+        .OPEN  ART100.CMD
+        .DATA ART100/CP,ART100=ART100/MP
+        .DATA UNITS=10
+        .DATA COMMON=APDEV:RW:7
+        .DATA //
+        .CLOSE
+      TKB @ART100
+      PIP ART100.TSK/PU
+     ; DELETE INTERMEDIATE FILES
+      PIP ART100.OBJ;*,ART100.CMD;*,ART100.ODL;*,ART100.OLB;*/DE
+      .EXIT
+  Release B.3                       Page   95                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   96
+  Release B.3                       Page   96                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   97
+   9.21  FFT100 Command File
++        ___________________
+     ; FFT10.CMD - INSTALL FFT100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; FFT100.FTN DGCOM.OLB
+     ; LIB100 BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+      .10:
+     ;
+     ; COMPILE FFT100
+     ;
+      .IFINS FOR FOR FFT100=FFT100'$FOR1'
+      .IFINS F4P F4P FFT100=FFT100'$F4P1'
+     ;
+     ; BUILD FFT100
+     ;
+        .OPEN  FFT100.CMD
+        .DATA FFT100/CP,FFT100=FFT100,DGCOM/LB,LB:'$LUIC'LIB100/LB
+        .DATA /
+        .DATA UNITS=10
+        .DATA COMMON=APDEV:RW:7
+        .DATA //
+        .CLOSE
+      TKB @FFT100
+      PIP FFT100.TSK/PU
+     ; DELETE INTERMEDIATE FILES
+      PIP FFT100.OBJ;*,FFT100.CMD;*/DE
+      .EXIT
+  Release B.3                       Page   97                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   98
+   9.22  MEM100 Command File
++        ___________________
+     ; MEM10.CMD - INSTALL MEM100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; MEM100.FTN DGCOM.OLB
+     ; LIB100 BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+      .10:
+     ;
+     ; COMPILE MEM100
+     ;
+      .IFINS FOR FOR MEM100=MEM100'$FOR1'
+      .IFINS F4P F4P MEM100=MEM100'$F4P1'
+     ;
+     ; CREATE MEM100 LIBRARY
+     ;
+      LBR MEM100/CR=MEM100
+     ;
+     ; BUILD MEM100
+     ;
+       .OPEN MEM100.ODL
+       .DATA .ROOT  ROOT1-*(OV1,OV2,OV3,OV4,OV5,OV6,OV7,OVR8)
+       .DATA ROOT1:  .FCTR MEM100/LB:.MAIN.:TEST:FMGR:SETUP:FILL-ROT11
+       .DATA ROT11:  .FCTR MEM100/LB:IMCMD:MEMSET:MEMDIS:PARAP:MEMWRT-ROT12
+       .DATA ROT12:  .FCTR MEM100/LB:TLOAD:MOVE:ASSIST:APSTOP:IBNHX-ROT16
+       .DATA OVR8:   .FCTR DGCOM/LB:CSI:IOCNTL:IRDTK:MEMDMP:DUMP
+       .DATA ROT16:  .FCTR DGCOM/LB:I2ASCI:NCOMP-ROT13
+       .DATA ROT13:  .FCTR LB:'$LUIC'LIB100/LB:APINIT:DAPEX:DUTIL:APEXAM-ROT14
+       .DATA ROT14:  .FCTR LB:'$LUIC'LIB100/LB:APDEP:ILITES:APGSP:APPSEL:APPUT-R
+     OT15
+       .DATA ROT15:  .FCTR LB:'$LUIC'LIB100/LB:OMAE:NAND16-LB:'$LUIC'LIB100/LB
+       .DATA OV1:    .FCTR MEM100/LB:PSVTST:PSPNL:PSVFP:PSVER
+       .DATA OV2:    .FCTR MEM100/LB:BRTST:BRERR
+       .DATA OV3:    .FCTR MEM100/LB:DPXTS:DPYTS:DPERR
+       .DATA OV4:    .FCTR MEM100/LB:PSTST:PSERR
+       .DATA OV5:    .FCTR MEM100/LB:SPTST:SPERR:DPXLP
+       .DATA OV6:    .FCTR MEM100/LB:MDTST:MDPT1:MDPT2:MTST0:MTST1:MDERR
+       .DATA OV7:    .FCTR MEM100/LB:TMTST:TMBAD:TMRDM:TMCKS:TMNSE:TMERR
+       .DATA         .END
+       .CLOSE
+       .OPEN MEM100.CMD
+       .DATA MEM100/CP,MEM100=MEM100/MP
+       .DATA UNITS=20
+       .DATA COMMON=APDEV:RW:7
+       .DATA //
+       .CLOSE
+      TKB @MEM100
+  Release B.3                       Page   98                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page   99
+      PIP MEM100.TSK/PU
+     ; DELETE INTERMEDIATE FILES
+      PIP MEM100.OBJ;*,MEM100.CMD;*,MEM100.ODL;*,MEM100.OLB;*/DE
+      .EXIT
+  Release B.3                       Page   99                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page  100
+   9.23  UFT100 Command File
++        ___________________
+     ; UFT10.CMD - INSTALL UFT100 COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; UFT100.FTN DGCOM.OLB
+     ; LIB100 BUILT AND IN PLACE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+      .10:
+     ;
+     ; COMPILE UFT100
+     ;
+      .IFINS FOR FOR UFT100=UFT100'$FOR1'
+      .IFINS F4P F4P UFT100=UFT100'$F4P1'
+     ;
+     ; CREATE UFT100 LIBRARY
+     ;
+      LBR UFT100/CR=UFT100
+     ;
+     ; BUILD UFT100
+     ;
+       .OPEN UFT100.ODL
+       .DATA  .ROOT  ROOT1-*(OV1,OV2)
+       .DATA  ROOT1:  .FCTR UFT100/LB:.MAIN.:.DATA.:INTRV:ISCAN:FILL-ROT11
+       .DATA  ROT13:  .FCTR LB:'$LUIC'LIB100/LB:APINIT:DAPEX:DUTIL:APDEP-ROT14
+       .DATA  ROT11:  .FCTR UFT100/LB:RNTST:MOVE:IBLNK:APSTOP:SETUP:LOADTS-RT12
+       .DATA  RT12:   .FCTR UFT100/LB:GETTST:IBNHX:FNDVLD:ASSIST:PPASS:TNUM-RT13
+       .DATA  RT13:   .FCTR UFT100/LB:IMCMD-ROT12
+       .DATA  ROT12:  .FCTR DGCOM/LB:I2ASCI:IOCNTL-ROT13
+       .DATA  ROT14:  .FCTR LB:'$LUIC'LIB100/LB:APEXAM:OMAE:NAND16:IPFIX-ROT16
+       .DATA  ROT16:  .FCTR LB:'$LUIC'LIB100/LB
+       .DATA  OV1:    .FCTR UFT100/LB:TYPE5:DECD5:UTYLD:TYPE2:DECD2:WAITA-OV11
+       .DATA  OV11:   .FCTR UFT100/LB:PLDPS:GETEXP:GETACT:DORLD:TYPE6:EMH-OV12
+       .DATA  OV12:   .FCTR UFT100/LB:GETUTL:PERMS:PEXAC:ERDIS:DEROP:RDOP-OV13
+       .DATA  OV13:   .FCTR UFT100/LB:WRTOP:DOWOP:PSLD:SPLD:DPLD:MDLD:POP-OV14
+       .DATA  OV14:   .FCTR UFT100/LB:PUSH:WAITD:PSDM:DMAGO:ISTIND:ISTDEP-OV15
+       .DATA  OV15:   .FCTR UFT100/LB:UNPK:SVPLP
+       .DATA  OV2:    .FCTR DGCOM/LB:CSI:IRDTK-OV21
+       .DATA  OV21:   .FCTR UFT100/LB:INITFL
+       .DATA          .END
+       .CLOSE
+       .OPEN UFT100.CMD
+       .DATA UFT100/CP,UFT100=UFT100/MP
+       .DATA UNITS=20
+       .DATA COMMON=APDEV:RW:7
+       .DATA //
+       .CLOSE
+      TKB @UFT100
+  Release B.3                       Page  100                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page  101
+      PIP UFT100.TSK/PU
+     ; DELETE INTERMEDIATE FILES
+      PIP UFT100.OBJ;*,UFT100.CMD;*,UFT100.ODL;*,UFT100.OLB;*/DE
+      .EXIT
+  Release B.3                       Page  101                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page  102
+   9.24  APLIB Command File
++        __________________
+     ; APL100.CMD - INSTALL APLIB COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ALL AP OBJECT FILES (.APO)
+     ; APEEL MUST BE BUILT
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+      SET /UIC='$LUIC'
+      PIP '$LBDSK'APLIB.*;*/DE   ! ERROR MESSAGE HERE IS O.K.
+      SET /UIC='$WUIC'
+     ;
+     ; READ PASS 4 FROM INSTALLATION TAPE
+     ;
+      .SETN $PASS 4
+      @TREAD
+     ;
+      .IFNINS APE INS APEEL/TASK=...APE
+      .IFINS APE .GOTO 15
+     ; APEEL CANNOT BE FOUND !!! CORRECT THIS, INSTALL APEEL BEFORE RESUMING.
+      .PAUSE
+      .15:
+     ;
+     ; INSTALL APLIB LIBRARY
+     ;
+      .SETS NO "1"
+      .IFNDF $AML .GOTO 20
+     ;
+     ; ADVANCED MATH LIBRARY
+     ;
+      APE 'NO',AMLLIB.APO
+      .SETS NO "0"
+      PIP AMLLIB.APO;1/DE
+      .20: .IFNDF $IPR .GOTO 30
+     ;
+     ; IMAGE PROCESSING LIBRARY
+     ;
+      APE 'NO',IPRLIB.APO
+      .SETS NO "0"
+      PIP IPRLIB.APO;1/DE
+      .30: .IFNDF $TMR .GOTO 40
+     ;
+     ; TMR LIBRARY
+     ;
+      APE 'NO',TMRLIB.APO
+      .SETS NO "0"
+  Release B.3                       Page  102                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page  103
+      PIP TMRLIB.APO;1/DE
+      .40: .IFNDF $SIG .GOTO 50
+     ;
+     ; SIGNAL PROCESSING LIBRARY
+     ;
+      APE 'NO',SIGLIB.APO
+      .SETS NO "0"
+      PIP SIGLIB.APO;1/DE
+      .50: .IFNDF $BASLB .GOTO 60
+     ;
+     ; BASIC MATH LIBRARIES
+     ;
+      APE 'NO',BAALIB.APO
+      PIP BAALIB.APO;1/DE
+      .SETS NO "0"
+      APE 'NO',BABLIB.APO
+      PIP BABLIB.APO;1/DE
+      APE 'NO',UTLLIB.APO
+      PIP UTLLIB.APO;1/DE
+      APE 'NO',APFLIB.APO
+      PIP APFLIB.APO;1/DE
+      .60:
+     ;
+     ; SYMLIB AND DGNLIB LIBRARIES
+     ;
+      APE 'NO',SYMLIB.APO
+      PIP SYMLIB.APO;1/DE
+      APE 2,DGNLIB.APO
+      PIP DGNLIB.APO;1/DE
+     ;
+     ; TRANSFER APLIB TO SYSTEM DISK
+     ;
+      SET /UIC='$LUIC'
+      PIP '$LBDSK'APLIB.LIB='$WUIC'APLIB.OBJ
+      SET /UIC='$WUIC'
+      PIP APLIB.OBJ;*/DE
+      .EXIT
+  Release B.3                       Page  103                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page  104
+   9.25  PDS Tests Command File
++        ______________________
+     ; PDSTST.CMD - INSTALL PDS TEST FILES COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ONLY READS FROM TAPE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ; READ PASS 5 FROM INSTALLATION TAPE
+     ;
+      .SETN $PASS 5
+      @TREAD
+      .EXIT
+  Release B.3                       Page  104                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page  105
+   9.26  Supervisors Command File
++        ________________________
+     ; SUP100.CMD - INSTALL SUPERVISORS COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ; ONLY READS FROM TAPE
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ; READ PASS 8 FROM INSTALLATION TAPE
+     ;
+      .SETN $PASS 8.
+      @TREAD
+      .EXIT
+  Release B.3                       Page  105                       January 1980
+1
+                  FPS100 PDP11 RSX-11M v 3.2 INSTALLATION NOTES        Page  106
+   9.27  Cleanup Command File
++        ____________________
+     ; CLEAN.CMD - CLEAN UP AFTER INSTALLATION COMMAND FILE
+     ; RSX11M FPS100 FEB 80
+     ;
+      .ENABLE GLOBAL
+      .ENABLE SUBSTITUTION
+      .IFDF $MAST .GOTO 10
+     ; SETUP
+      @SETUP
+     ;
+      .10:
+     ; CLEAN UP MISC FILES
+     ;
+     ; *** ERROR MESSAGE HERE IS O.K. ***
+      PIP DRIVER.*;1,DEVTABLE.*;1,FPSMC.*;*,APEEL.*;*,PEEL.*;*,*.MAP;*/DE
+      .EXIT
+   ****End of Installation Instructions****
+  Release B.3                       Page  106                       January 1980
+ 
